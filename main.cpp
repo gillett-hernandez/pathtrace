@@ -4,6 +4,7 @@
 #include "camera.h"
 #include "random.h"
 #include "helpers.h"
+#include "bvh.h"
 
 #include <iostream>
 
@@ -17,7 +18,7 @@ class lambertian : public material {
         virtual bool scatter(const ray& r_in, const hit_record& rec,
                              vec3& attenuation, ray& scattered) const {
             vec3 target = rec.p + rec.normal + random_in_unit_sphere();
-            scattered = ray(rec.p, target-rec.p);
+            scattered = ray(rec.p, target-rec.p, r_in.time());
             attenuation = albedo;
             return true;
         }
@@ -144,7 +145,7 @@ hittable *random_scene() {
     list[i++] = new sphere(vec3(-4, 1, 0), 1.0, new lambertian(vec3(0.4, 0.2, 0.1)));
     list[i++] = new sphere(vec3(4, 1, 0), 1.0, new metal(vec3(0.7, 0.6, 0.5), 0.0));
 
-    return new hittable_list(list,i);
+    return new bvh_node(list,i, 0.0f, 0.0f);
 }
 
 int main() {
@@ -171,7 +172,7 @@ int main() {
     float aperture = 2.0;
 
     camera cam(lookfrom, lookat, vec3(0,1,0), 20,
-           float(nx)/float(ny), aperture, dist_to_focus);
+           float(nx)/float(ny), aperture, dist_to_focus, 0.0f, 0.0f);
     int pixels = 0;
     int total_pixels = nx * ny;
     for (int j = ny-1; j >= 0; j--) {
