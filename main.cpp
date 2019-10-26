@@ -3,17 +3,12 @@
 #include "sphere.h"
 #include "camera.h"
 #include "random.h"
+#include "helpers.h"
 
 #include <iostream>
 
 
-vec3 random_in_unit_sphere() {
-    vec3 p;
-    do {
-        p = 2.0*vec3(random_double(), random_double(), random_double()) - vec3(1,1,1);
-    } while (p.squared_length() >= 1.0);
-    return p;
-}
+
 class lambertian : public material {
     public:
         lambertian(const vec3& a) : albedo(a) {}
@@ -28,27 +23,6 @@ class lambertian : public material {
         vec3 albedo;
 };
 
-vec3 reflect(const vec3& v, const vec3& n) {
-    return v - 2*dot(v,n)*n;
-}
-
-bool refract(const vec3& v, const vec3& n, float ni_over_nt, vec3& refracted) {
-    vec3 uv = unit_vector(v);
-    float dt = dot(uv, n);
-    float discriminant = 1.0 - ni_over_nt*ni_over_nt*(1-dt*dt);
-    if (discriminant > 0) {
-        refracted = ni_over_nt*(uv - n*dt) - n*sqrt(discriminant);
-        return true;
-    }
-    else
-        return false;
-}
-
-float schlick(float cosine, float ref_idx) {
-    float r0 = (1-ref_idx) / (1+ref_idx);
-    r0 = r0*r0;
-    return r0 + (1-r0)*pow((1 - cosine),5);
-}
 
 class metal : public material {
     public:
@@ -132,6 +106,45 @@ vec3 color(const ray& r, hittable *world, int depth) {
     }
 }
 
+hittable *random_scene() {
+    int n = 500;
+    hittable **list = new hittable*[n+1];
+    list[0] =  new sphere(vec3(0,-1000,0), 1000, new lambertian(vec3(0.5, 0.5, 0.5)));
+    int i = 1;
+    for (int a = -11; a < 11; a++) {
+        for (int b = -11; b < 11; b++) {
+            float choose_mat = random_double();
+            vec3 center(a+0.9*random_double(),0.2,b+0.9*random_double());
+            if ((center-vec3(4,0.2,0)).length() > 0.9) {
+                if (choose_mat < 0.8) {  // diffuse
+                    list[i++] = new sphere(center, 0.2,
+                        new lambertian(vec3(random_double()*random_double(),
+                                            random_double()*random_double(),
+                                            random_double()*random_double())
+                        )
+                    );
+                }
+                else if (choose_mat < 0.95) { // metal
+                    list[i++] = new sphere(center, 0.2,
+                            new metal(vec3(0.5*(1 + random_double()),
+                                           0.5*(1 + random_double()),
+                                           0.5*(1 + random_double())),
+                                      0.5*random_double()));
+                }
+                else {  // glass
+                    list[i++] = new sphere(center, 0.2, new dielectric(1.5));
+                }
+            }
+        }
+    }
+
+    list[i++] = new sphere(vec3(0, 1, 0), 1.0, new dielectric(1.5));
+    list[i++] = new sphere(vec3(-4, 1, 0), 1.0, new lambertian(vec3(0.4, 0.2, 0.1)));
+    list[i++] = new sphere(vec3(4, 1, 0), 1.0, new metal(vec3(0.7, 0.6, 0.5), 0.0));
+
+    return new hittable_list(list,i);
+}
+
 int main() {
     int nx = 500;
     int ny = 250;
@@ -143,13 +156,20 @@ int main() {
     vec3 origin(0.0, 0.0, 0.0);
 
 
-    hittable *list[4];
-    list[0] = new sphere(vec3(0,0,-1), 0.5, new lambertian(vec3(0.1, 0.2, 0.5)));
-    list[1] = new sphere(vec3(0,-100.5,-1), 100, new lambertian(vec3(0.8, 0.8, 0.0)));
-    list[2] = new sphere(vec3(1,0,-1), 0.5, new metal(vec3(0.8, 0.6, 0.2), 0.0));
-    list[3] = new sphere(vec3(-1,0,-1), 0.5, new dielectric(1.5));
-    hittable *world = new hittable_list(list,4);
-    camera cam(vec3(-2,2,1), vec3(0,0,-1), vec3(0,1,0), 90, float(nx)/float(ny));
+    // hittable *list[500];
+    // list[0] = new sphere(vec3(0,0,-1), 0.5, new lambertian(vec3(0.1, 0.2, 0.5)));
+    // list[1] = new sphere(vec3(0,-100.5,-1), 100, new lambertian(vec3(0.8, 0.8, 0.0)));
+    // list[2] = new sphere(vec3(1,0,-1), 0.5, new metal(vec3(0.8, 0.6, 0.2), 0.0));
+    // list[3] = new sphere(vec3(-1,0,-1), 0.5, new dielectric(1.5));
+    // hittable *world = new hittable_list(list,4);
+    hittable *world = random_scene();
+    vec3 lookfrom(10,1,4);
+    vec3 lookat(0,1,-1);
+    float dist_to_focus = (lookfrom-lookat).length();
+    float aperture = 2.0;
+
+    camera cam(lookfrom, lookat, vec3(0,1,0), 20,
+           float(nx)/float(ny), aperture, dist_to_focus);
     for (int j = ny-1; j >= 0; j--) {
         for (int i = 0; i < nx; i++) {
             vec3 col(0, 0, 0);
