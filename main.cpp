@@ -8,6 +8,8 @@
 #include <iostream>
 
 
+#define MAX_BOUNCES 10
+
 
 class lambertian : public material {
     public:
@@ -92,7 +94,7 @@ vec3 color(const ray& r, hittable *world, int depth) {
     if (world->hit(r, 0.001, MAXFLOAT, rec)) {
         ray scattered;
         vec3 attenuation;
-        if (depth < 50 && rec.mat_ptr->scatter(r, rec, attenuation, scattered)) {
+        if (depth < MAX_BOUNCES && rec.mat_ptr->scatter(r, rec, attenuation, scattered)) {
             return attenuation*color(scattered, world, depth+1);
         }
         else {
@@ -146,9 +148,9 @@ hittable *random_scene() {
 }
 
 int main() {
-    int nx = 500;
-    int ny = 250;
-    int ns = 100;
+    int nx = 1920;
+    int ny = 1080;
+    int ns = 5;
     std::cout << "P6\n" << nx << " " << ny << "\n255\n";
     vec3 lower_left_corner(-2.0, -1.0, -1.0);
     vec3 horizontal(4.0, 0.0, 0.0);
@@ -170,8 +172,12 @@ int main() {
 
     camera cam(lookfrom, lookat, vec3(0,1,0), 20,
            float(nx)/float(ny), aperture, dist_to_focus);
+    int pixels = 0;
+    int total_pixels = nx * ny;
     for (int j = ny-1; j >= 0; j--) {
         for (int i = 0; i < nx; i++) {
+            pixels++;
+
             vec3 col(0, 0, 0);
             for (int s = 0; s < ns; s++) {
                 float u = float(i + random_double()) / float(nx);
