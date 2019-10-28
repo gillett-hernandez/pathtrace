@@ -9,7 +9,8 @@
 #include <iostream>
 
 
-#define MAX_BOUNCES 10
+#define MAX_BOUNCES 30
+#define N_THREADS 4
 
 
 class lambertian : public material {
@@ -151,31 +152,30 @@ hittable *random_scene() {
 int main() {
     int nx = 1920;
     int ny = 1080;
-    int ns = 5;
+    int ns = 20;
     std::cout << "P6\n" << nx << " " << ny << "\n255\n";
-    vec3 lower_left_corner(-2.0, -1.0, -1.0);
-    vec3 horizontal(4.0, 0.0, 0.0);
-    vec3 vertical(0.0, 2.0, 0.0);
-    vec3 origin(0.0, 0.0, 0.0);
 
-
-    // hittable *list[500];
-    // list[0] = new sphere(vec3(0,0,-1), 0.5, new lambertian(vec3(0.1, 0.2, 0.5)));
-    // list[1] = new sphere(vec3(0,-100.5,-1), 100, new lambertian(vec3(0.8, 0.8, 0.0)));
-    // list[2] = new sphere(vec3(1,0,-1), 0.5, new metal(vec3(0.8, 0.6, 0.2), 0.0));
-    // list[3] = new sphere(vec3(-1,0,-1), 0.5, new dielectric(1.5));
-    // hittable *world = new hittable_list(list,4);
-    hittable *world = random_scene();
-    vec3 lookfrom(10,1,4);
-    vec3 lookat(0,1,-1);
+    // x,y,z
+    // y is up.
+    hittable *list[3];
+    int i = 0;
+    list[i++] = new sphere(vec3(0,-100,0), 100, new lambertian(vec3(0.2, 0.2, 0.2)));
+    list[i++] = new sphere(vec3(1,1,0), 1.0, new metal(vec3(1.0, 1.0, 1.0), 0.05));
+    list[i++] = new sphere(vec3(-1,1,0), 1.0, new metal(vec3(1.0, 1.0, 1.0), 0.05));
+    hittable *world = new bvh_node(list, i, 0.0f, 0.0f);
+    // hittable *world = random_scene();
+    vec3 lookfrom(0,1,5);
+    vec3 lookat(0,1,0);
     float dist_to_focus = (lookfrom-lookat).length();
-    float aperture = 2.0;
+    float aperture = 0.005;
+    int fov = 40;
 
-    camera cam(lookfrom, lookat, vec3(0,1,0), 20,
+    camera cam(lookfrom, lookat, vec3(0,1,0), fov,
            float(nx)/float(ny), aperture, dist_to_focus, 0.0f, 0.0f);
     int pixels = 0;
     int total_pixels = nx * ny;
     for (int j = ny-1; j >= 0; j--) {
+        // std::cerr << "computed row " << j << std::endl;
         for (int i = 0; i < nx; i++) {
             pixels++;
 
@@ -196,4 +196,5 @@ int main() {
             std::cout << ir <<  ig <<  ib;
         }
     }
+    std::cerr << "computed " << total_pixels * ns << " rays" << std::endl;
 }

@@ -1,8 +1,9 @@
 
 build: ray.cpp ray.h vec3.h main.cpp hittable.h hittable_list.h helpers.h camera.h random.h sphere.h
-	g++ -O3 main.cpp ray.cpp  -o main.exe -I.
+	time g++ -std=c++14 -O3 main.cpp ray.cpp  -o main.exe -I.
 
 run: build
-	./main.exe > out.ppm
+	time ./main.exe > out.ppm
+	python3 convert_ppm_in_curdir.py
 clean:
 	rm *.o
