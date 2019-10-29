@@ -153,7 +153,15 @@ int main() {
     int nx = 1920;
     int ny = 1080;
     int ns = 20;
-    std::cout << "P6\n" << nx << " " << ny << "\n255\n";
+    vec3** buffer = new vec3*[ny];
+    for (int j = ny-1; j >= 0; j--) {
+        // std::cerr << "computed row " << j << std::endl;
+        buffer[j] = new vec3[nx];
+        for (int i = 0; i < nx; i++) {
+            buffer[j][i] = vec3(0, 0, 0);
+        }
+    }
+
 
     // x,y,z
     // y is up.
@@ -190,11 +198,21 @@ int main() {
 
             col = vec3( sqrt(col[0]), sqrt(col[1]), sqrt(col[2]) );
 
+            buffer[j][i] = col;
+        }
+    }
+    std::cerr << "computed " << total_pixels * ns << " rays" << std::endl;
+
+    std::cout << "P6\n" << nx << " " << ny << "\n255\n";
+    for (int j = ny-1; j >= 0; j--) {
+        // std::cerr << "computed row " << j << std::endl;
+        for (int i = 0; i < nx; i++) {
+            vec3 col = buffer[j][i];
+
             char ir = int(255.99*col[0]);
             char ig = int(255.99*col[1]);
             char ib = int(255.99*col[2]);
             std::cout << ir <<  ig <<  ib;
         }
     }
-    std::cerr << "computed " << total_pixels * ns << " rays" << std::endl;
 }
