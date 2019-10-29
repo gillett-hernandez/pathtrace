@@ -8,6 +8,8 @@
 
 #include <iostream>
 #include <thread>
+#include <mutex>
+#include <chrono>
 
 
 #define MAX_BOUNCES 30
@@ -105,6 +107,7 @@ vec3 color(const ray& r, hittable *world, int depth) {
         }
     }
     else {
+        // world background color here
         vec3 unit_direction = unit_vector(r.direction());
         float t = 0.5*(unit_direction.y() + 1.0);
         return (1.0-t)*vec3(1.0, 1.0, 1.0) + t*vec3(0.5, 0.7, 1.0);
@@ -151,15 +154,29 @@ hittable *random_scene() {
 }
 
 
-void compute_rays(vec3** acc, int tid, int i, int j, int nx, int ny, int ns, camera cam, hittable* world) {
+std::mutex framebuffer_lock;
 
-    for (int s = 0; s < ns; s++) {
-        float u = float(i + random_double()) / float(nx);
-        float v = float(j + random_double()) / float(ny);
-        ray r = cam.get_ray(u, v);
-        (*acc)[tid] += color(r, world, 0);
+void compute_rays(vec3** buffer, int nx, int ny, int ns, camera cam, hittable* world) {
+
+    for (int j = ny-1; j >= 0; j--) {
+        // std::cerr << "computing row " << j << std::endl;
+        for (int i = 0; i < nx; i++) {
+            // std::cerr << "computing column " << i << std::endl
+            vec3 col = vec3(0, 0, 0);
+            for (int s = 0; s < ns; s++) {
+                float u = float(i + random_double()) / float(nx);
+                float v = float(j + random_double()) / float(ny);
+                ray r = cam.get_ray(u, v);
+                col += color(r, world, 0);
+            }
+
+            framebuffer_lock.lock();
+            buffer[j][i] += col;
+            framebuffer_lock.unlock();
+        }
     }
 }
+
 
 
 int main() {
@@ -169,24 +186,28 @@ int main() {
     // round up to nearest multiple of N_THREADS
     ns += N_THREADS;
     ns -= ns % N_THREADS;
-    vec3** buffer = new vec3*[ny];
+    vec3** framebuffer = new vec3*[ny];
     for (int j = ny-1; j >= 0; j--) {
         // std::cerr << "computed row " << j << std::endl;
-        buffer[j] = new vec3[nx];
+        framebuffer[j] = new vec3[nx];
         for (int i = 0; i < nx; i++) {
-            buffer[j][i] = vec3(0, 0, 0);
+            framebuffer[j][i] = vec3(0, 0, 0);
         }
     }
 
 
     // x,y,z
     // y is up.
+    auto t1 = std::chrono::high_resolution_clock::now();
     hittable *list[3];
     int i = 0;
     list[i++] = new sphere(vec3(0,-100,0), 100, new lambertian(vec3(0.2, 0.2, 0.2)));
     list[i++] = new sphere(vec3(1,1,0), 1.0, new metal(vec3(1.0, 1.0, 1.0), 0.05));
     list[i++] = new sphere(vec3(-1,1,0), 1.0, new metal(vec3(1.0, 1.0, 1.0), 0.05));
     hittable *world = new bvh_node(list, i, 0.0f, 0.0f);
+    auto t2 = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> elapsed_seconds = t2-t1;
+    std::cerr << "time taken to build bvh " << elapsed_seconds.count() << std::endl; 
     // hittable *world = random_scene();
     vec3 lookfrom(0,1,5);
     vec3 lookat(0,1,0);
@@ -198,43 +219,34 @@ int main() {
            float(nx)/float(ny), aperture, dist_to_focus, 0.0f, 0.0f);
     int pixels = 0;
     int total_pixels = nx * ny;
-    vec3** accumulators = new vec3*[N_THREADS];
-    for (int t = 0; t < N_THREADS; t++) {
-        accumulators[t] = new vec3(0, 0, 0);
-    }
     std::thread threads[N_THREADS];
-    // std::cerr << "computed row " << -1 << std::endl;
-    for (int j = ny-1; j >= 0; j--) {
-        // std::cerr << "computing row " << j << std::endl;
-        for (int i = 0; i < nx; i++) {
-            // std::cerr << "computing column " << i << std::endl;
-            pixels++;
 
-            vec3 col(0, 0, 0);
-            for (int t = 0; t < N_THREADS; t++) {
-                // std::cerr << "test" << std::endl;
-                (*accumulators)[t] = vec3(0, 0, 0);
-                threads[t] = std::thread(compute_rays, accumulators, t, i, j, nx, ny, ns/N_THREADS, cam, world);
-            }
-            // std::cerr << "got here with " << pixels << " " << std::endl;
-            for (int t = 0; t < N_THREADS; t++) {
-                threads[t].join();
-                col += (*accumulators)[t];
-            }
-            col /= float(ns);
-
-            col = vec3( sqrt(col[0]), sqrt(col[1]), sqrt(col[2]) );
-
-            buffer[j][i] = col;
-        }
+    for (int t = 0; t < N_THREADS; t++) {
+        std::cerr << "spawning thread " << t << std::endl;
+        threads[t] = std::thread(compute_rays, std::ref(framebuffer), nx, ny, ns/N_THREADS, cam, world);
     }
-    std::cerr << "computed " << total_pixels * ns << " rays" << std::endl;
+    auto t3 = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> elapsed_seconds2 = t3-t2;
+    std::cerr << "time taken to setup the rest and spawn threads " << elapsed_seconds2.count() << std::endl; 
+    for (int t = 0; t < N_THREADS; t++) {
+        std::cerr << "joining thread " << t << std::endl;
+        threads[t].join();
+        std::cerr << "joined thread " << t << std::endl;
+    }
+    auto t4 = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> elapsed_seconds3 = t4-t3;
+    std::cerr << "time taken to compute " << elapsed_seconds3.count() << std::endl;
+
+    std::cerr << "computed " << total_pixels * ns << " rays in " << elapsed_seconds3.count() << "seconds, at " << total_pixels*ns/elapsed_seconds3.count() << " rays per second" << std::endl;
 
     std::cout << "P6\n" << nx << " " << ny << "\n255\n";
     for (int j = ny-1; j >= 0; j--) {
         // std::cerr << "computed row " << j << std::endl;
         for (int i = 0; i < nx; i++) {
-            vec3 col = buffer[j][i];
+            vec3 col = framebuffer[j][i];
+            col /= float(ns);
+
+            col = vec3( sqrt(col[0]), sqrt(col[1]), sqrt(col[2]) );
 
             char ir = int(255.99*col[0]);
             char ig = int(255.99*col[1]);
