@@ -7,6 +7,7 @@
 #include "bvh.h"
 
 #include <iostream>
+#include <thread>
 
 
 #define MAX_BOUNCES 30
@@ -149,10 +150,25 @@ hittable *random_scene() {
     return new bvh_node(list,i, 0.0f, 0.0f);
 }
 
+
+void compute_rays(vec3** acc, int tid, int i, int j, int nx, int ny, int ns, camera cam, hittable* world) {
+
+    for (int s = 0; s < ns; s++) {
+        float u = float(i + random_double()) / float(nx);
+        float v = float(j + random_double()) / float(ny);
+        ray r = cam.get_ray(u, v);
+        (*acc)[tid] += color(r, world, 0);
+    }
+}
+
+
 int main() {
     int nx = 1920;
     int ny = 1080;
     int ns = 20;
+    // round up to nearest multiple of N_THREADS
+    ns += N_THREADS;
+    ns -= ns % N_THREADS;
     std::cout << "P6\n" << nx << " " << ny << "\n255\n";
 
     // x,y,z
@@ -174,17 +190,28 @@ int main() {
            float(nx)/float(ny), aperture, dist_to_focus, 0.0f, 0.0f);
     int pixels = 0;
     int total_pixels = nx * ny;
+    vec3** accumulators = new vec3*[N_THREADS];
+    for (int t = 0; t < N_THREADS; t++) {
+        accumulators[t] = new vec3(0, 0, 0);
+    }
+    std::thread threads[N_THREADS];
+    // std::cerr << "computed row " << -1 << std::endl;
     for (int j = ny-1; j >= 0; j--) {
-        // std::cerr << "computed row " << j << std::endl;
+        // std::cerr << "computing row " << j << std::endl;
         for (int i = 0; i < nx; i++) {
+            // std::cerr << "computing column " << i << std::endl;
             pixels++;
 
             vec3 col(0, 0, 0);
-            for (int s = 0; s < ns; s++) {
-                float u = float(i + random_double()) / float(nx);
-                float v = float(j + random_double()) / float(ny);
-                ray r = cam.get_ray(u, v);
-                col += color(r, world, 0);
+            for (int t = 0; t < N_THREADS; t++) {
+                // std::cerr << "test" << std::endl;
+                (*accumulators)[t] = vec3(0, 0, 0);
+                threads[t] = std::thread(compute_rays, accumulators, t, i, j, nx, ny, ns/N_THREADS, cam, world);
+            }
+            // std::cerr << "got here with " << pixels << " " << std::endl;
+            for (int t = 0; t < N_THREADS; t++) {
+                threads[t].join();
+                col += (*accumulators)[t];
             }
             col /= float(ns);
 
