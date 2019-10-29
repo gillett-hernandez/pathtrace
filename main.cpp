@@ -149,7 +149,7 @@ hittable *random_scene() {
     list[i++] = new sphere(vec3(0, 1, 0), 1.0, new dielectric(1.5));
     list[i++] = new sphere(vec3(-4, 1, 0), 1.0, new lambertian(vec3(0.4, 0.2, 0.1)));
     list[i++] = new sphere(vec3(4, 1, 0), 1.0, new metal(vec3(0.7, 0.6, 0.5), 0.0));
-
+    std::cerr << i << std::endl;
     return new bvh_node(list,i, 0.0f, 0.0f);
 }
 
@@ -179,9 +179,9 @@ void compute_rays(vec3** buffer, int nx, int ny, int ns, camera cam, hittable* w
 
 
 
-int main() {
-    int nx = 1920;
-    int ny = 1080;
+int main(int argc, char *argv[]) {
+    int nx = 1920/10;
+    int ny = 1080/10;
     int ns = 20;
     // round up to nearest multiple of N_THREADS
     ns += N_THREADS;
@@ -199,20 +199,20 @@ int main() {
     // x,y,z
     // y is up.
     auto t1 = std::chrono::high_resolution_clock::now();
-    hittable *list[3];
-    int i = 0;
-    list[i++] = new sphere(vec3(0,-100,0), 100, new lambertian(vec3(0.2, 0.2, 0.2)));
-    list[i++] = new sphere(vec3(1,1,0), 1.0, new metal(vec3(1.0, 1.0, 1.0), 0.05));
-    list[i++] = new sphere(vec3(-1,1,0), 1.0, new metal(vec3(1.0, 1.0, 1.0), 0.05));
-    hittable *world = new bvh_node(list, i, 0.0f, 0.0f);
+    // hittable *list[3];
+    // int i = 0;
+    // list[i++] = new sphere(vec3(0,-100,0), 100, new lambertian(vec3(0.2, 0.2, 0.2)));
+    // list[i++] = new sphere(vec3(1,1,0), 1.0, new metal(vec3(1.0, 1.0, 1.0), 0.05));
+    // list[i++] = new sphere(vec3(-1,1,0), 1.0, new metal(vec3(1.0, 1.0, 1.0), 0.05));
+    // hittable *world = new bvh_node(list, i, 0.0f, 0.0f);
+    hittable *world = random_scene();
     auto t2 = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsed_seconds = t2-t1;
     std::cerr << "time taken to build bvh " << elapsed_seconds.count() << std::endl; 
-    // hittable *world = random_scene();
-    vec3 lookfrom(0,1,5);
+    vec3 lookfrom(0,1,10);
     vec3 lookat(0,1,0);
     float dist_to_focus = (lookfrom-lookat).length();
-    float aperture = 0.005;
+    float aperture = 0.05;
     int fov = 40;
 
     camera cam(lookfrom, lookat, vec3(0,1,0), fov,
@@ -241,7 +241,6 @@ int main() {
 
     std::cout << "P6\n" << nx << " " << ny << "\n255\n";
     for (int j = ny-1; j >= 0; j--) {
-        // std::cerr << "computed row " << j << std::endl;
         for (int i = 0; i < nx; i++) {
             vec3 col = framebuffer[j][i];
             col /= float(ns);
