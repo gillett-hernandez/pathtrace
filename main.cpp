@@ -81,7 +81,7 @@ hittable *random_scene()
     list[i++] = new sphere(vec3(0, 1, 0), 1.0, new dielectric(1.5));
     list[i++] = new sphere(vec3(-4, 1, 0), 1.0, new lambertian(vec3(0.4, 0.2, 0.1)));
     list[i++] = new sphere(vec3(4, 1, 0), 1.0, new metal(vec3(0.7, 0.6, 0.5), 0.0));
-    std::cerr << i << std::endl;
+    std::cout << i << std::endl;
     return new bvh_node(list, i, 0.0f, 0.0f);
 }
 
@@ -92,10 +92,10 @@ void compute_rays(vec3 **buffer, int width, int height, int samples, int max_bou
 
     for (int j = height - 1; j >= 0; j--)
     {
-        // std::cerr << "computing row " << j << std::endl;
+        // std::cout << "computing row " << j << std::endl;
         for (int i = 0; i < width; i++)
         {
-            // std::cerr << "computing column " << i << std::endl
+            // std::cout << "computing column " << i << std::endl
             vec3 col = vec3(0, 0, 0);
             for (int s = 0; s < samples; s++)
             {
@@ -146,7 +146,7 @@ int main(int argc, char *argv[])
     vec3 **framebuffer = new vec3 *[height];
     for (int j = height - 1; j >= 0; j--)
     {
-        // std::cerr << "computed row " << j << std::endl;
+        // std::cout << "computed row " << j << std::endl;
         framebuffer[j] = new vec3[width];
         for (int i = 0; i < width; i++)
         {
@@ -166,7 +166,7 @@ int main(int argc, char *argv[])
     hittable *world = random_scene();
     auto t2 = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsed_seconds = t2 - t1;
-    std::cerr << "time taken to build bvh " << elapsed_seconds.count() << std::endl;
+    std::cout << "time taken to build bvh " << elapsed_seconds.count() << std::endl;
     vec3 lookfrom(0, 1, 10);
     vec3 lookat(0, 1, 0);
     float dist_to_focus = (lookfrom - lookat).length();
@@ -177,29 +177,32 @@ int main(int argc, char *argv[])
                float(width) / float(height), aperture, dist_to_focus, 0.0f, 0.0f);
     int pixels = 0;
     int total_pixels = width * height;
+    // before we compute everything, open the file
+    std::ofstream output(j.value("output_path", "out.ppm"));
     std::thread threads[N_THREADS];
 
     for (int t = 0; t < N_THREADS; t++)
     {
-        std::cerr << "spawning thread " << t << std::endl;
+        std::cout << "spawning thread " << t << std::endl;
         threads[t] = std::thread(compute_rays, std::ref(framebuffer), width, height, n_samples / N_THREADS, MAX_BOUNCES, cam, world);
     }
     auto t3 = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsed_seconds2 = t3 - t2;
-    std::cerr << "time taken to setup the rest and spawn threads " << elapsed_seconds2.count() << std::endl;
+    std::cout << "time taken to setup the rest and spawn threads " << elapsed_seconds2.count() << std::endl;
     for (int t = 0; t < N_THREADS; t++)
     {
-        std::cerr << "joining thread " << t << std::endl;
+        std::cout << "joining thread " << t << std::endl;
         threads[t].join();
-        std::cerr << "joined thread " << t << std::endl;
+        std::cout << "joined thread " << t << std::endl;
     }
+
     auto t4 = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsed_seconds3 = t4 - t3;
-    std::cerr << "time taken to compute " << elapsed_seconds3.count() << std::endl;
+    std::cout << "time taken to compute " << elapsed_seconds3.count() << std::endl;
+    std::cout << "computed " << total_pixels * n_samples << " rays in " << elapsed_seconds3.count() << "seconds, at " << total_pixels * n_samples / elapsed_seconds3.count() << " rays per second" << std::endl;
 
-    std::cerr << "computed " << total_pixels * n_samples << " rays in " << elapsed_seconds3.count() << "seconds, at " << total_pixels * n_samples / elapsed_seconds3.count() << " rays per second" << std::endl;
-
-    std::cout << "P6\n"
+    // output file
+    output << "P6\n"
               << width << " " << height << "\n255\n";
     for (int j = height - 1; j >= 0; j--)
     {
@@ -213,7 +216,8 @@ int main(int argc, char *argv[])
             char ir = int(255.99 * col[0]);
             char ig = int(255.99 * col[1]);
             char ib = int(255.99 * col[2]);
-            std::cout << ir << ig << ib;
+            output << ir << ig << ib;
         }
     }
+    output.close();
 }

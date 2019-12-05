@@ -11,7 +11,7 @@ debug:
 	time g++ $(opts) -g -std=c++14 main.cpp ray.cpp  -o main.exe -I.
 
 run: build
-	time ./main.exe > out.ppm
+	time ./main.exe
 	python3 convert_ppm_in_curdir.py
 clean:
 	rm *.o

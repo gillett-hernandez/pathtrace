@@ -3,5 +3,5 @@
     "height": 1080,
     "samples": 10,
     "threads": 8,
-    "max_bounces": 10
+    "max_bounces": 5
 }
