@@ -5,7 +5,9 @@
 #include "random.h"
 #include "helpers.h"
 #include "bvh.h"
+#include "texture.h"
 #include "material.h"
+#include "primitive.h"
 #include "thirdparty/json.hpp"
 
 using json = nlohmann::json;
@@ -19,33 +21,40 @@ using json = nlohmann::json;
 vec3 color(const ray &r, hittable *world, int depth, int max_bounces)
 {
     hit_record rec;
-    if (world->hit(r, 0.001, MAXFLOAT, rec))
-    {
+    if (world->hit(r, 0.001, MAXFLOAT, rec)) {
         ray scattered;
         vec3 attenuation;
-        if (depth < max_bounces && rec.mat_ptr->scatter(r, rec, attenuation, scattered))
-        {
-            return attenuation * color(scattered, world, depth + 1, max_bounces);
+        vec3 emitted = rec.mat_ptr->emitted(rec.u, rec.v, rec.p);
+        if (depth < 50 && rec.mat_ptr->scatter(r, rec, attenuation, scattered)){
+             return emitted + attenuation*color(scattered, world, depth+1, max_bounces);
         }
         else
         {
-            return vec3(0, 0, 0);
+            return emitted;
         }
     }
     else
     {
         // world background color here
-        vec3 unit_direction = unit_vector(r.direction());
-        float t = 0.5 * (unit_direction.y() + 1.0);
-        return (1.0 - t) * vec3(1.0, 1.0, 1.0) + t * vec3(0.5, 0.7, 1.0);
+        // vec3 unit_direction = unit_vector(r.direction());
+        // float t = 0.5 * (unit_direction.y() + 1.0);
+        // return (1.0 - t) * vec3(1.0, 1.0, 1.0) + t * vec3(0.5, 0.7, 1.0);
+        
+        return vec3(0,0,0);
     }
 }
+
 
 hittable *random_scene()
 {
     int n = 500;
     hittable **list = new hittable *[n + 1];
-    list[0] = new sphere(vec3(0, -1000, 0), 1000, new lambertian(vec3(0.5, 0.5, 0.5)));
+    // list[0] = new sphere(vec3(0, -1000, 0), 1000, new lambertian(new constant_texture(vec3(0.5, 0.5, 0.5))));
+    texture *checker = new checker_texture(
+        new constant_texture(vec3(0.2, 0.3, 0.1)),
+        new constant_texture(vec3(0.9, 0.9, 0.9))
+    );
+    list[0] = new sphere(vec3(0,-1000,0), 1000, new lambertian(checker));
     int i = 1;
     for (int a = -11; a < 11; a++)
     {
@@ -57,10 +66,18 @@ hittable *random_scene()
             {
                 if (choose_mat < 0.8)
                 { // diffuse
-                    list[i++] = new sphere(center, 0.2,
-                                           new lambertian(vec3(random_double() * random_double(),
-                                                               random_double() * random_double(),
-                                                               random_double() * random_double())));
+                    list[i++] = new sphere(
+                        center,
+                        0.2,
+                        new lambertian(
+                            new constant_texture(
+                                vec3(random_double() * random_double(),
+                                     random_double() * random_double(),
+                                     random_double() * random_double()
+                                )
+                            )
+                        )
+                    );
                 }
                 else if (choose_mat < 0.95)
                 { // metal
@@ -79,8 +96,9 @@ hittable *random_scene()
     }
 
     list[i++] = new sphere(vec3(0, 1, 0), 1.0, new dielectric(1.5));
-    list[i++] = new sphere(vec3(-4, 1, 0), 1.0, new lambertian(vec3(0.4, 0.2, 0.1)));
-    list[i++] = new sphere(vec3(4, 1, 0), 1.0, new metal(vec3(0.7, 0.6, 0.5), 0.0));
+    list[i++] = new sphere(vec3(-4, 1, 0), 1.0, new lambertian(new constant_texture(vec3(0.4, 0.2, 0.1))));
+    list[i++] = new sphere(vec3(4, 1, 0), 1.0, new metal(vec3(0.9, 0.9, 0.9), 0.0));
+    list[i++] = new sphere(vec3(0, 8, 0), 5.0, new diffuse_light(new constant_texture(vec3(1.0, 1.0, 1.0))));
     std::cout << i << std::endl;
     return new bvh_node(list, i, 0.0f, 0.0f);
 }
