@@ -87,22 +87,22 @@ hittable *random_scene()
 
 std::mutex framebuffer_lock;
 
-void compute_rays(vec3 **buffer, json config, camera cam, hittable *world)
+void compute_rays(vec3 **buffer, int width, int height, int samples, int max_bounces, camera cam, hittable *world)
 {
 
-    for (int j = config["height"].get<int>() - 1; j >= 0; j--)
+    for (int j = height - 1; j >= 0; j--)
     {
         // std::cerr << "computing row " << j << std::endl;
-        for (int i = 0; i < config["width"].get<int>(); i++)
+        for (int i = 0; i < width; i++)
         {
             // std::cerr << "computing column " << i << std::endl
             vec3 col = vec3(0, 0, 0);
-            for (int s = 0; s < config["samples"].get<int>(); s++)
+            for (int s = 0; s < samples; s++)
             {
-                float u = float(i + random_double()) / float(config["width"].get<int>());
-                float v = float(j + random_double()) / float(config["height"].get<int>());
+                float u = float(i + random_double()) / float(width);
+                float v = float(j + random_double()) / float(height);
                 ray r = cam.get_ray(u, v);
-                col += color(r, world, 0, config["max_bounces"].get<int>());
+                col += color(r, world, 0, max_bounces);
             }
 
             framebuffer_lock.lock();
@@ -182,7 +182,7 @@ int main(int argc, char *argv[])
     for (int t = 0; t < N_THREADS; t++)
     {
         std::cerr << "spawning thread " << t << std::endl;
-        threads[t] = std::thread(compute_rays, std::ref(framebuffer), j, cam, world);
+        threads[t] = std::thread(compute_rays, std::ref(framebuffer), width, height, n_samples / N_THREADS, MAX_BOUNCES, cam, world);
     }
     auto t3 = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsed_seconds2 = t3 - t2;
