@@ -5,102 +5,28 @@
 #include "random.h"
 #include "helpers.h"
 #include "bvh.h"
+#include "material.h"
+#include "thirdparty/json.hpp"
+
+using json=nlohmann::json;
+
 
 #include <iostream>
+#include <fstream>
 #include <thread>
 #include <mutex>
 #include <chrono>
 
 
-#define MAX_BOUNCES 30
-#define N_THREADS 4
 
 
-class lambertian : public material {
-    public:
-        lambertian(const vec3& a) : albedo(a) {}
-        virtual bool scatter(const ray& r_in, const hit_record& rec,
-                             vec3& attenuation, ray& scattered) const {
-            vec3 target = rec.p + rec.normal + random_in_unit_sphere();
-            scattered = ray(rec.p, target-rec.p, r_in.time());
-            attenuation = albedo;
-            return true;
-        }
-
-        vec3 albedo;
-};
-
-
-class metal : public material {
-    public:
-        metal(const vec3& a, float f) : albedo(a) {
-            if (f < 1) fuzz = f; else fuzz = 1;
-        }
-        virtual bool scatter(const ray& r_in, const hit_record& rec,
-                             vec3& attenuation, ray& scattered) const {
-            vec3 reflected = reflect(unit_vector(r_in.direction()), rec.normal);
-            scattered = ray(rec.p, reflected);
-            attenuation = albedo;
-            return (dot(scattered.direction(), rec.normal) > 0);
-        }
-        vec3 albedo;
-        float fuzz;
-};
-
-class dielectric : public material {
-    public:
-        dielectric(float ri) : ref_idx(ri) {}
-        virtual bool scatter(const ray& r_in, const hit_record& rec,
-                             vec3& attenuation, ray& scattered) const {
-            vec3 outward_normal;
-            vec3 reflected = reflect(r_in.direction(), rec.normal);
-            float ni_over_nt;
-            attenuation = vec3(1.0, 1.0, 1.0);
-            vec3 refracted;
-
-            float reflect_prob;
-            float cosine;
-
-            if (dot(r_in.direction(), rec.normal) > 0) {
-                outward_normal = -rec.normal;
-                ni_over_nt = ref_idx;
-                cosine = ref_idx * dot(r_in.direction(), rec.normal)
-                        / r_in.direction().length();
-            }
-            else {
-                outward_normal = rec.normal;
-                ni_over_nt = 1.0 / ref_idx;
-                cosine = -dot(r_in.direction(), rec.normal)
-                        / r_in.direction().length();
-            }
-
-            if (refract(r_in.direction(), outward_normal, ni_over_nt, refracted)) {
-                reflect_prob = schlick(cosine, ref_idx);
-            }
-            else {
-                reflect_prob = 1.0;
-            }
-
-            if (random_double() < reflect_prob) {
-                scattered = ray(rec.p, reflected);
-            }
-            else {
-                scattered = ray(rec.p, refracted);
-            }
-
-            return true;
-        }
-
-        float ref_idx;
-};
-
-vec3 color(const ray& r, hittable *world, int depth) {
+vec3 color(const ray& r, hittable *world, int depth, int max_bounces) {
     hit_record rec;
     if (world->hit(r, 0.001, MAXFLOAT, rec)) {
         ray scattered;
         vec3 attenuation;
-        if (depth < MAX_BOUNCES && rec.mat_ptr->scatter(r, rec, attenuation, scattered)) {
-            return attenuation*color(scattered, world, depth+1);
+        if (depth < max_bounces && rec.mat_ptr->scatter(r, rec, attenuation, scattered)) {
+            return attenuation*color(scattered, world, depth+1, max_bounces);
         }
         else {
             return vec3(0,0,0);
@@ -156,18 +82,18 @@ hittable *random_scene() {
 
 std::mutex framebuffer_lock;
 
-void compute_rays(vec3** buffer, int nx, int ny, int ns, camera cam, hittable* world) {
+void compute_rays(vec3** buffer, json config, camera cam, hittable* world) {
 
-    for (int j = ny-1; j >= 0; j--) {
+    for (int j = config["height"].get<int>()-1; j >= 0; j--) {
         // std::cerr << "computing row " << j << std::endl;
-        for (int i = 0; i < nx; i++) {
+        for (int i = 0; i < config["width"].get<int>(); i++) {
             // std::cerr << "computing column " << i << std::endl
             vec3 col = vec3(0, 0, 0);
-            for (int s = 0; s < ns; s++) {
-                float u = float(i + random_double()) / float(nx);
-                float v = float(j + random_double()) / float(ny);
+            for (int s = 0; s < config["samples"].get<int>(); s++) {
+                float u = float(i + random_double()) / float(config["width"].get<int>());
+                float v = float(j + random_double()) / float(config["height"].get<int>());
                 ray r = cam.get_ray(u, v);
-                col += color(r, world, 0);
+                col += color(r, world, 0, config["max_bounces"].get<int>());
             }
 
             framebuffer_lock.lock();
@@ -177,20 +103,37 @@ void compute_rays(vec3** buffer, int nx, int ny, int ns, camera cam, hittable* w
     }
 }
 
-
+template<class T>
+void default_assign(json j, T& var, std::string key, T _default) {
+    if (j.find(key) != j.end()) {
+        var = j[key];
+    } else {
+        var = _default;
+    }
+}
 
 int main(int argc, char *argv[]) {
-    int nx = 1920/10;
-    int ny = 1080/10;
-    int ns = 20;
+    std::ifstream input("config.json");
+    json j;
+    input >> j;
+    int width, height, n_samples, N_THREADS, MAX_BOUNCES;
+    // int width, height, n_samples, N_THREADS, MAX_BOUNCES;
+    // default_assign(j, width, "width", 1920/10);
+    // int width = j.value("width", 1920/10);
+    default_assign(j, width, "width", 1920/10);
+    default_assign(j, height, "height", 1080/10);
+    default_assign(j, n_samples, "samples", 20);
+    default_assign(j, N_THREADS, "threads", 4);
+    default_assign(j, MAX_BOUNCES, "max_bounces", 10);
+
     // round up to nearest multiple of N_THREADS
-    ns += N_THREADS;
-    ns -= ns % N_THREADS;
-    vec3** framebuffer = new vec3*[ny];
-    for (int j = ny-1; j >= 0; j--) {
+    n_samples += N_THREADS;
+    n_samples -= n_samples % N_THREADS;
+    vec3** framebuffer = new vec3*[height];
+    for (int j = height-1; j >= 0; j--) {
         // std::cerr << "computed row " << j << std::endl;
-        framebuffer[j] = new vec3[nx];
-        for (int i = 0; i < nx; i++) {
+        framebuffer[j] = new vec3[width];
+        for (int i = 0; i < width; i++) {
             framebuffer[j][i] = vec3(0, 0, 0);
         }
     }
@@ -216,14 +159,14 @@ int main(int argc, char *argv[]) {
     int fov = 40;
 
     camera cam(lookfrom, lookat, vec3(0,1,0), fov,
-           float(nx)/float(ny), aperture, dist_to_focus, 0.0f, 0.0f);
+           float(width)/float(height), aperture, dist_to_focus, 0.0f, 0.0f);
     int pixels = 0;
-    int total_pixels = nx * ny;
+    int total_pixels = width * height;
     std::thread threads[N_THREADS];
 
     for (int t = 0; t < N_THREADS; t++) {
         std::cerr << "spawning thread " << t << std::endl;
-        threads[t] = std::thread(compute_rays, std::ref(framebuffer), nx, ny, ns/N_THREADS, cam, world);
+        threads[t] = std::thread(compute_rays, std::ref(framebuffer), j, cam, world);
     }
     auto t3 = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsed_seconds2 = t3-t2;
@@ -237,13 +180,13 @@ int main(int argc, char *argv[]) {
     std::chrono::duration<double> elapsed_seconds3 = t4-t3;
     std::cerr << "time taken to compute " << elapsed_seconds3.count() << std::endl;
 
-    std::cerr << "computed " << total_pixels * ns << " rays in " << elapsed_seconds3.count() << "seconds, at " << total_pixels*ns/elapsed_seconds3.count() << " rays per second" << std::endl;
+    std::cerr << "computed " << total_pixels * n_samples << " rays in " << elapsed_seconds3.count() << "seconds, at " << total_pixels*n_samples/elapsed_seconds3.count() << " rays per second" << std::endl;
 
-    std::cout << "P6\n" << nx << " " << ny << "\n255\n";
-    for (int j = ny-1; j >= 0; j--) {
-        for (int i = 0; i < nx; i++) {
+    std::cout << "P6\n" << width << " " << height << "\n255\n";
+    for (int j = height-1; j >= 0; j--) {
+        for (int i = 0; i < width; i++) {
             vec3 col = framebuffer[j][i];
-            col /= float(ns);
+            col /= float(n_samples);
 
             col = vec3( sqrt(col[0]), sqrt(col[1]), sqrt(col[2]) );
 
