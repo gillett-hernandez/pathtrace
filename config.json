@@ -1,6 +1,8 @@
 {
-    "width": 1920,
-    "height": 1080,
+    "film": {
+        "width": 590,
+        "height": 590
+    },
     "samples": 120,
     "threads": 8,
     "max_bounces": 5

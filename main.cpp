@@ -1,6 +1,5 @@
 #include "float.h"
 #include "hittable_list.h"
-#include "sphere.h"
 #include "camera.h"
 #include "random.h"
 #include "helpers.h"
@@ -9,6 +8,7 @@
 #include "material.h"
 #include "primitive.h"
 #include "thirdparty/json.hpp"
+#include "example_scenes.h"
 
 using json = nlohmann::json;
 
@@ -21,12 +21,14 @@ using json = nlohmann::json;
 vec3 color(const ray &r, hittable *world, int depth, int max_bounces)
 {
     hit_record rec;
-    if (world->hit(r, 0.001, MAXFLOAT, rec)) {
+    if (world->hit(r, 0.001, MAXFLOAT, rec))
+    {
         ray scattered;
         vec3 attenuation;
         vec3 emitted = rec.mat_ptr->emitted(rec.u, rec.v, rec.p);
-        if (depth < 50 && rec.mat_ptr->scatter(r, rec, attenuation, scattered)){
-             return emitted + attenuation*color(scattered, world, depth+1, max_bounces);
+        if (depth < 50 && rec.mat_ptr->scatter(r, rec, attenuation, scattered))
+        {
+            return emitted + attenuation * color(scattered, world, depth + 1, max_bounces);
         }
         else
         {
@@ -39,68 +41,9 @@ vec3 color(const ray &r, hittable *world, int depth, int max_bounces)
         // vec3 unit_direction = unit_vector(r.direction());
         // float t = 0.5 * (unit_direction.y() + 1.0);
         // return (1.0 - t) * vec3(1.0, 1.0, 1.0) + t * vec3(0.5, 0.7, 1.0);
-        
-        return vec3(0,0,0);
+
+        return vec3(0, 0, 0);
     }
-}
-
-
-hittable *random_scene()
-{
-    int n = 500;
-    hittable **list = new hittable *[n + 1];
-    // list[0] = new sphere(vec3(0, -1000, 0), 1000, new lambertian(new constant_texture(vec3(0.5, 0.5, 0.5))));
-    texture *checker = new checker_texture(
-        new constant_texture(vec3(0.2, 0.3, 0.1)),
-        new constant_texture(vec3(0.9, 0.9, 0.9))
-    );
-    list[0] = new sphere(vec3(0,-1000,0), 1000, new lambertian(checker));
-    int i = 1;
-    for (int a = -11; a < 11; a++)
-    {
-        for (int b = -11; b < 11; b++)
-        {
-            float choose_mat = random_double();
-            vec3 center(a + 0.9 * random_double(), 0.2, b + 0.9 * random_double());
-            if ((center - vec3(4, 0.2, 0)).length() > 0.9)
-            {
-                if (choose_mat < 0.8)
-                { // diffuse
-                    list[i++] = new sphere(
-                        center,
-                        0.2,
-                        new lambertian(
-                            new constant_texture(
-                                vec3(random_double() * random_double(),
-                                     random_double() * random_double(),
-                                     random_double() * random_double()
-                                )
-                            )
-                        )
-                    );
-                }
-                else if (choose_mat < 0.95)
-                { // metal
-                    list[i++] = new sphere(center, 0.2,
-                                           new metal(vec3(0.5 * (1 + random_double()),
-                                                          0.5 * (1 + random_double()),
-                                                          0.5 * (1 + random_double())),
-                                                     0.5 * random_double()));
-                }
-                else
-                { // glass
-                    list[i++] = new sphere(center, 0.2, new dielectric(1.5));
-                }
-            }
-        }
-    }
-
-    list[i++] = new sphere(vec3(0, 1, 0), 1.0, new dielectric(1.5));
-    list[i++] = new sphere(vec3(-4, 1, 0), 1.0, new lambertian(new constant_texture(vec3(0.4, 0.2, 0.1))));
-    list[i++] = new sphere(vec3(4, 1, 0), 1.0, new metal(vec3(0.9, 0.9, 0.9), 0.0));
-    list[i++] = new sphere(vec3(0, 8, 0), 5.0, new diffuse_light(new constant_texture(vec3(1.0, 1.0, 1.0))));
-    std::cout << i << std::endl;
-    return new bvh_node(list, i, 0.0f, 0.0f);
 }
 
 std::mutex framebuffer_lock;
@@ -146,17 +89,14 @@ void default_assign(json j, T &var, std::string key, T _default)
 int main(int argc, char *argv[])
 {
     std::ifstream input("config.json");
-    json j;
-    input >> j;
-    int width, height, n_samples, N_THREADS, MAX_BOUNCES;
-    // int width, height, n_samples, N_THREADS, MAX_BOUNCES;
-    // default_assign(j, width, "width", 1920/10);
-    // int width = j.value("width", 1920/10);
-    default_assign(j, width, "width", 1920 / 10);
-    default_assign(j, height, "height", 1080 / 10);
-    default_assign(j, n_samples, "samples", 20);
-    default_assign(j, N_THREADS, "threads", 4);
-    default_assign(j, MAX_BOUNCES, "max_bounces", 10);
+    json config;
+    input >> config;
+
+    int width = config["film"].value("width", 400);
+    int height = config["film"].value("height", 300);
+    int n_samples = config.value("samples", 20);
+    int N_THREADS = config.value("threads", 4);
+    int MAX_BOUNCES = config.value("max_bounces", 10);
 
     // round up to nearest multiple of N_THREADS
     n_samples += N_THREADS;
@@ -181,22 +121,40 @@ int main(int argc, char *argv[])
     // list[i++] = new sphere(vec3(1,1,0), 1.0, new metal(vec3(1.0, 1.0, 1.0), 0.05));
     // list[i++] = new sphere(vec3(-1,1,0), 1.0, new metal(vec3(1.0, 1.0, 1.0), 0.05));
     // hittable *world = new bvh_node(list, i, 0.0f, 0.0f);
-    hittable *world = random_scene();
+    hittable *world = cornell_box();
     auto t2 = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsed_seconds = t2 - t1;
     std::cout << "time taken to build bvh " << elapsed_seconds.count() << std::endl;
-    vec3 lookfrom(0, 1, 10);
-    vec3 lookat(0, 1, 0);
-    float dist_to_focus = (lookfrom - lookat).length();
-    float aperture = 0.05;
-    int fov = 40;
 
-    camera cam(lookfrom, lookat, vec3(0, 1, 0), fov,
-               float(width) / float(height), aperture, dist_to_focus, 0.0f, 0.0f);
+    // camera setup
+
+    // camera for random scene 1
+
+    // vec3 lookfrom(0, 1, 10);
+    // vec3 lookat(0, 1, 0);
+    // float dist_to_focus = (lookfrom - lookat).length();
+    // float aperture = 0.05;
+    // int fov = 40;
+
+    // camera cam(lookfrom, lookat, vec3(0, 1, 0), fov,
+    //            float(width) / float(height), aperture, dist_to_focus, 0.0f, 0.0f);
+
+    // camera for cornell box
+
+    vec3 lookfrom(278, 278, -800);
+    vec3 lookat(278, 278, 0);
+    float dist_to_focus = 10.0;
+    float aperture = 0.0;
+    float vfov = 40.0;
+
+    camera cam(lookfrom, lookat, vec3(0, 1, 0), vfov, float(width) / float(height),
+               aperture, dist_to_focus, 0.0, 1.0);
+
+    // end camera setup
     int pixels = 0;
     int total_pixels = width * height;
     // before we compute everything, open the file
-    std::ofstream output(j.value("output_path", "out.ppm"));
+    std::ofstream output(config.value("output_path", "out.ppm"));
     std::thread threads[N_THREADS];
 
     for (int t = 0; t < N_THREADS; t++)
@@ -221,7 +179,7 @@ int main(int argc, char *argv[])
 
     // output file
     output << "P6\n"
-              << width << " " << height << "\n255\n";
+           << width << " " << height << "\n255\n";
     for (int j = height - 1; j >= 0; j--)
     {
         for (int i = 0; i < width; i++)
