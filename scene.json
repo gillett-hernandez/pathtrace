@@ -1,0 +1,24 @@
+{
+    "camera": {
+        "look_from": [
+            0.0,
+            1.0,
+            10.0
+        ],
+        "look_at": [
+            0.0,
+            1.0,
+            0.0
+        ],
+        "fov": 40.0,
+        "aperture": 0.0,
+        "dist_to_focus": 10.0
+    },
+    "assets": [],
+    "instances": [
+        {
+            "type": "sphere"
+        }
+    ],
+    "objects": []
+}

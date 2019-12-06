@@ -1,10 +1,14 @@
+#ifndef EXAMPLESCENEH
+#define EXAMPLESCENEH
+
 #include "hittable.h"
 #include "hittable_list.h"
 #include "material.h"
 #include "primitive.h"
 
-hittable *cornell_box() {
-    hittable **list = new hittable*[6];
+hittable *cornell_box()
+{
+    hittable **list = new hittable *[6];
     int i = 0;
     material *red = new lambertian(new constant_texture(vec3(0.65, 0.05, 0.05)));
     material *white = new lambertian(new constant_texture(vec3(0.73, 0.73, 0.73)));
@@ -21,7 +25,6 @@ hittable *cornell_box() {
     return new bvh_node(list, i, 0.0f, 0.0f);
 }
 
-
 hittable *random_scene1()
 {
     int n = 500;
@@ -29,9 +32,8 @@ hittable *random_scene1()
     // list[0] = new sphere(vec3(0, -1000, 0), 1000, new lambertian(new constant_texture(vec3(0.5, 0.5, 0.5))));
     texture *checker = new checker_texture(
         new constant_texture(vec3(0.2, 0.3, 0.1)),
-        new constant_texture(vec3(0.9, 0.9, 0.9))
-    );
-    list[0] = new sphere(vec3(0,-1000,0), 1000, new lambertian(checker));
+        new constant_texture(vec3(0.9, 0.9, 0.9)));
+    list[0] = new sphere(vec3(0, -1000, 0), 1000, new lambertian(checker));
     int i = 1;
     for (int a = -11; a < 11; a++)
     {
@@ -50,11 +52,7 @@ hittable *random_scene1()
                             new constant_texture(
                                 vec3(random_double() * random_double(),
                                      random_double() * random_double(),
-                                     random_double() * random_double()
-                                )
-                            )
-                        )
-                    );
+                                     random_double() * random_double()))));
                 }
                 else if (choose_mat < 0.95)
                 { // metal
@@ -79,3 +77,5 @@ hittable *random_scene1()
     std::cout << i << std::endl;
     return new bvh_node(list, i, 0.0f, 0.0f);
 }
+
+#endif

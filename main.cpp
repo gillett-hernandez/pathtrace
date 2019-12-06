@@ -9,6 +9,7 @@
 #include "primitive.h"
 #include "thirdparty/json.hpp"
 #include "example_scenes.h"
+#include "scene.h"
 
 using json = nlohmann::json;
 
@@ -88,12 +89,18 @@ void default_assign(json j, T &var, std::string key, T _default)
 
 int main(int argc, char *argv[])
 {
-    std::ifstream input("config.json");
+    std::ifstream config_file("config.json");
     json config;
-    input >> config;
+    config_file >> config;
+
+    // film setup
 
     int width = config["film"].value("width", 400);
     int height = config["film"].value("height", 300);
+
+    // end film setup
+
+    // other config
     int n_samples = config.value("samples", 20);
     int N_THREADS = config.value("threads", 4);
     int MAX_BOUNCES = config.value("max_bounces", 10);
@@ -101,6 +108,8 @@ int main(int argc, char *argv[])
     // round up to nearest multiple of N_THREADS
     n_samples += N_THREADS;
     n_samples -= n_samples % N_THREADS;
+
+    // create framebuffer
     vec3 **framebuffer = new vec3 *[height];
     for (int j = height - 1; j >= 0; j--)
     {
@@ -114,6 +123,12 @@ int main(int argc, char *argv[])
 
     // x,y,z
     // y is up.
+    std::cout << "reading scene data" << std::endl;
+
+    json scene;
+    std::ifstream scene_file("scene.json");
+    scene_file >> scene;
+
     auto t1 = std::chrono::high_resolution_clock::now();
     // hittable *list[3];
     // int i = 0;
@@ -121,36 +136,34 @@ int main(int argc, char *argv[])
     // list[i++] = new sphere(vec3(1,1,0), 1.0, new metal(vec3(1.0, 1.0, 1.0), 0.05));
     // list[i++] = new sphere(vec3(-1,1,0), 1.0, new metal(vec3(1.0, 1.0, 1.0), 0.05));
     // hittable *world = new bvh_node(list, i, 0.0f, 0.0f);
-    hittable *world = cornell_box();
+    // hittable *world = cornell_box();
+    hittable *world = build_scene(scene);
     auto t2 = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsed_seconds = t2 - t1;
     std::cout << "time taken to build bvh " << elapsed_seconds.count() << std::endl;
 
     // camera setup
 
-    // camera for random scene 1
+    json camera_json = scene["camera"];
+    vec3 lookfrom(
+        camera_json["look_from"].at(0),
+        camera_json["look_from"].at(1),
+        camera_json["look_from"].at(2));
 
-    // vec3 lookfrom(0, 1, 10);
-    // vec3 lookat(0, 1, 0);
-    // float dist_to_focus = (lookfrom - lookat).length();
-    // float aperture = 0.05;
-    // int fov = 40;
+    vec3 lookat(
+        camera_json["look_at"].at(0),
+        camera_json["look_at"].at(1),
+        camera_json["look_at"].at(2));
 
-    // camera cam(lookfrom, lookat, vec3(0, 1, 0), fov,
-    //            float(width) / float(height), aperture, dist_to_focus, 0.0f, 0.0f);
-
-    // camera for cornell box
-
-    vec3 lookfrom(278, 278, -800);
-    vec3 lookat(278, 278, 0);
-    float dist_to_focus = 10.0;
-    float aperture = 0.0;
-    float vfov = 40.0;
+    float vfov = camera_json.value("fov", 30.0);
+    float aperture = camera_json.value("aperture", 0.0);
+    float dist_to_focus = camera_json.value("dist_to_focus", 10.0);
 
     camera cam(lookfrom, lookat, vec3(0, 1, 0), vfov, float(width) / float(height),
                aperture, dist_to_focus, 0.0, 1.0);
 
     // end camera setup
+
     int pixels = 0;
     int total_pixels = width * height;
     // before we compute everything, open the file
@@ -187,6 +200,8 @@ int main(int argc, char *argv[])
             vec3 col = framebuffer[j][i];
             col /= float(n_samples);
 
+            // color space interpolation here
+            // put gamma and exposure here?
             col = vec3(sqrt(col[0]), sqrt(col[1]), sqrt(col[2]));
 
             char ir = int(255.99 * col[0]);
