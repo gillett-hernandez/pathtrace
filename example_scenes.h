@@ -32,7 +32,8 @@ hittable *random_scene1()
     // list[0] = new sphere(vec3(0, -1000, 0), 1000, new lambertian(new constant_texture(vec3(0.5, 0.5, 0.5))));
     texture *checker = new checker_texture(
         new constant_texture(vec3(0.2, 0.3, 0.1)),
-        new constant_texture(vec3(0.9, 0.9, 0.9)));
+        new constant_texture(vec3(0.9, 0.9, 0.9)),
+        2.0);
     list[0] = new sphere(vec3(0, -1000, 0), 1000, new lambertian(checker));
     int i = 1;
     for (int a = -11; a < 11; a++)
@@ -76,6 +77,16 @@ hittable *random_scene1()
     list[i++] = new sphere(vec3(0, 8, 0), 5.0, new diffuse_light(new constant_texture(vec3(1.0, 1.0, 1.0))));
     std::cout << i << std::endl;
     return new bvh_node(list, i, 0.0f, 0.0f);
+}
+
+hittable *test_scene()
+{
+    hittable *list[3];
+    int i = 0;
+    list[i++] = new sphere(vec3(0, -100, 0), 100, new lambertian(vec3(0.2, 0.2, 0.2)));
+    list[i++] = new sphere(vec3(1, 1, 0), 1.0, new metal(vec3(1.0, 1.0, 1.0), 0.05));
+    list[i++] = new sphere(vec3(-1, 1, 0), 1.0, new metal(vec3(1.0, 1.0, 1.0), 0.05));
+    hittable *world = new bvh_node(list, i, 0.0f, 0.0f);
 }
 
 #endif

@@ -3,9 +3,10 @@
 #include "hittable.h"
 #include "ray.h"
 #include "vec3.h"
-
-#include "hittable.h"
+#include "transform3.h"
 #include "bvh.h"
+#include "hittable.h"
+
 
 class sphere : public hittable
 {
@@ -163,6 +164,26 @@ bool xy_rect::hit(const ray &r, float t0, float t1, hit_record &rec) const
     return true;
 }
 
+// class instance : public hittable
+// {
+// public:
+//     instance(hittable *p, transform3 transform) : ptr(p), transform(transform) {}
+//     virtual bool hit(const ray &r, float t_min, float t_max, hit_record &rec) const
+//     {
+//         ray local = transform.apply(r);
+//         if (ptr->hit(local, t_min, t_max, rec))
+//         {
+//             return true;
+//         }
+//         else
+//         {
+//             return false;
+//         }
+//     }
+//     transform3 transform;
+//     hittable * ptr;
+// };
+
 class flip_normals : public hittable
 {
 public:
@@ -178,7 +199,9 @@ public:
             return true;
         }
         else
+        {
             return false;
+        }
     }
 
     virtual bool bounding_box(float t0, float t1, aabb &box) const

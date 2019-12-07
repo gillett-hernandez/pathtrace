@@ -130,13 +130,6 @@ int main(int argc, char *argv[])
     scene_file >> scene;
 
     auto t1 = std::chrono::high_resolution_clock::now();
-    // hittable *list[3];
-    // int i = 0;
-    // list[i++] = new sphere(vec3(0,-100,0), 100, new lambertian(vec3(0.2, 0.2, 0.2)));
-    // list[i++] = new sphere(vec3(1,1,0), 1.0, new metal(vec3(1.0, 1.0, 1.0), 0.05));
-    // list[i++] = new sphere(vec3(-1,1,0), 1.0, new metal(vec3(1.0, 1.0, 1.0), 0.05));
-    // hittable *world = new bvh_node(list, i, 0.0f, 0.0f);
-    // hittable *world = cornell_box();
     hittable *world = build_scene(scene);
     auto t2 = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsed_seconds = t2 - t1;
