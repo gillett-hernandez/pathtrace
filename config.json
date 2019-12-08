@@ -1,12 +1,12 @@
 {
     "film": {
-        "width": 1920,
-        "height": 1080,
+        "width": 800,
+        "height": 700,
         "exposure": 1.0,
-        "gamma": 0.0
+        "gamma": 0.1
     },
-    "output_path": "out.ppm",
-    "samples": 10,
-    "threads": 12,
+    "output_path": "out2.ppm",
+    "samples": 1,
+    "threads": 1,
     "max_bounces": 5
 }

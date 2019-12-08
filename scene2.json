@@ -1,0 +1,106 @@
+{
+    "camera": {
+        "look_from": [
+            0.0,
+            1.0,
+            10.0
+        ],
+        "look_at": [
+            0.0,
+            1.0,
+            0.0
+        ],
+        "fov": 40.0,
+        "aperture": 0.0,
+        "dist_to_focus": 10.0
+    },
+    "assets": [
+        {
+            "skip": true,
+            "note": "this is a template asset entry",
+            "id": "asset1",
+            "type": "object",
+            "path": "assets/asset1.obj"
+        }
+    ],
+    "textures": [
+        {
+            "skip": false,
+            "note": "this is a template material entry",
+            "id": "texture1",
+            "type": "checker_texture",
+            "data": {
+                "color1": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "color2": [
+                    1.0,
+                    1.0,
+                    1.0
+                ],
+                "scale": 10.0
+            }
+        }
+    ],
+    "materials": [
+        {
+            "skip": false,
+            "note": "this is a template material entry that references another material",
+            "id": "material1",
+            "type": "lambertian",
+            "data": {
+                "texture": "texture1"
+            }
+        },
+        {
+            "note": "lambertian with direct color instead of texture reference",
+            "id": "brown_matte",
+            "type": "lambertian",
+            "data": {
+                "color": [
+                    0.4,
+                    0.2,
+                    0.1
+                ]
+            }
+        },
+        {
+            "skip": false,
+            "id": "light",
+            "type": "diffuse_light",
+            "data": {
+                "color": [
+                    1.0,
+                    1.0,
+                    1.0
+                ]
+            }
+        }
+    ],
+    "instances": [
+        {
+            "type": "sphere",
+            "scale": [
+                1.0,
+                1.0,
+                1.0
+            ],
+            "rotate": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "translate": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "material": {
+                "type": "lambertian"
+            }
+        }
+    ],
+    "objects": []
+}

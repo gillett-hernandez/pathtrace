@@ -2,6 +2,7 @@
 #ifndef AABBH
 #define AABBH
 #include <stdlib.h>
+#include "transform3.h"
 
 inline float ffmin(float a, float b) { return a < b ? a : b; }
 inline float ffmax(float a, float b) { return a > b ? a : b; }
@@ -14,6 +15,11 @@ public:
     {
         _min = a;
         _max = b;
+    }
+
+    aabb apply(transform3 transform) const
+    {
+        return aabb(transform * _min, transform * _max);
     }
 
     vec3 min() const { return _min; }

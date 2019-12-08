@@ -7,7 +7,6 @@
 #include "bvh.h"
 #include "hittable.h"
 
-
 class sphere : public hittable
 {
 public:
@@ -62,140 +61,105 @@ bool sphere::bounding_box(float t0, float t1, aabb &box) const
     return true;
 }
 
-class xy_rect : public hittable
+class rect : public hittable
 {
 public:
-    xy_rect() {}
-    xy_rect(float _x0, float _x1, float _y0, float _y1, float _k, material *mat)
-        : x0(_x0), x1(_x1), y0(_y0), y1(_y1), k(_k), mp(mat){};
+    rect() {}
+    rect(float _x, float _z, material *mat, bool dual_sided = false)
+        : x(_x), z(_z), mp(mat), dual_sided(dual_sided){};
     virtual bool hit(const ray &r, float t0, float t1, hit_record &rec) const;
     virtual bool bounding_box(float t0, float t1, aabb &box) const
     {
-        box = aabb(vec3(x0, y0, k - 0.0001), vec3(x1, y1, k + 0.0001));
+        box = aabb(vec3(-x / 2.0, -0.001, -z / 2.0), vec3(x / 2.0, 0.001, z / 2.0));
         return true;
     }
     material *mp;
-    float x0, x1, y0, y1, k;
+    bool dual_sided;
+    float x, z;
 };
 
-class xz_rect : public hittable
+bool rect::hit(const ray &r, float t0, float t1, hit_record &rec) const
 {
-public:
-    xz_rect() {}
-    xz_rect(float _x0, float _x1, float _z0, float _z1, float _k, material *mat)
-        : x0(_x0), x1(_x1), z0(_z0), z1(_z1), k(_k), mp(mat){};
-    virtual bool hit(const ray &r, float t0, float t1, hit_record &rec) const;
-    virtual bool bounding_box(float t0, float t1, aabb &box) const
+    float t = (-r.origin().y()) / r.direction().y();
+    bool flipped = false;
+    if (t < 0 && dual_sided)
     {
-        box = aabb(vec3(x0, k - 0.0001, z0), vec3(x1, k + 0.0001, z1));
-        return true;
+        t = -t;
+        std::cout << "blahblah" << t << '\n';
+        flipped = true;
     }
-    material *mp;
-    float x0, x1, z0, z1, k;
-};
-
-class yz_rect : public hittable
-{
-public:
-    yz_rect() {}
-    yz_rect(float _y0, float _y1, float _z0, float _z1, float _k, material *mat)
-        : y0(_y0), y1(_y1), z0(_z0), z1(_z1), k(_k), mp(mat){};
-    virtual bool hit(const ray &r, float t0, float t1, hit_record &rec) const;
-    virtual bool bounding_box(float t0, float t1, aabb &box) const
+    if (t < t0 || t > t1)
     {
-        box = aabb(vec3(k - 0.0001, y0, z0), vec3(k + 0.0001, y1, z1));
-        return true;
+        return false;
     }
-    material *mp;
-    float y0, y1, z0, z1, k;
-};
-
-bool xz_rect::hit(const ray &r, float t0, float t1, hit_record &rec) const
-{
-    float t = (k - r.origin().y()) / r.direction().y();
-    if (t < t0 || t > t1)
+    float xh = r.origin().x() + t * r.direction().x();
+    float zh = r.origin().z() + t * r.direction().z();
+    if (xh < (-x / 2.0) || xh > (x / 2.0) || zh < (-z / 2.0) || zh > (z / 2.0))
+    {
         return false;
-    float x = r.origin().x() + t * r.direction().x();
-    float z = r.origin().z() + t * r.direction().z();
-    if (x < x0 || x > x1 || z < z0 || z > z1)
-        return false;
-    rec.u = (x - x0) / (x1 - x0);
-    rec.v = (z - z0) / (z1 - z0);
+    }
+    rec.u = (xh + x / 2.0) / x;
+    rec.v = (zh + z / 2.0) / z;
     rec.t = t;
     rec.mat_ptr = mp;
     rec.p = r.point_at_parameter(t);
-    rec.normal = vec3(0, 1, 0);
+    if (!flipped)
+    {
+        rec.normal = vec3(0, 1, 0);
+    }
+    else
+    {
+        rec.normal = vec3(0, -1, 0);
+    }
     return true;
 }
-
-bool yz_rect::hit(const ray &r, float t0, float t1, hit_record &rec) const
-{
-    float t = (k - r.origin().x()) / r.direction().x();
-    if (t < t0 || t > t1)
-        return false;
-    float y = r.origin().y() + t * r.direction().y();
-    float z = r.origin().z() + t * r.direction().z();
-    if (y < y0 || y > y1 || z < z0 || z > z1)
-        return false;
-    rec.u = (y - y0) / (y1 - y0);
-    rec.v = (z - z0) / (z1 - z0);
-    rec.t = t;
-    rec.mat_ptr = mp;
-    rec.p = r.point_at_parameter(t);
-    rec.normal = vec3(1, 0, 0);
-    return true;
-}
-
-bool xy_rect::hit(const ray &r, float t0, float t1, hit_record &rec) const
-{
-    float t = (k - r.origin().z()) / r.direction().z();
-    if (t < t0 || t > t1)
-        return false;
-    float x = r.origin().x() + t * r.direction().x();
-    float y = r.origin().y() + t * r.direction().y();
-    if (x < x0 || x > x1 || y < y0 || y > y1)
-        return false;
-    rec.u = (x - x0) / (x1 - x0);
-    rec.v = (y - y0) / (y1 - y0);
-    rec.t = t;
-    rec.mat_ptr = mp;
-    rec.p = r.point_at_parameter(t);
-    rec.normal = vec3(0, 0, 1);
-    return true;
-}
-
-// class instance : public hittable
-// {
-// public:
-//     instance(hittable *p, transform3 transform) : ptr(p), transform(transform) {}
-//     virtual bool hit(const ray &r, float t_min, float t_max, hit_record &rec) const
-//     {
-//         ray local = transform.apply(r);
-//         if (ptr->hit(local, t_min, t_max, rec))
-//         {
-//             return true;
-//         }
-//         else
-//         {
-//             return false;
-//         }
-//     }
-//     transform3 transform;
-//     hittable * ptr;
-// };
-
-class flip_normals : public hittable
+class instance : public hittable
 {
 public:
-    flip_normals(hittable *p) : ptr(p) {}
-
-    virtual bool hit(
-        const ray &r, float t_min, float t_max, hit_record &rec) const
+    instance(hittable *p) : ptr(p)
     {
-
-        if (ptr->hit(r, t_min, t_max, rec))
+        transform = transform3();
+        hasbbox = ptr->bounding_box(0, 1, bbox);
+    }
+    instance(hittable *p, transform3 transform) : ptr(p), transform(transform)
+    {
+        vec3 min(FLT_MAX, FLT_MAX, FLT_MAX);
+        vec3 max(-FLT_MAX, -FLT_MAX, -FLT_MAX);
+        hasbbox = ptr->bounding_box(0, 1, bbox);
+        // narrow down the bounding box based on the transform
+        for (int i = 0; i < 2; i++)
         {
-            rec.normal = -rec.normal;
+            for (int j = 0; j < 2; j++)
+            {
+                for (int k = 0; k < 2; k++)
+                {
+                    float x = i * bbox.max().x() + (1 - i) * bbox.min().x();
+                    float y = j * bbox.max().y() + (1 - j) * bbox.min().y();
+                    float z = k * bbox.max().z() + (1 - k) * bbox.min().z();
+                    vec3 tester = transform * vec3(x, y, z);
+                    for (int c = 0; c < 3; c++)
+                    {
+                        if (tester[c] > max[c])
+                        {
+                            max[c] = tester[c];
+                        }
+                        if (tester[c] < min[c])
+                        {
+                            min[c] = tester[c];
+                        }
+                    }
+                }
+            }
+        }
+        bbox = aabb(min, max);
+    }
+    virtual bool hit(const ray &r, float t_min, float t_max, hit_record &rec) const
+    {
+        const ray local = r.apply(transform.inverse());
+        if (ptr->hit(local, t_min, t_max, rec))
+        {
+            rec.p = transform * rec.p;
+            rec.normal = transform.apply_normal(rec.normal);
             return true;
         }
         else
@@ -206,9 +170,13 @@ public:
 
     virtual bool bounding_box(float t0, float t1, aabb &box) const
     {
-        return ptr->bounding_box(t0, t1, box);
+        box = bbox;
+        return hasbbox;
     }
 
+    transform3 transform;
+    aabb bbox;
+    bool hasbbox;
     hittable *ptr;
 };
 
