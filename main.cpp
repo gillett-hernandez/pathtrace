@@ -19,7 +19,7 @@ using json = nlohmann::json;
 #include <mutex>
 #include <chrono>
 
-vec3 color(const ray &r, hittable *world, int depth, int max_bounces, int *bounce_count)
+vec3 color(const ray &r, hittable *world, int depth, int max_bounces, long *bounce_count)
 {
     hit_record rec;
     if (world->hit(r, 0.001, MAXFLOAT, rec))
@@ -51,7 +51,7 @@ vec3 color(const ray &r, hittable *world, int depth, int max_bounces, int *bounc
 
 std::mutex framebuffer_lock;
 
-void compute_rays(int *ray_ct, vec3 **buffer, int width, int height, int samples, int max_bounces, camera cam, hittable *world)
+void compute_rays(long *ray_ct, vec3 **buffer, int width, int height, int samples, int max_bounces, camera cam, hittable *world)
 {
     if (samples == 0)
     {
@@ -64,7 +64,7 @@ void compute_rays(int *ray_ct, vec3 **buffer, int width, int height, int samples
         {
             // std::cout << "computing column " << i << std::endl
             vec3 col = vec3(0, 0, 0);
-            int *count = new int(0);
+            long *count = new long(0);
             for (int s = 0; s < samples; s++)
             {
                 float u = float(i + random_double()) / float(width);
@@ -187,7 +187,7 @@ int main(int argc, char *argv[])
 
     std::cout << min_samples << '\n';
     std::cout << remaining_samples << '\n';
-    int bounce_counts[N_THREADS];
+    long bounce_counts[N_THREADS];
 
     std::cout << "spawning threads";
     for (int t = 0; t < N_THREADS; t++)
