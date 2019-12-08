@@ -27,7 +27,7 @@ vec3 color(const ray &r, hittable *world, int depth, int max_bounces)
         ray scattered;
         vec3 attenuation;
         vec3 emitted = rec.mat_ptr->emitted(rec.u, rec.v, rec.p);
-        if (depth < 50 && rec.mat_ptr->scatter(r, rec, attenuation, scattered))
+        if (depth < max_bounces && rec.mat_ptr->scatter(r, rec, attenuation, scattered))
         {
             return emitted + attenuation * color(scattered, world, depth + 1, max_bounces);
         }
@@ -39,11 +39,11 @@ vec3 color(const ray &r, hittable *world, int depth, int max_bounces)
     else
     {
         // world background color here
-        // vec3 unit_direction = unit_vector(r.direction());
-        // float t = 0.5 * (unit_direction.y() + 1.0);
-        // return (1.0 - t) * vec3(1.0, 1.0, 1.0) + t * vec3(0.5, 0.7, 1.0);
+        vec3 unit_direction = unit_vector(r.direction());
+        float t = 0.5 * (unit_direction.y() + 1.0);
+        return (1.0 - t) * vec3(1.0, 1.0, 1.0) + t * vec3(0.2, 0.1, 0.7);
 
-        return vec3(0, 0, 0);
+        // return vec3(0, 0, 0);
     }
 }
 
@@ -100,6 +100,8 @@ int main(int argc, char *argv[])
 
     int width = config["film"].value("width", 400);
     int height = config["film"].value("height", 300);
+    float gamma = config["film"].value("gamma", 2.2);
+    float exposure = config["film"].value("exposure", 0.0);
 
     // end film setup
 
@@ -154,6 +156,8 @@ int main(int argc, char *argv[])
     float aperture = camera_json.value("aperture", 0.0);
     float dist_to_focus = camera_json.value("dist_to_focus", 10.0);
 
+    std::cout << lookfrom << ' ' << lookat << '\n';
+
     camera cam(lookfrom, lookat, vec3(0, 1, 0), vfov, float(width) / float(height),
                aperture, dist_to_focus, 0.0, 1.0);
 
@@ -192,6 +196,26 @@ int main(int argc, char *argv[])
     std::cout << "computed " << total_pixels * n_samples << " rays in " << elapsed_seconds3.count() << "seconds, at " << total_pixels * n_samples / elapsed_seconds3.count() << " rays per second" << std::endl;
 
     // output file
+    float max_luminance;
+    for (int j = height - 1; j >= 0; j--)
+    {
+        for (int i = 0; i < width; i++)
+        {
+            vec3 col = framebuffer[j][i];
+            col /= float(n_samples);
+            float f = col.length();
+            if (f > max_luminance)
+            {
+                max_luminance = f;
+            }
+        }
+    }
+
+    std::cout << "max lum " << max_luminance << '\n';
+    // |p|^(1/g) == 1
+    // |p| == 1
+    // float calculated_gamma = ;
+
     output << "P6\n"
            << width << " " << height << "\n255\n";
     for (int j = height - 1; j >= 0; j--)
@@ -201,12 +225,17 @@ int main(int argc, char *argv[])
             vec3 col = framebuffer[j][i];
             col /= float(n_samples);
             // color space interpolation here
-            // put gamma and exposure here?
-            col = vec3(sqrt(col[0]), sqrt(col[1]), sqrt(col[2]));
+            // first color mapping
+            float lum = col.length();
+            float new_lum = lum / (1 + lum);
+            // float new_lum = 1.0 - expf(-0.1 * lum);
+            float factor = new_lum / lum;
+            col = vec3(factor * col[0], factor * col[1], factor * col[2]);
+            // put gamma and exposure here
 
-            char ir = int(255.99 * col[0]);
-            char ig = int(255.99 * col[1]);
-            char ib = int(255.99 * col[2]);
+            char ir = int(255.99 * powf(col[0], gamma));
+            char ig = int(255.99 * powf(col[1], gamma));
+            char ib = int(255.99 * powf(col[2], gamma));
             output << ir << ig << ib;
         }
     }

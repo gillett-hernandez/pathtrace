@@ -6,7 +6,8 @@
 #include <stdlib.h>
 #include "thirdparty/Eigen/Dense"
 
-typedef Eigen::Vector3f Vector3f;
+using Vector4f = Eigen::Vector4f;
+using Vector3f = Eigen::Vector3f;
 
 class vec3
 {
@@ -18,6 +19,13 @@ public:
         e[1] = e1;
         e[2] = e2;
     }
+    vec3(Vector4f v)
+    {
+        e[0] = v.x() / v.w();
+        e[1] = v.y() / v.w();
+        e[2] = v.z() / v.w();
+    }
+
     vec3(Vector3f v)
     {
         e[0] = v.x();
@@ -43,7 +51,7 @@ public:
     inline vec3 &operator*=(const float t);
     inline vec3 &operator/=(const float t);
 
-    inline Vector3f as_eigen_vector() const { return Vector3f(e[0], e[1], e[2]); };
+    inline Vector3f as_eigen_vector3() const { return Vector3f(e[0], e[1], e[2]); };
 
     inline float length() const { return sqrt(e[0] * e[0] + e[1] * e[1] + e[2] * e[2]); }
     inline float squared_length() const { return e[0] * e[0] + e[1] * e[1] + e[2] * e[2]; }

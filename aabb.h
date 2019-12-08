@@ -17,9 +17,9 @@ public:
         _max = b;
     }
 
-    aabb *apply(transform3 transform) const
+    aabb apply(transform3 transform) const
     {
-        return new aabb(transform * _min, transform * _max);
+        return aabb(transform * _min, transform * _max);
     }
 
     vec3 min() const { return _min; }
