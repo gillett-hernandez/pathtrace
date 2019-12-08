@@ -3,4 +3,5 @@
 *.gch
 *.ppm
 .vscode/**
+thirdparty/Eigen/src/*
 main
