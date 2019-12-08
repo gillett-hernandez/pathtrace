@@ -10,22 +10,22 @@ hittable *cornell_box()
 {
     hittable **list = new hittable *[6];
     int i = 0;
-    material *red = new lambertian(new constant_texture(vec3(0.65, 0.05, 0.05)));
+    // material *red = new lambertian(new constant_texture(vec3(0.65, 0.05, 0.05)));
     material *white = new lambertian(new constant_texture(vec3(0.73, 0.73, 0.73)));
-    material *green = new lambertian(new constant_texture(vec3(0.12, 0.45, 0.15)));
+    // material *green = new lambertian(new constant_texture(vec3(0.12, 0.45, 0.15)));
     material *light = new diffuse_light(new constant_texture(vec3(15, 15, 15)));
 
     rect *white_wall = new rect(0, 555, 0, 555, 0, white);
     // yz rect
-    list[i++] = new instance(new rect(0, 555, 0, 555, 555, green), transform3::from_rotate(vec3(0.0, 1.0, 0.0)));
+    // list[i++] = new instance(new rect(0, 555, 0, 555, 555, green), transform3::from_rotate(vec3(0.0, 1.0, 0.0)));
     // yz rect
-    list[i++] = new instance(new rect(0, 555, 0, 555, 0, red), transform3::from_rotate(vec3(0.5, 0, 0)));
+    // list[i++] = new instance(new rect(0, 555, 0, 555, 0, red), transform3::from_rotate(vec3(0.5, 0, 0)));
     list[i++] = new rect(213, 343, 227, 332, 554, light);
     // list[i++] = new instance(new xz_rect)
-    list[i++] = new instance(white_wall, transform3::from_rotate_and_translate(vec3(0.0, 1.0, 0.0), vec3(0, 555, 0)));
-    list[i++] = new instance(white_wall, transform3());
+    // list[i++] = new instance(white_wall, transform3::from_rotate_and_translate(vec3(0.0, 1.0, 0.0), vec3(0, 555, 0)));
+    list[i++] = new instance(white_wall);
     // xy rect
-    list[i++] = new flip_normals(new rect(0, 555, 0, 555, 555, white));
+    // list[i++] = new instance(new rect(0, 555, 0, 555, 555, white), transform3::from_rotate(vec3(0.0, 1.0, 0.0)));
 
     return new bvh_node(list, i, 0.0f, 0.0f);
 }

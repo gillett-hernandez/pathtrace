@@ -131,7 +131,8 @@ int main(int argc, char *argv[])
     scene_file >> scene;
 
     auto t1 = std::chrono::high_resolution_clock::now();
-    hittable *world = build_scene(scene);
+    hittable *world = cornell_box();
+    // hittable *world = build_scene(scene);
     auto t2 = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsed_seconds = t2 - t1;
     std::cout << "time taken to build bvh " << elapsed_seconds.count() << std::endl;

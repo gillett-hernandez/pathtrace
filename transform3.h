@@ -48,6 +48,11 @@ public:
     {
         // return transform3(ONE, ZERO, ZERO);
     }
+
+    inline vec3 operator*(vec3 vec) const
+    {
+        return vec3(_transform * vec.as_eigen_vector());
+    }
     Eigen::Affine3f _transform;
 };
 
