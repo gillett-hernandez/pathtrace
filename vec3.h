@@ -5,6 +5,7 @@
 #include <math.h>
 #include <stdlib.h>
 #include "thirdparty/Eigen/Dense"
+#include "transform3.h"
 
 typedef Eigen::Vector3f Vector3f;
 
@@ -44,6 +45,7 @@ public:
     inline vec3 &operator/=(const float t);
 
     inline Vector3f as_eigen_vector() const { return Vector3f(e[0], e[1], e[2]); };
+    inline vec3 apply(transform3 transform) const;
 
     inline float length() const { return sqrt(e[0] * e[0] + e[1] * e[1] + e[2] * e[2]); }
     inline float squared_length() const { return e[0] * e[0] + e[1] * e[1] + e[2] * e[2]; }
@@ -51,6 +53,7 @@ public:
 
     float e[3];
 };
+
 inline std::istream &operator>>(std::istream &is, vec3 &t)
 {
     is >> t.e[0] >> t.e[1] >> t.e[2];
@@ -166,6 +169,11 @@ inline vec3 &vec3::operator/=(const float t)
     e[1] *= k;
     e[2] *= k;
     return *this;
+}
+
+inline vec3 vec3::apply(transform3 transform) const
+{
+    return vec3(transform._transform * this->as_eigen_vector());
 }
 
 inline vec3 unit_vector(vec3 v)

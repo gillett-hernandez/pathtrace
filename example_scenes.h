@@ -15,12 +15,17 @@ hittable *cornell_box()
     material *green = new lambertian(new constant_texture(vec3(0.12, 0.45, 0.15)));
     material *light = new diffuse_light(new constant_texture(vec3(15, 15, 15)));
 
-    list[i++] = new flip_normals(new yz_rect(0, 555, 0, 555, 555, green));
-    list[i++] = new yz_rect(0, 555, 0, 555, 0, red);
-    list[i++] = new xz_rect(213, 343, 227, 332, 554, light);
-    list[i++] = new flip_normals(new xz_rect(0, 555, 0, 555, 555, white));
-    list[i++] = new xz_rect(0, 555, 0, 555, 0, white);
-    list[i++] = new flip_normals(new xy_rect(0, 555, 0, 555, 555, white));
+    rect *white_wall = new rect(0, 555, 0, 555, 0, white);
+    // yz rect
+    list[i++] = new instance(new rect(0, 555, 0, 555, 555, green), transform3::from_rotate(vec3(0.0, 1.0, 0.0)));
+    // yz rect
+    list[i++] = new instance(new rect(0, 555, 0, 555, 0, red), transform3::from_rotate(vec3(0.5, 0, 0)));
+    list[i++] = new rect(213, 343, 227, 332, 554, light);
+    // list[i++] = new instance(new xz_rect)
+    list[i++] = new instance(white_wall, transform3::from_rotate_and_translate(vec3(0.0, 1.0, 0.0), vec3(0, 555, 0)));
+    list[i++] = new instance(white_wall, transform3());
+    // xy rect
+    list[i++] = new flip_normals(new rect(0, 555, 0, 555, 555, white));
 
     return new bvh_node(list, i, 0.0f, 0.0f);
 }

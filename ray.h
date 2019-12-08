@@ -20,7 +20,7 @@ public:
     vec3 point_at_parameter(float t) const { return A + t * B; }
     ray apply(transform3 transform) const
     {
-        return ray(vec3(transform * A.as_eigen_vector()), vec3(transform * B.as_eigen_vector()), _time);
+        return ray(A.apply(transform), B.apply(transform), _time);
     }
 
     vec3 A;
