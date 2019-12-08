@@ -12,7 +12,8 @@ debug:
 
 run: build
 	time ./main.exe
-	python3 convert_ppm_in_curdir.py
+	python3 -m pip install Pillow
+	(python3 convert_ppm_in_curdir.py &)
 clean:
 	rm *.o
 	rm *.gch
