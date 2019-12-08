@@ -19,7 +19,7 @@ using json = nlohmann::json;
 #include <mutex>
 #include <chrono>
 
-vec3 color(const ray &r, hittable *world, int depth, int max_bounces, int* bounce_count)
+vec3 color(const ray &r, hittable *world, int depth, int max_bounces, int *bounce_count)
 {
     hit_record rec;
     if (world->hit(r, 0.001, MAXFLOAT, rec))
@@ -40,11 +40,12 @@ vec3 color(const ray &r, hittable *world, int depth, int max_bounces, int* bounc
     else
     {
         // world background color here
-        vec3 unit_direction = unit_vector(r.direction());
-        float t = 0.5 * (unit_direction.y() + 1.0);
-        return (1.0 - t) * vec3(1.0, 1.0, 1.0) + t * vec3(0.2, 0.1, 0.7);
+        // vec3 unit_direction = unit_vector(r.direction());
+        // float t = 0.5 * (unit_direction.y() + 1.0);
+        // return (1.0 - t) * vec3(1.0, 1.0, 1.0) + t * vec3(0.2, 0.1, 0.7);
 
-        // return vec3(0, 0, 0);
+        // generate world u v and then sample world texture?
+        return vec3(0, 0, 0);
     }
 }
 
@@ -80,17 +81,17 @@ void compute_rays(int *ray_ct, vec3 **buffer, int width, int height, int samples
     }
 }
 
-template <class T>
-void default_assign(json j, T &var, std::string key, T _default)
+float A = 0.15;
+float B = 0.50;
+float C = 0.10;
+float D = 0.20;
+float E = 0.02;
+float F = 0.30;
+float W = 11.2;
+
+vec3 Uncharted2Tonemap(vec3 x)
 {
-    if (j.find(key) != j.end())
-    {
-        var = j[key];
-    }
-    else
-    {
-        var = _default;
-    }
+    return ((x * (A * x + C * B) + D * E) / (x * (A * x + B) + D * F)) - E / F;
 }
 
 int main(int argc, char *argv[])
@@ -116,12 +117,12 @@ int main(int argc, char *argv[])
     int N_THREADS = config.value("threads", 4);
     int MAX_BOUNCES = config.value("max_bounces", 10);
 
-
     // round up to nearest multiple of N_THREADS
 
     int min_camera_rays = n_samples * total_pixels;
 
-    std::cout << std::endl << "config read complete, rendering image at " << width << "x" << height << "==" << total_pixels << "px^2" << '\n';
+    std::cout << std::endl
+              << "config read complete, rendering image at " << width << "x" << height << "==" << total_pixels << "px^2" << '\n';
     std::cout << "with " << n_samples << " samples per pixel, that sets a minimum number of camera rays at " << min_camera_rays << "\n\n";
     std::cout << "using " << N_THREADS << " threads\n";
 
@@ -146,8 +147,8 @@ int main(int argc, char *argv[])
     scene_file >> scene;
 
     auto t1 = std::chrono::high_resolution_clock::now();
-    hittable *world = cornell_box();
-    // hittable *world = build_scene(scene);
+    // hittable *world = cornell_box();
+    hittable *world = build_scene(scene);
     auto t2 = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsed_seconds = t2 - t1;
     std::cout << "time taken to build bvh " << elapsed_seconds.count() << std::endl;
@@ -179,7 +180,6 @@ int main(int argc, char *argv[])
     // before we compute everything, open the file
     std::ofstream output(config.value("output_path", "out.ppm"));
 
-
     // start thread setup
     std::thread threads[N_THREADS];
     int min_samples = n_samples / N_THREADS;
@@ -190,7 +190,7 @@ int main(int argc, char *argv[])
     int bounce_counts[N_THREADS];
 
     std::cout << "spawning threads";
-        for (int t = 0; t < N_THREADS; t++)
+    for (int t = 0; t < N_THREADS; t++)
     {
         int samples = min_samples + (int)(t < remaining_samples);
         std::cout << ' ' << samples;
@@ -208,7 +208,6 @@ int main(int argc, char *argv[])
         total_bounces += (float)bounce_counts[t];
         std::cout << ' ' << t << ':' << bounce_counts[t];
         threads[t].join();
-        
     }
 
     std::cout << " done\n";
@@ -220,6 +219,7 @@ int main(int argc, char *argv[])
 
     // output file
     float max_luminance;
+    float total_luminance;
     for (int j = height - 1; j >= 0; j--)
     {
         for (int i = 0; i < width; i++)
@@ -227,17 +227,17 @@ int main(int argc, char *argv[])
             vec3 col = framebuffer[j][i];
             col /= float(n_samples);
             float f = col.length();
+            total_luminance += f;
             if (f > max_luminance)
             {
                 max_luminance = f;
             }
         }
     }
+    float avg_luminance = total_luminance / ((float)total_pixels * (float)n_samples);
 
+    std::cout << "avg lum " << avg_luminance << '\n';
     std::cout << "max lum " << max_luminance << '\n';
-    // |p|^(1/g) == 1
-    // |p| == 1
-    // float calculated_gamma = ;
 
     output << "P6\n"
            << width << " " << height << "\n255\n";
@@ -247,13 +247,17 @@ int main(int argc, char *argv[])
         {
             vec3 col = framebuffer[j][i];
             col /= float(n_samples);
+
+            col *= 16 + exposure;
             // color space interpolation here
             // first color mapping
-            float lum = col.length();
-            float new_lum = lum / (1 + lum);
-            // float new_lum = 1.0 - expf(-0.1 * lum);
+            // float lum = col.length();
+            float lum = std::max({col[0], col[1], col[2]});
+            // float new_lum = lum / (1 + lum);
+            float new_lum = 1.0 - expf(-0.2 * lum);
             float factor = new_lum / lum;
-            col = vec3(factor * col[0], factor * col[1], factor * col[2]);
+            // col = vec3(factor * col[0], factor * col[1], factor * col[2]);
+            col = col * factor;
             // put gamma and exposure here
 
             char ir = int(255.99 * powf(col[0], gamma));

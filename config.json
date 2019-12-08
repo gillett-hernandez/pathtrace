@@ -2,11 +2,11 @@
     "film": {
         "width": 800,
         "height": 700,
-        "exposure": 1.0,
-        "gamma": 0.1
+        "exposure": -5.0,
+        "gamma": 0.9
     },
     "output_path": "out2.ppm",
-    "samples": 1,
-    "threads": 1,
+    "samples": 120,
+    "threads": 12,
     "max_bounces": 5
 }

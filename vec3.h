@@ -51,6 +51,8 @@ public:
     inline vec3 &operator*=(const float t);
     inline vec3 &operator/=(const float t);
 
+    inline vec3 normalized() const;
+
     inline Vector3f as_eigen_vector3() const { return Vector3f(e[0], e[1], e[2]); };
 
     inline float length() const { return sqrt(e[0] * e[0] + e[1] * e[1] + e[2] * e[2]); }
@@ -83,6 +85,16 @@ inline void vec3::make_unit_vector()
 inline vec3 operator+(const vec3 &v1, const vec3 &v2)
 {
     return vec3(v1.e[0] + v2.e[0], v1.e[1] + v2.e[1], v1.e[2] + v2.e[2]);
+}
+
+inline vec3 operator+(const vec3 &v, const float &f)
+{
+    return vec3(v.x() + f, v.y() + f, v.z() + f);
+}
+
+inline vec3 operator-(const vec3 &v, const float &f)
+{
+    return vec3(v.x() - f, v.y() - f, v.z() - f);
 }
 
 inline vec3 operator-(const vec3 &v1, const vec3 &v2)
@@ -177,9 +189,13 @@ inline vec3 &vec3::operator/=(const float t)
     return *this;
 }
 
+inline vec3 vec3::normalized() const
+{
+    return *this / this->length();
+}
+
 inline vec3 unit_vector(vec3 v)
 {
     return v / v.length();
 }
-
 #endif

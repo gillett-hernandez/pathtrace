@@ -7,7 +7,7 @@
         ],
         "look_at": [
             278.0,
-            178.0,
+            278.0,
             0.0
         ],
         "fov": 40.0,
@@ -64,26 +64,145 @@
     ],
     "instances": [
         {
-            "type": "sphere",
-            "scale": [
-                1.0,
-                1.0,
-                1.0
-            ],
-            "rotate": [
-                0.0,
-                0.0,
-                0.0
-            ],
-            "translate": [
-                0.0,
-                0.0,
-                0.0
-            ],
+            "type": "rect",
             "material": {
-                "type": "lambertian"
+                "id": "white"
+            },
+            "size": [
+                555,
+                555
+            ],
+            "transform": {
+                "scale": 1.0,
+                "translate": [
+                    277.5,
+                    0.0,
+                    277.5
+                ]
+            }
+        },
+        {
+            "type": "rect",
+            "material": {
+                "id": "white"
+            },
+            "size": [
+                555,
+                555
+            ],
+            "transform": {
+                "rotate": [
+                    1.0,
+                    0.0,
+                    0.0
+                ],
+                "translate": [
+                    277.5,
+                    555,
+                    277.5
+                ]
+            }
+        },
+        {
+            "type": "rect",
+            "material": {
+                "id": "white"
+            },
+            "size": [
+                555,
+                555
+            ],
+            "transform": {
+                "rotate": [
+                    0.5,
+                    0.0,
+                    0.0
+                ],
+                "translate": [
+                    277.5,
+                    277.5,
+                    555
+                ]
+            }
+        },
+        {
+            "type": "rect",
+            "material": {
+                "id": "green"
+            },
+            "size": [
+                555,
+                555
+            ],
+            "transform": {
+                "rotate": [
+                    0.0,
+                    0.0,
+                    -0.5
+                ],
+                "translate": [
+                    555,
+                    277.5,
+                    277.5
+                ]
+            }
+        },
+        {
+            "type": "rect",
+            "material": {
+                "id": "red"
+            },
+            "size": [
+                555,
+                555
+            ],
+            "transform": {
+                "rotate": [
+                    0.0,
+                    0.0,
+                    0.5
+                ],
+                "translate": [
+                    0,
+                    277.5,
+                    277.5
+                ]
+            }
+        },
+        {
+            "type": "rect",
+            "material": {
+                "id": "light"
+            },
+            "size": [
+                120,
+                115
+            ],
+            "transform": {
+                "translate": [
+                    273,
+                    554.0,
+                    171
+                ]
+            }
+        },
+        {
+            "type": "sphere",
+            "material": {
+                "id": "light"
+            },
+            "transform": {
+                "scale": [
+                    100.0,
+                    20.0,
+                    100.0
+                ],
+                "translate": [
+                    273,
+                    200,
+                    171
+                ]
             }
         }
-    ],
-    "objects": []
+    ]
 }
