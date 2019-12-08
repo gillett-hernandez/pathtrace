@@ -3,7 +3,7 @@
         "width": 800,
         "height": 700,
         "exposure": -5.0,
-        "gamma": 0.9
+        "gamma": 2.2
     },
     "output_path": "out2.ppm",
     "samples": 120,
