@@ -42,7 +42,7 @@ hittable *build_scene(json scene)
         assert(element["type"].get<std::string>() == "object");
     }
     // iterate through and load textures
-    for (auto &element : scene["assets"])
+    for (auto &element : scene["textures"])
     {
         if (element.value("skip", false))
         {
@@ -50,7 +50,7 @@ hittable *build_scene(json scene)
         }
         std::cout << element << '\n';
         // currently the only accepted asset type is a .obj
-        assert(element["type"].get<std::string>() == "object");
+        // assert(element["type"].get<std::string>() == "object");
     }
     // iterate through and construct materials
     for (auto &element : scene["materials"])
@@ -84,6 +84,7 @@ hittable *build_scene(json scene)
             }
             break;
         case METAL:
+        {
             std::cout << "found METAL" << '\n';
             vec3 color;
             if (element["data"].contains("color"))
@@ -106,7 +107,7 @@ hittable *build_scene(json scene)
                 materials.emplace(mat_id, error_material());
             }
             break;
-
+        }
         case DIELECTRIC:
             std::cout << "found DIELECTRIC" << '\n';
             break;
@@ -190,7 +191,7 @@ hittable *build_scene(json scene)
 
     list.push_back(new sphere(vec3(0, 1, 0), 1.0, new dielectric(1.5)));
     list.push_back(new sphere(vec3(-4, 1, 0), 1.0, new lambertian(new constant_texture(vec3(0.4, 0.2, 0.1)))));
-    list.push_back(new sphere(vec3(4, 1, 0), 1.0, new metal(vec3(0.9, 0.9, 0.9), 0.0)));
+    list.push_back(new sphere(vec3(4, 1, 0), 1.0, new metal(vec3(0.9, 0.2, 0.2), 0.1)));
     list.push_back(new sphere(vec3(0, 8, 0), 5.0, new diffuse_light(new constant_texture(vec3(1.0, 1.0, 1.0)))));
     // iterate through objects which are collections of instances
     int size = list.size();

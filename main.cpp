@@ -51,7 +51,10 @@ std::mutex framebuffer_lock;
 
 void compute_rays(vec3 **buffer, int width, int height, int samples, int max_bounces, camera cam, hittable *world)
 {
-
+    if (samples == 0)
+    {
+        return;
+    }
     for (int j = height - 1; j >= 0; j--)
     {
         // std::cout << "computing row " << j << std::endl;
@@ -106,8 +109,6 @@ int main(int argc, char *argv[])
     int MAX_BOUNCES = config.value("max_bounces", 10);
 
     // round up to nearest multiple of N_THREADS
-    n_samples += N_THREADS;
-    n_samples -= n_samples % N_THREADS;
 
     // create framebuffer
     vec3 **framebuffer = new vec3 *[height];
@@ -162,11 +163,17 @@ int main(int argc, char *argv[])
     // before we compute everything, open the file
     std::ofstream output(config.value("output_path", "out.ppm"));
     std::thread threads[N_THREADS];
+    int min_samples = n_samples / N_THREADS;
+    int remaining_samples = n_samples % N_THREADS;
+
+    std::cout << min_samples << '\n';
+    std::cout << remaining_samples << '\n';
 
     for (int t = 0; t < N_THREADS; t++)
     {
-        std::cout << "spawning thread " << t << std::endl;
-        threads[t] = std::thread(compute_rays, std::ref(framebuffer), width, height, n_samples / N_THREADS, MAX_BOUNCES, cam, world);
+        int samples = min_samples + (int)(t < remaining_samples);
+        std::cout << "spawning thread " << t << " with " << samples << " samples" << std::endl;
+        threads[t] = std::thread(compute_rays, std::ref(framebuffer), width, height, samples, MAX_BOUNCES, cam, world);
     }
     auto t3 = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsed_seconds2 = t3 - t2;
@@ -192,7 +199,6 @@ int main(int argc, char *argv[])
         {
             vec3 col = framebuffer[j][i];
             col /= float(n_samples);
-
             // color space interpolation here
             // put gamma and exposure here?
             col = vec3(sqrt(col[0]), sqrt(col[1]), sqrt(col[2]));
