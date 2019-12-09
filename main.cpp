@@ -218,15 +218,15 @@ int main(int argc, char *argv[])
     std::cout << total_bounces << " " << total_bounces / elapsed_seconds3.count() << '\n';
 
     // output file
-    float max_luminance;
-    float total_luminance;
+    float max_luminance = -FLT_MAX;
+    float total_luminance = 0.0;
     for (int j = height - 1; j >= 0; j--)
     {
         for (int i = 0; i < width; i++)
         {
             vec3 col = framebuffer[j][i];
             col /= float(n_samples);
-            float f = col.length();
+            float f = abs(col.length());
             total_luminance += f;
             if (f > max_luminance)
             {
