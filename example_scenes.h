@@ -98,7 +98,7 @@ hittable *test_scene()
     list[i++] = new sphere(vec3(0, -100, 0), 100, new lambertian(vec3(0.2, 0.2, 0.2)));
     list[i++] = new sphere(vec3(1, 1, 0), 1.0, new metal(vec3(1.0, 1.0, 1.0), 0.05));
     list[i++] = new sphere(vec3(-1, 1, 0), 1.0, new metal(vec3(1.0, 1.0, 1.0), 0.05));
-    hittable *world = new bvh_node(list, i, 0.0f, 0.0f);
+    return new bvh_node(list, i, 0.0f, 0.0f);
 }
 
 #endif

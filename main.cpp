@@ -51,7 +51,7 @@ vec3 color(const ray &r, hittable *world, int depth, int max_bounces, long *boun
 
 std::mutex framebuffer_lock;
 
-void compute_rays(long *ray_ct, vec3 **buffer, int width, int height, int samples, int max_bounces, camera cam, hittable *world)
+void compute_rays(long ray_ct, vec3 **buffer, int width, int height, int samples, int max_bounces, camera cam, hittable *world)
 {
     if (samples == 0)
     {
@@ -75,7 +75,7 @@ void compute_rays(long *ray_ct, vec3 **buffer, int width, int height, int sample
 
             framebuffer_lock.lock();
             buffer[j][i] += col;
-            (*ray_ct) += *count;
+            ray_ct += *count;
             framebuffer_lock.unlock();
         }
     }
@@ -194,7 +194,7 @@ int main(int argc, char *argv[])
     {
         int samples = min_samples + (int)(t < remaining_samples);
         std::cout << ' ' << samples;
-        threads[t] = std::thread(compute_rays, &bounce_counts[t], std::ref(framebuffer), width, height, samples, MAX_BOUNCES, cam, world);
+        threads[t] = std::thread(compute_rays, std::ref(bounce_counts[t]), std::ref(framebuffer), width, height, samples, MAX_BOUNCES, cam, world);
     }
     std::cout << " done.\n";
     auto t3 = std::chrono::high_resolution_clock::now();
