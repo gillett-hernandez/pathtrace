@@ -10,6 +10,7 @@
 #include "thirdparty/json.hpp"
 #include "example_scenes.h"
 #include "scene.h"
+#include "world.h"
 
 using json = nlohmann::json;
 
@@ -19,7 +20,7 @@ using json = nlohmann::json;
 #include <mutex>
 #include <chrono>
 
-vec3 color(const ray &r, hittable *world, int depth, int max_bounces, long *bounce_count)
+vec3 color(const ray &r, world *world, int depth, int max_bounces, long *bounce_count)
 {
     hit_record rec;
     if (world->hit(r, 0.001, MAXFLOAT, rec))
@@ -45,13 +46,18 @@ vec3 color(const ray &r, hittable *world, int depth, int max_bounces, long *boun
         // return (1.0 - t) * vec3(1.0, 1.0, 1.0) + t * vec3(0.2, 0.1, 0.7);
 
         // generate world u v and then sample world texture?
-        return vec3(0, 0, 0);
+        // return vec3(0, 0, 0);
+        vec3 unit_direction = unit_vector(r.direction());
+        float u = unit_direction.x();
+        float v = unit_direction.y();
+        // TODO: replace u and v with angle l->r and angle d->u;
+        return world->value(u, v, unit_direction);
     }
 }
 
 std::mutex framebuffer_lock;
 
-void compute_rays(long ray_ct, vec3 **buffer, int width, int height, int samples, int max_bounces, camera cam, hittable *world)
+void compute_rays(long ray_ct, vec3 **buffer, int width, int height, int samples, int max_bounces, camera cam, world *world)
 {
     if (samples == 0)
     {
@@ -148,7 +154,7 @@ int main(int argc, char *argv[])
 
     auto t1 = std::chrono::high_resolution_clock::now();
     // hittable *world = cornell_box();
-    hittable *world = build_scene(scene);
+    world *world = build_scene(scene);
     auto t2 = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsed_seconds = t2 - t1;
     std::cout << "time taken to build bvh " << elapsed_seconds.count() << std::endl;
@@ -170,7 +176,6 @@ int main(int argc, char *argv[])
     float aperture = camera_json.value("aperture", 0.0);
     float dist_to_focus = camera_json.value("dist_to_focus", 10.0);
 
-    std::cout << lookfrom << ' ' << lookat << '\n';
 
     camera cam(lookfrom, lookat, vec3(0, 1, 0), vfov, float(width) / float(height),
                aperture, dist_to_focus, 0.0, 1.0);
@@ -185,8 +190,8 @@ int main(int argc, char *argv[])
     int min_samples = n_samples / N_THREADS;
     int remaining_samples = n_samples % N_THREADS;
 
-    std::cout << min_samples << '\n';
-    std::cout << remaining_samples << '\n';
+    std::cout << "samples per thread " << min_samples << '\n';
+    std::cout << "leftover samples to be allocated " << remaining_samples << '\n';
     long bounce_counts[N_THREADS];
 
     std::cout << "spawning threads";
@@ -217,7 +222,6 @@ int main(int argc, char *argv[])
     std::cout << "computed " << total_pixels * n_samples << " rays in " << elapsed_seconds3.count() << "s, at " << total_pixels * n_samples / elapsed_seconds3.count() << " rays per second" << std::endl;
     std::cout << total_bounces << " " << total_bounces / elapsed_seconds3.count() << '\n';
 
-    // output file
     float max_luminance = -FLT_MAX;
     float total_luminance = 0.0;
     for (int j = height - 1; j >= 0; j--)
@@ -239,6 +243,7 @@ int main(int argc, char *argv[])
     std::cout << "avg lum " << avg_luminance << '\n';
     std::cout << "max lum " << max_luminance << '\n';
 
+    // output file
     output << "P6\n"
            << width << " " << height << "\n255\n";
     for (int j = height - 1; j >= 0; j--)
