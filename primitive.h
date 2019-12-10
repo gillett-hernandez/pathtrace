@@ -65,6 +65,7 @@ class rect : public hittable
 {
 public:
     rect() {}
+    rect(float x0, float z0, float x1, float z1, material *mat, bool dual_sided=false) {}
     rect(float _x, float _z, material *mat, bool dual_sided = false)
         : x(_x), z(_z), mp(mat), dual_sided(dual_sided){};
     virtual bool hit(const ray &r, float t0, float t1, hit_record &rec) const;
@@ -113,6 +114,19 @@ bool rect::hit(const ray &r, float t0, float t1, hit_record &rec) const
     }
     return true;
 }
+
+
+class box : public hittable {
+public:
+    box(float width, float height, float depth) {
+
+    }
+
+    hittable sides[6];
+    // float width, height, depth;
+};
+
+
 class instance : public hittable
 {
 public:
