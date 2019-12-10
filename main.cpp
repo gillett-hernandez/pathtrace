@@ -149,7 +149,7 @@ int main(int argc, char *argv[])
     std::cout << "reading scene data" << std::endl;
 
     json scene;
-    std::ifstream scene_file("scene.json");
+    std::ifstream scene_file("scenes/scene.json");
     scene_file >> scene;
 
     auto t1 = std::chrono::high_resolution_clock::now();
