@@ -199,14 +199,13 @@ public:
     box(float width, float height, float depth, material *mat) : box(vec3(-width / 2, -height / 2, -depth / 2), vec3(width / 2, height / 2, depth / 2), mat) {}
     box(const vec3 p0, const vec3 p1, material *mat) : p0(p0), p1(p1)
     {
-        vec3 span = p1 - p0;
         hittable **sides = new hittable *[6];
-        sides[0] = new rect(span.x(), span.y(), p0.z(), mat, XY);
-        sides[1] = new rect(span.x(), span.y(), p1.z(), mat, XY, true);
-        sides[2] = new rect(span.y(), span.z(), p0.x(), mat, YZ);
-        sides[3] = new rect(span.y(), span.z(), p1.x(), mat, YZ, true);
-        sides[4] = new rect(span.x(), span.z(), p0.y(), mat, XZ);
-        sides[5] = new rect(span.x(), span.z(), p1.y(), mat, XZ, true);
+        sides[0] = new rect(p0.x(), p0.y(), p1.x(), p1.y(), p0.z(), mat, XY, true);
+        sides[1] = new rect(p0.x(), p0.y(), p1.x(), p1.y(), p1.z(), mat, XY);
+        sides[2] = new rect(p0.y(), p0.z(), p1.y(), p1.z(), p0.x(), mat, YZ, true);
+        sides[3] = new rect(p0.y(), p0.z(), p1.y(), p1.z(), p1.x(), mat, YZ);
+        sides[4] = new rect(p0.x(), p0.z(), p1.x(), p1.z(), p0.y(), mat, XZ, true);
+        sides[5] = new rect(p0.x(), p0.z(), p1.x(), p1.z(), p1.y(), mat, XZ);
         group = new hittable_list(sides, 6);
     }
 

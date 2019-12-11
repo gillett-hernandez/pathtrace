@@ -16,9 +16,9 @@
     },
     "world": {
         "color": [
-            0.9,
-            0.9,
-            0.9
+            0.2,
+            0.2,
+            0.2
         ]
     },
     "assets": [],
@@ -172,25 +172,47 @@
             }
         },
         {
-            "skip": true,
             "type": "box",
             "material": {
                 "id": "white"
             },
-            "p0": [
-                120,
-                120,
-                120
-            ],
-            "p1": [
-                180,
-                250,
-                180
+            "size": [
+                165,
+                165,
+                165
             ],
             "transform": {
+                "translate": [
+                    212.5,
+                    82.5,
+                    147.5
+                ],
                 "rotate": [
                     0.0,
-                    0.1,
+                    -0.1,
+                    0.0
+                ]
+            }
+        },
+        {
+            "type": "box",
+            "material": {
+                "id": "white"
+            },
+            "size": [
+                165,
+                330,
+                165
+            ],
+            "transform": {
+                "translate": [
+                    347.5,
+                    165,
+                    377.5
+                ],
+                "rotate": [
+                    0.0,
+                    0.05,
                     0.0
                 ]
             }
@@ -213,6 +235,7 @@
             }
         },
         {
+            "skip": true,
             "type": "sphere",
             "material": {
                 "id": "light"

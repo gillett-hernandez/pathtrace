@@ -6,7 +6,7 @@
         "gamma": 2.2
     },
     "output_path": "out2.ppm",
-    "samples": 4,
-    "threads": 2,
-    "max_bounces": 5
+    "samples": 40,
+    "threads": 6,
+    "max_bounces": 10
 }
