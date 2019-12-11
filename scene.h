@@ -7,6 +7,7 @@
 #include "material.h"
 #include "primitive.h"
 #include "thirdparty/json.hpp"
+#include "volume.h"
 #include "world.h"
 #include <map>
 #include <string>
@@ -311,6 +312,18 @@ world *build_scene(json scene)
     {
         background = new constant_texture(vec3(0.3, 0.3, 0.3));
     }
+
+    list.push_back(
+        new instance(
+            new constant_medium(new box(165, 165, 165, error_material()), 0.01, vec3(0.9, 0.9, 0.9)),
+            transform3::from_rotate_and_translate(vec3(
+                                                      0.0,
+                                                      -0.1,
+                                                      0.0),
+                                                  vec3(
+                                                      212.5,
+                                                      82.5,
+                                                      147.5))));
 
     // iterate through objects which are collections of instances
     int size = list.size();

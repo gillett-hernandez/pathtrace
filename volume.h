@@ -9,6 +9,7 @@ class isotropic : public material
 {
 public:
     isotropic(texture *a) : albedo(a) {}
+    isotropic(vec3 a) : albedo(new constant_texture(a)) {}
     virtual bool scatter(
         const ray &r_in,
         const hit_record &rec,
@@ -27,6 +28,10 @@ class constant_medium : public hittable
 {
 public:
     constant_medium(hittable *b, float d, texture *a) : boundary(b), density(d)
+    {
+        phase_function = new isotropic(a);
+    }
+    constant_medium(hittable *b, float d, vec3 a) : boundary(b), density(d)
     {
         phase_function = new isotropic(a);
     }

@@ -69,7 +69,7 @@
             }
         }
     ],
-    "instances": [
+    "primitives": [
         {
             "type": "rect",
             "material": {
@@ -78,7 +78,26 @@
             "size": [
                 555,
                 555
-            ],
+            ]
+        },
+        {
+            "type": "box",
+            "material": {
+                "id": "white"
+            },
+            "size": [
+                165,
+                165,
+                165
+            ]
+        }
+    ],
+    "instances": [
+        {
+            "type": "ref",
+            "primitive": {
+                "id": "white_wall"
+            },
             "transform": {
                 "scale": 1.0,
                 "translate": [
@@ -89,14 +108,10 @@
             }
         },
         {
-            "type": "rect",
-            "material": {
-                "id": "white"
+            "type": "ref",
+            "primitive": {
+                "id": "white_wall"
             },
-            "size": [
-                555,
-                555
-            ],
             "transform": {
                 "rotate": [
                     1.0,
@@ -111,17 +126,16 @@
             }
         },
         {
-            "type": "rect",
-            "material": {
-                "id": "white"
+            "type": "ref",
+            "primitive": {
+                "id": "white_wall"
             },
-            "size": [
-                555,
-                555
-            ],
-            "align": "xy",
-            "flip": true,
             "transform": {
+                "rotate": [
+                    0.5,
+                    0,
+                    0
+                ],
                 "translate": [
                     277.5,
                     277.5,
@@ -130,16 +144,19 @@
             }
         },
         {
-            "type": "rect",
-            "material": {
-                "id": "green"
+            "type": "direct",
+            "primitive": {
+                "type": "rect",
+                "material": {
+                    "id": "green"
+                },
+                "size": [
+                    555,
+                    555
+                ],
+                "align": "yz",
+                "flip": true
             },
-            "size": [
-                555,
-                555
-            ],
-            "align": "yz",
-            "flip": true,
             "transform": {
                 "translate": [
                     555,
@@ -149,20 +166,18 @@
             }
         },
         {
-            "type": "rect",
-            "material": {
-                "id": "red"
+            "type": "direct",
+            "primitive": {
+                "type": "rect",
+                "material": {
+                    "id": "red"
+                },
+                "size": [
+                    555,
+                    555
+                ],
+                "align": "yz"
             },
-            "size": [
-                555,
-                555
-            ],
-            "align": "yz",
-            "rotate": [
-                0.0,
-                0.0,
-                -0.5
-            ],
             "transform": {
                 "translate": [
                     0,
@@ -172,16 +187,10 @@
             }
         },
         {
-            "skip": true,
-            "type": "box",
-            "material": {
-                "id": "white"
+            "type": "ref",
+            "primitive": {
+                "id": "box"
             },
-            "size": [
-                165,
-                165,
-                165
-            ],
             "transform": {
                 "translate": [
                     212.5,
@@ -196,37 +205,43 @@
             }
         },
         {
-            "type": "box",
-            "material": {
-                "id": "white"
-            },
-            "size": [
-                165,
-                330,
-                165
-            ],
-            "transform": {
-                "translate": [
-                    347.5,
+            "type": "direct",
+            "primitive": {
+                "type": "box",
+                "material": {
+                    "id": "white"
+                },
+                "size": [
                     165,
-                    377.5
+                    330,
+                    165
                 ],
-                "rotate": [
-                    0.0,
-                    0.05,
-                    0.0
-                ]
+                "transform": {
+                    "translate": [
+                        347.5,
+                        165,
+                        377.5
+                    ],
+                    "rotate": [
+                        0.0,
+                        0.05,
+                        0.0
+                    ]
+                }
             }
         },
         {
-            "type": "rect",
-            "material": {
-                "id": "light"
+            "type": "direct",
+            "primitive": {
+                "type": "rect",
+                "material": {
+                    "id": "light"
+                },
+                "size": [
+                    240,
+                    230
+                ]
             },
-            "size": [
-                240,
-                230
-            ],
             "transform": {
                 "translate": [
                     273,
@@ -237,9 +252,12 @@
         },
         {
             "skip": true,
-            "type": "sphere",
-            "material": {
-                "id": "light"
+            "type": "direct",
+            "primitive": {
+                "type": "sphere",
+                "material": {
+                    "id": "light"
+                }
             },
             "transform": {
                 "scale": [

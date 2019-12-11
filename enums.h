@@ -28,7 +28,8 @@ enum primitive_type
     MESH,
     SPHERE,
     RECT,
-    BOX
+    BOX,
+    VOLUME
 };
 
 primitive_type get_primitive_type_for(std::string type)
@@ -37,7 +38,22 @@ primitive_type get_primitive_type_for(std::string type)
         {"mesh", MESH},
         {"sphere", SPHERE},
         {"rect", RECT},
+        {"volume", VOLUME},
         {"box", BOX}};
+    return mapping[type];
+}
+
+enum instance_type
+{
+    REF,
+    DIRECT
+};
+
+instance_type get_instance_type_for(std::string type)
+{
+    static std::map<std::string, instance_type> mapping = {
+        {"ref", REF},
+        {"direct", DIRECT}};
     return mapping[type];
 }
 
