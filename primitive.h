@@ -65,67 +65,84 @@ class rect : public hittable
 {
 public:
     rect() {}
-    rect(float x0, float z0, float x1, float z1, material *mat, bool dual_sided=false) {}
-    rect(float _x, float _z, material *mat, bool dual_sided = false)
-        : x(_x), z(_z), mp(mat), dual_sided(dual_sided){};
+    rect(float _x0, float _z0, float _x1, float _z1, float _y, material *mat, bool flipped = false) : x0(_x0), z0(_z0), x1(_x1), z1(_z1), y(_y), mp(mat) {}
+    rect(float x, float z, material *mat, bool flipped = false)
+        : mp(mat), flipped(flipped)
+    {
+        x0 = -x / 2.0;
+        z0 = -z / 2.0;
+        x1 = x / 2.0;
+        z1 = z / 2.0;
+        y = 0.0;
+    };
+    rect(float x, float z, float _y, material *mat, bool flipped = false)
+        : mp(mat), flipped(flipped)
+    {
+        x0 = -x / 2.0;
+        z0 = -z / 2.0;
+        x1 = x / 2.0;
+        z1 = z / 2.0;
+        y = _y;
+    };
     virtual bool hit(const ray &r, float t0, float t1, hit_record &rec) const;
     virtual bool bounding_box(float t0, float t1, aabb &box) const
     {
-        box = aabb(vec3(-x / 2.0, -0.001, -z / 2.0), vec3(x / 2.0, 0.001, z / 2.0));
+        assert(x0 < x1);
+        assert(z0 < z1);
+
+        box = aabb(vec3(x0, y - 0.001, z0), vec3(x1, y + 0.001, z1));
         return true;
     }
     material *mp;
-    bool dual_sided;
-    float x, z;
+    bool flipped;
+    float x0, z0, x1, z1, y;
 };
 
 bool rect::hit(const ray &r, float t0, float t1, hit_record &rec) const
 {
-    float t = (-r.origin().y()) / r.direction().y();
-    bool flipped = false;
-    if (t < 0 && dual_sided)
-    {
-        t = -t;
-        std::cout << "blahblah" << t << '\n';
-        flipped = true;
-    }
+    float t = (y - r.origin().y()) / r.direction().y();
     if (t < t0 || t > t1)
     {
         return false;
     }
     float xh = r.origin().x() + t * r.direction().x();
     float zh = r.origin().z() + t * r.direction().z();
-    if (xh < (-x / 2.0) || xh > (x / 2.0) || zh < (-z / 2.0) || zh > (z / 2.0))
+    if (xh < x0 || xh > x1 || zh < z0 || zh > z1)
     {
         return false;
     }
-    rec.u = (xh + x / 2.0) / x;
-    rec.v = (zh + z / 2.0) / z;
+    rec.u = (xh - x0) / (x1 - x0);
+    rec.v = (zh - x0) / (z1 - z0);
     rec.t = t;
     rec.mat_ptr = mp;
     rec.p = r.point_at_parameter(t);
-    if (!flipped)
-    {
-        rec.normal = vec3(0, 1, 0);
-    }
-    else
-    {
-        rec.normal = vec3(0, -1, 0);
-    }
+    rec.normal = vec3(0, 1, 0);
     return true;
 }
 
+// class  xyrect : public rect {
+//     ;
+// }
 
-class box : public hittable {
+class box : public hittable
+{
 public:
-    box(float width, float height, float depth) {
-
+    box(float width, float height, float depth, material *mat)
+    {
+        sides[0] = new rect(width, height, -depth, mat);
+        sides[1] = new rect(width, height, depth, mat);
+        sides[2] = new rect(height, depth, -width, mat);
+        sides[3] = new rect(height, depth, width, mat);
+        sides[4] = new rect(depth, width, -height, mat);
+        sides[5] = new rect(depth, width, height, mat);
+    }
+    box(const vec3 p0, const vec3 p1, material *mat){
+        float width = p0.x;
     }
 
-    hittable sides[6];
+    hittable *sides[6];
     // float width, height, depth;
 };
-
 
 class instance : public hittable
 {
