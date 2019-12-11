@@ -17,8 +17,14 @@ run: main.exe
 	./main.exe
 	# python3 -m pip install Pillow
 	(python3 convert_ppm_in_curdir.py &)
+
+
+run_and_send: run
+	python3 -m pip install sendgrid
+	python3 send_result.py
+
 clean:
 	rm *.o
 	rm *.gch
 
-.PHONY: run clean
+.PHONY: run clean run_and_send

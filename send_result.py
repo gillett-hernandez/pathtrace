@@ -1,6 +1,7 @@
 import os
 from sendgrid import SendGridAPIClient
-from sendgrid.helpers.mail import Mail, Attachment, FileContent, FileType, FileName, ContentId
+import base64
+from sendgrid.helpers.mail import Mail, Attachment, FileContent, FileType, FileName, ContentId, Disposition
 
 message = Mail(
     from_email='pathtrace@example.com',
@@ -19,7 +20,7 @@ attachment.file_name = FileName('render.png')
 attachment.disposition = Disposition('inline')
 attachment.content_id = ContentId('myimagecid')
 
-mail.add_attachment()
+message.add_attachment(attachment)
 
 
 try:
