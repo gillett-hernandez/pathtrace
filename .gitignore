@@ -4,3 +4,4 @@
 *.ppm
 .vscode/**
 main
+sendgrid.env
