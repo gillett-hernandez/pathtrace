@@ -15,7 +15,7 @@ check:
 
 run: main.exe
 	./main.exe
-	# python3 -m pip install Pillow
+	python3 -m pip install Pillow
 	(python3 convert_ppm_in_curdir.py &)
 
 
