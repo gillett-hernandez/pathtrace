@@ -202,11 +202,11 @@ public:
         vec3 span = p1 - p0;
         hittable **sides = new hittable *[6];
         sides[0] = new rect(span.x(), span.y(), p0.z(), mat, XY);
-        sides[1] = new rect(span.x(), span.y(), p1.z(), mat, XY);
+        sides[1] = new rect(span.x(), span.y(), p1.z(), mat, XY, true);
         sides[2] = new rect(span.y(), span.z(), p0.x(), mat, YZ);
-        sides[3] = new rect(span.y(), span.z(), p1.x(), mat, YZ);
+        sides[3] = new rect(span.y(), span.z(), p1.x(), mat, YZ, true);
         sides[4] = new rect(span.x(), span.z(), p0.y(), mat, XZ);
-        sides[5] = new rect(span.x(), span.z(), p1.y(), mat, XZ);
+        sides[5] = new rect(span.x(), span.z(), p1.y(), mat, XZ, true);
         group = new hittable_list(sides, 6);
     }
 
