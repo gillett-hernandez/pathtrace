@@ -220,38 +220,86 @@ world *build_scene(json scene)
         case RECT:
         {
             std::cout << "found RECT" << '\n';
-            float x, z;
-            if (element.contains("size"))
+            plane_enum align = XZ;
+
+            if (element.contains("align"))
             {
-                x = element["size"].at(0);
-                z = element["size"].at(1);
+                align = plane_enum_mapping(element["align"].get<std::string>());
+            }
+            if (element.contains("a0") && element.contains("b0") && element.contains("a1") && element.contains("b1"))
+            {
+                float a0, b0, a1, b1, c;
+                a0 = element["a0"].get<float>();
+                b0 = element["b0"].get<float>();
+                a1 = element["a1"].get<float>();
+                b1 = element["b1"].get<float>();
+                c = element["c"].get<float>();
+                list.push_back(new instance(new rect(a0, b0, a1, b1, c, _material, align), transform));
+            }
+
+            else
+            {
+                float a, b;
+                if (element.contains("size"))
+                {
+                    a = element["size"].at(0);
+                    b = element["size"].at(1);
+                }
+                else
+                {
+                    a = 1.0;
+                    b = 1.0;
+                }
+                list.push_back(new instance(new rect(a, b, _material, align), transform));
+            }
+            break;
+        }
+        case BOX:
+        {
+            std::cout << "found BOX" << '\n';
+            if (element.contains("p0") && element.contains("p1"))
+            {
+                vec3 p0, p1;
+                p0 = json_to_vec3(element["p0"]);
+                p1 = json_to_vec3(element["p1"]);
+                list.push_back(new instance(new box(p0, p1, _material), transform));
             }
             else
             {
-                x = 1.0;
-                z = 1.0;
+                vec3 size;
+                if (element.contains("size"))
+                {
+                    size = json_to_vec3(element["size"]);
+                }
+                else
+                {
+                    size = vec3(1, 1, 1);
+                }
+                list.push_back(new instance(new box(size.x(), size.y(), size.z(), _material), transform));
             }
-            list.push_back(new instance(new rect(x, z, _material), transform));
+            break;
             break;
         }
-        case CUBE:
-            std::cout << "found CUBE" << '\n';
-            break;
 
         default:
             break;
         }
     }
 
-
     texture *background;
-    if (scene.contains("world")) {
-        if (scene["world"].contains("texture")) {
+    if (scene.contains("world"))
+    {
+        if (scene["world"].contains("texture"))
+        {
             background = textures[scene["world"]["texture"].get<std::string>()];
-        } else if (scene["world"].contains("color")) {
+        }
+        else if (scene["world"].contains("color"))
+        {
             background = new constant_texture(json_to_vec3(scene["world"]["color"]));
         }
-    } else {
+    }
+    else
+    {
         background = new constant_texture(vec3(0.3, 0.3, 0.3));
     }
 

@@ -1,11 +1,12 @@
 #ifndef PRIMITIVEH
 #define PRIMITIVEH
-#include "hittable.h"
-#include "ray.h"
-#include "vec3.h"
-#include "transform3.h"
 #include "bvh.h"
+#include "enums.h"
 #include "hittable.h"
+#include "hittable_list.h"
+#include "ray.h"
+#include "transform3.h"
+#include "vec3.h"
 
 class sphere : public hittable
 {
@@ -64,10 +65,10 @@ bool sphere::bounding_box(float t0, float t1, aabb &box) const
 class rect : public hittable
 {
 public:
-    rect() {}
-    rect(float _x0, float _z0, float _x1, float _z1, float _y, material *mat, bool flipped = false) : x0(_x0), z0(_z0), x1(_x1), z1(_z1), y(_y), mp(mat) {}
-    rect(float x, float z, material *mat, bool flipped = false)
-        : mp(mat), flipped(flipped)
+    rect() : type(XZ) {}
+    rect(float _x0, float _z0, float _x1, float _z1, float _y, material *mat, bool flipped = false, plane_enum type = XZ) : x0(_x0), z0(_z0), x1(_x1), z1(_z1), y(_y), mp(mat), type(type) {}
+    rect(float x, float z, material *mat, bool flipped = false, plane_enum type = XZ)
+        : mp(mat), flipped(flipped), type(type)
     {
         x0 = -x / 2.0;
         z0 = -z / 2.0;
@@ -75,8 +76,8 @@ public:
         z1 = z / 2.0;
         y = 0.0;
     };
-    rect(float x, float z, float _y, material *mat, bool flipped = false)
-        : mp(mat), flipped(flipped)
+    rect(float x, float z, float _y, material *mat, bool flipped = false, plane_enum type = XZ)
+        : mp(mat), flipped(flipped), type(type)
     {
         x0 = -x / 2.0;
         z0 = -z / 2.0;
@@ -89,24 +90,78 @@ public:
     {
         assert(x0 < x1);
         assert(z0 < z1);
-
-        box = aabb(vec3(x0, y - 0.001, z0), vec3(x1, y + 0.001, z1));
+        // switch some variables around for axis alignment
+        switch (type)
+        {
+        case XY:
+        {
+            box = aabb(vec3(x0, z0, y - 0.001), vec3(x1, z1, y + 0.001));
+            break;
+        }
+        case YZ:
+        {
+            box = aabb(vec3(y - 0.001, x0, z0), vec3(y + 0.001, x1, z1));
+            break;
+        }
+        default:
+        {
+            std::cout << "default" << '\n';
+            box = aabb(vec3(x0, y - 0.001, z0), vec3(x1, y + 0.001, z1));
+            break;
+        }
+        }
         return true;
     }
     material *mp;
     bool flipped;
     float x0, z0, x1, z1, y;
+    plane_enum type;
 };
 
 bool rect::hit(const ray &r, float t0, float t1, hit_record &rec) const
 {
-    float t = (y - r.origin().y()) / r.direction().y();
+    float rox, roy, roz, rdx, rdy, rdz;
+    // conversion to simulated/transformed space
+    switch (type)
+    {
+    case XY:
+    {
+        rox = r.origin().x();
+        rdx = r.direction().x();
+        roy = r.origin().z();
+        rdy = r.direction().z();
+        roz = r.origin().y();
+        rdz = r.direction().y();
+        break;
+    }
+    case YZ:
+    {
+        rox = r.origin().y();
+        rdx = r.direction().y();
+        roy = r.origin().x();
+        rdy = r.direction().x();
+        roz = r.origin().z();
+        rdz = r.direction().z();
+        break;
+    }
+    default:
+    {
+        rox = r.origin().x();
+        rdx = r.direction().x();
+        roy = r.origin().y();
+        rdy = r.direction().y();
+        roz = r.origin().z();
+        rdz = r.direction().z();
+        break;
+    }
+    }
+    float t = (y - roy) / rdy;
     if (t < t0 || t > t1)
     {
         return false;
     }
-    float xh = r.origin().x() + t * r.direction().x();
-    float zh = r.origin().z() + t * r.direction().z();
+    float xh = rox + t * rdx;
+    float zh = roz + t * rdz;
     if (xh < x0 || xh > x1 || zh < z0 || zh > z1)
     {
         return false;
@@ -115,33 +170,59 @@ bool rect::hit(const ray &r, float t0, float t1, hit_record &rec) const
     rec.v = (zh - x0) / (z1 - z0);
     rec.t = t;
     rec.mat_ptr = mp;
+
+    //do conversion back to real space here
     rec.p = r.point_at_parameter(t);
-    rec.normal = vec3(0, 1, 0);
+    switch (type)
+    {
+    case XY:
+    {
+        rec.normal = vec3(0, 0, 1);
+        break;
+    }
+    case YZ:
+    {
+        rec.normal = vec3(1, 0, 0);
+        break;
+    }
+    default:
+    {
+        rec.normal = vec3(0, 1, 0);
+        break;
+    }
+    }
     return true;
 }
-
-// class  xyrect : public rect {
-//     ;
-// }
 
 class box : public hittable
 {
 public:
-    box(float width, float height, float depth, material *mat)
+    box(float width, float height, float depth, material *mat) : box(vec3(-width / 2, -height / 2, -depth / 2), vec3(width / 2, height / 2, depth / 2), mat) {}
+    box(const vec3 p0, const vec3 p1, material *mat) : p0(p0), p1(p1)
     {
-        sides[0] = new rect(width, height, -depth, mat);
-        sides[1] = new rect(width, height, depth, mat);
-        sides[2] = new rect(height, depth, -width, mat);
-        sides[3] = new rect(height, depth, width, mat);
-        sides[4] = new rect(depth, width, -height, mat);
-        sides[5] = new rect(depth, width, height, mat);
-    }
-    box(const vec3 p0, const vec3 p1, material *mat){
-        float width = p0.x;
+        vec3 span = p1 - p0;
+        hittable *sides[6];
+        sides[0] = new rect(span.x(), span.y(), p0.z(), mat, XY);
+        sides[1] = new rect(span.x(), span.y(), p1.z(), mat, XY);
+        sides[2] = new rect(span.y(), span.z(), p0.x(), mat, YZ);
+        sides[3] = new rect(span.y(), span.z(), p1.x(), mat, YZ);
+        sides[4] = new rect(span.x(), span.z(), p0.y(), mat, XZ);
+        sides[5] = new rect(span.x(), span.z(), p1.y(), mat, XZ);
+        group = new hittable_list(sides, 6);
     }
 
-    hittable *sides[6];
-    // float width, height, depth;
+    virtual bool hit(const ray &r, float t0, float t1, hit_record &rec) const
+    {
+        return group->hit(r, t0, t1, rec);
+    }
+    virtual bool bounding_box(float t0, float t1, aabb &box) const
+    {
+        box = aabb(p0, p1);
+        return true;
+    }
+
+    hittable *group;
+    vec3 p0, p1;
 };
 
 class instance : public hittable

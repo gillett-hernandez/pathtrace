@@ -10,6 +10,9 @@ main.exe: ray.h vec3.h main.cpp hittable.h hittable_list.h helpers.h camera.h ra
 debug:
 	g++ $(opts) -g  main.cpp  -o main.exe -I.
 
+check:
+	g++ $(opts) main.cpp -o main.exe -I.
+
 run: main.exe
 	./main.exe
 	# python3 -m pip install Pillow

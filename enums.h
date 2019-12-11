@@ -8,7 +8,8 @@ enum material_type
     LAMBERTIAN,
     METAL,
     DIELECTRIC,
-    DIFFUSE_LIGHT
+    DIFFUSE_LIGHT,
+    ISOTROPIC
 };
 
 material_type get_material_type_for(std::string type)
@@ -17,6 +18,7 @@ material_type get_material_type_for(std::string type)
         {"lambertian", LAMBERTIAN},
         {"metal", METAL},
         {"dielectric", DIELECTRIC},
+        {"isotropic", ISOTROPIC},
         {"diffuse_light", DIFFUSE_LIGHT}};
     return mapping[type];
 }
@@ -26,7 +28,7 @@ enum primitive_type
     MESH,
     SPHERE,
     RECT,
-    CUBE
+    BOX
 };
 
 primitive_type get_primitive_type_for(std::string type)
@@ -35,7 +37,7 @@ primitive_type get_primitive_type_for(std::string type)
         {"mesh", MESH},
         {"sphere", SPHERE},
         {"rect", RECT},
-        {"cube", CUBE}};
+        {"box", BOX}};
     return mapping[type];
 }
 
@@ -53,6 +55,22 @@ texture_type get_texture_type_for(std::string type)
         {"checker", CHECKERED},
         {"perlin", PERLIN}};
     return mapping[type];
+}
+
+enum plane_enum
+{
+    XY,
+    XZ,
+    YZ
+};
+
+plane_enum plane_enum_mapping(std::string alignment)
+{
+    static std::map<std::string, plane_enum> mapping = {
+        {"xy", XY},
+        {"xz", XZ},
+        {"yz", YZ}};
+    return mapping[alignment];
 }
 
 #endif
