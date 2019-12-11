@@ -4,7 +4,7 @@ else
 	opts=-pthread --std=c++14
 endif
 
-main.exe: ray.h vec3.h main.cpp hittable.h hittable_list.h helpers.h camera.h random.h primitive.h texture.h
+main.exe: ray.h vec3.h main.cpp hittable.h hittable_list.h helpers.h camera.h random.h primitive.h texture.h scene.h
 	g++ $(opts) -O3 main.cpp -o main.exe -I.
 
 debug:

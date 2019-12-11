@@ -156,6 +156,10 @@ world *build_scene(json scene)
     //      instanced primitives, i.e. primitives with a transform
     for (auto &element : scene["instances"])
     {
+        if (element.value("skip", false))
+        {
+            continue;
+        }
         std::cout << element << '\n';
         std::string instance_id = element.value("id", generate_new_id());
         material *_material;
@@ -221,11 +225,14 @@ world *build_scene(json scene)
         {
             std::cout << "found RECT" << '\n';
             plane_enum align = XZ;
+            bool flipped = element.value("flip", false);
 
             if (element.contains("align"))
             {
+                std::cout << "set alignment to " << element["align"].get<std::string>() << '\n';
                 align = plane_enum_mapping(element["align"].get<std::string>());
             }
+
             if (element.contains("a0") && element.contains("b0") && element.contains("a1") && element.contains("b1"))
             {
                 float a0, b0, a1, b1, c;
@@ -234,7 +241,7 @@ world *build_scene(json scene)
                 a1 = element["a1"].get<float>();
                 b1 = element["b1"].get<float>();
                 c = element["c"].get<float>();
-                list.push_back(new instance(new rect(a0, b0, a1, b1, c, _material, align), transform));
+                list.push_back(new instance(new rect(a0, b0, a1, b1, c, _material, align, flipped), transform));
             }
 
             else
@@ -250,7 +257,7 @@ world *build_scene(json scene)
                     a = 1.0;
                     b = 1.0;
                 }
-                list.push_back(new instance(new rect(a, b, _material, align), transform));
+                list.push_back(new instance(new rect(a, b, _material, align, flipped), transform));
             }
             break;
         }
@@ -259,6 +266,7 @@ world *build_scene(json scene)
             std::cout << "found BOX" << '\n';
             if (element.contains("p0") && element.contains("p1"))
             {
+                std::cout << "\tp0 and p1 path" << std::endl;
                 vec3 p0, p1;
                 p0 = json_to_vec3(element["p0"]);
                 p1 = json_to_vec3(element["p1"]);
@@ -266,6 +274,7 @@ world *build_scene(json scene)
             }
             else
             {
+                std::cout << "\tsize path" << std::endl;
                 vec3 size;
                 if (element.contains("size"))
                 {

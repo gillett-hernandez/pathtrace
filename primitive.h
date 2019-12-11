@@ -65,26 +65,24 @@ bool sphere::bounding_box(float t0, float t1, aabb &box) const
 class rect : public hittable
 {
 public:
-    rect() : type(XZ) {}
-    rect(float _x0, float _z0, float _x1, float _z1, float _y, material *mat, bool flipped = false, plane_enum type = XZ) : x0(_x0), z0(_z0), x1(_x1), z1(_z1), y(_y), mp(mat), type(type) {}
-    rect(float x, float z, material *mat, bool flipped = false, plane_enum type = XZ)
-        : mp(mat), flipped(flipped), type(type)
+    rect() {}
+    rect(float _x0, float _z0, float _x1, float _z1, float _y, material *mat, plane_enum type = XZ, bool flipped = false)
+        : x0(_x0), z0(_z0), x1(_x1), z1(_z1), y(_y), mp(mat), type(type), normal(!flipped)
     {
-        x0 = -x / 2.0;
-        z0 = -z / 2.0;
-        x1 = x / 2.0;
-        z1 = z / 2.0;
-        y = 0.0;
-    };
-    rect(float x, float z, float _y, material *mat, bool flipped = false, plane_enum type = XZ)
-        : mp(mat), flipped(flipped), type(type)
+        std::cout << "constructor called with " << type << '\n';
+    }
+    rect(float x, float z, material *mat, plane_enum type = XZ, bool flipped = false)
+        : rect(-x / 2.0, -z / 2.0, x / 2.0, z / 2.0, 0.0, mat, type, flipped)
     {
-        x0 = -x / 2.0;
-        z0 = -z / 2.0;
-        x1 = x / 2.0;
-        z1 = z / 2.0;
+        std::cout << "constructor called with " << type << '\n';
+    }
+
+    rect(float x, float z, float _y, material *mat, plane_enum type = XZ, bool flipped = false)
+        : rect(x, z, mat, type, flipped)
+    {
         y = _y;
-    };
+        std::cout << "constructor called with " << type << '\n';
+    }
     virtual bool hit(const ray &r, float t0, float t1, hit_record &rec) const;
     virtual bool bounding_box(float t0, float t1, aabb &box) const
     {
@@ -95,17 +93,19 @@ public:
         {
         case XY:
         {
+            std::cout << "set xy aabb" << '\n';
             box = aabb(vec3(x0, z0, y - 0.001), vec3(x1, z1, y + 0.001));
             break;
         }
         case YZ:
         {
+            std::cout << "set yz aabb" << '\n';
             box = aabb(vec3(y - 0.001, x0, z0), vec3(y + 0.001, x1, z1));
             break;
         }
         default:
         {
-            std::cout << "default" << '\n';
+            std::cout << "set default aabb" << '\n';
             box = aabb(vec3(x0, y - 0.001, z0), vec3(x1, y + 0.001, z1));
             break;
         }
@@ -113,7 +113,7 @@ public:
         return true;
     }
     material *mp;
-    bool flipped;
+    bool normal;
     float x0, z0, x1, z1, y;
     plane_enum type;
 };
@@ -171,23 +171,22 @@ bool rect::hit(const ray &r, float t0, float t1, hit_record &rec) const
     rec.t = t;
     rec.mat_ptr = mp;
 
-    //do conversion back to real space here
     rec.p = r.point_at_parameter(t);
     switch (type)
     {
     case XY:
     {
-        rec.normal = vec3(0, 0, 1);
+        rec.normal = vec3(0, 0, 2 * normal - 1);
         break;
     }
     case YZ:
     {
-        rec.normal = vec3(1, 0, 0);
+        rec.normal = vec3(2 * normal - 1, 0, 0);
         break;
     }
     default:
     {
-        rec.normal = vec3(0, 1, 0);
+        rec.normal = vec3(0, 2 * normal - 1, 0);
         break;
     }
     }
@@ -201,7 +200,7 @@ public:
     box(const vec3 p0, const vec3 p1, material *mat) : p0(p0), p1(p1)
     {
         vec3 span = p1 - p0;
-        hittable *sides[6];
+        hittable **sides = new hittable *[6];
         sides[0] = new rect(span.x(), span.y(), p0.z(), mat, XY);
         sides[1] = new rect(span.x(), span.y(), p1.z(), mat, XY);
         sides[2] = new rect(span.y(), span.z(), p0.x(), mat, YZ);
@@ -217,7 +216,8 @@ public:
     }
     virtual bool bounding_box(float t0, float t1, aabb &box) const
     {
-        box = aabb(p0, p1);
+        // box = aabb(p0, p1);
+        group->bounding_box(t0, t1, box);
         return true;
     }
 

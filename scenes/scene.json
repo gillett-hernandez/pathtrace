@@ -119,12 +119,9 @@
                 555,
                 555
             ],
+            "align": "xy",
+            "flip": true,
             "transform": {
-                "rotate": [
-                    -0.5,
-                    0.0,
-                    0.0
-                ],
                 "translate": [
                     277.5,
                     277.5,
@@ -141,12 +138,9 @@
                 555,
                 555
             ],
+            "align": "yz",
+            "flip": true,
             "transform": {
-                "rotate": [
-                    0.0,
-                    0.0,
-                    0.5
-                ],
                 "translate": [
                     555,
                     277.5,
@@ -163,16 +157,41 @@
                 555,
                 555
             ],
+            "align": "yz",
+            "rotate": [
+                0.0,
+                0.0,
+                -0.5
+            ],
             "transform": {
-                "rotate": [
-                    0.0,
-                    0.0,
-                    -0.5
-                ],
                 "translate": [
                     0,
                     277.5,
                     277.5
+                ]
+            }
+        },
+        {
+            "skip": true,
+            "type": "box",
+            "material": {
+                "id": "white"
+            },
+            "p0": [
+                120,
+                120,
+                120
+            ],
+            "p1": [
+                180,
+                250,
+                180
+            ],
+            "transform": {
+                "rotate": [
+                    0.0,
+                    0.1,
+                    0.0
                 ]
             }
         },
