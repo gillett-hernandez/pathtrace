@@ -7,6 +7,7 @@
 #include "ray.h"
 #include "transform3.h"
 #include "vec3.h"
+#include <float.h>
 
 class sphere : public hittable
 {

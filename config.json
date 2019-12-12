@@ -7,6 +7,9 @@
     },
     "output_path": "out2.ppm",
     "scene": "scenes/cornell_with_volume2.json",
+    "should_trace_paths": true,
+    "avg_number_of_paths": 100,
+    "traced_paths_output": "out.txt",
     "samples": 40,
     "threads": 3,
     "max_bounces": 5

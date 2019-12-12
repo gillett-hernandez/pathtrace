@@ -5,3 +5,5 @@
 .vscode/**
 main
 sendgrid.env
+*.txt
+
