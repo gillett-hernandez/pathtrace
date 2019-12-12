@@ -258,7 +258,6 @@ int main(int argc, char *argv[])
 
     for (int t = 0; t < N_THREADS; t++)
     {
-
         threads[t].join();
     }
     for (int t = 0; t < N_THREADS; t++)
@@ -266,11 +265,12 @@ int main(int argc, char *argv[])
         total_bounces += (float)bounce_counts[t];
         std::cout << ' ' << t << ':' << bounce_counts[t] << "bounces, ";
 
-        assert(should_trace_paths);
+        auto paths = array_of_paths[t];
+        
+        assert(paths.size() > 0 || !should_trace_paths);
         if (should_trace_paths)
         {
             std::ofstream traced_paths_output(config.value("traced_paths_output", "paths.txt"));
-            auto paths = array_of_paths[t];
             std::cout << "adding " << paths.size() << " paths" << std::endl;
             for (auto &path : paths)
             {
