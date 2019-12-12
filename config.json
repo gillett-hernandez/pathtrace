@@ -7,7 +7,7 @@
     },
     "output_path": "out2.ppm",
     "scene": "scenes/cornell_with_volume2.json",
-    "samples": 400,
-    "threads": 11,
-    "max_bounces": 10
+    "samples": 40,
+    "threads": 3,
+    "max_bounces": 5
 }
