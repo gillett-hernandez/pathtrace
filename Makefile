@@ -13,6 +13,9 @@ debug:
 check:
 	g++ $(opts) main.cpp -o main.exe -I.
 
+strict:
+	g++ $(opts) -Wall -Wpedantic main.cpp -o main.exe -I.
+
 run: main.exe
 	./main.exe
 	python3 -m pip install Pillow
@@ -27,4 +30,4 @@ clean:
 	rm *.o
 	rm *.gch
 
-.PHONY: run clean run_and_send
+.PHONY: run clean run_and_send strict

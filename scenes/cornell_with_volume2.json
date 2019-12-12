@@ -58,6 +58,18 @@
             }
         },
         {
+            "id": "isotropic",
+            "type": "isotropic",
+            "data": {
+                "color": [
+                    0.93,
+                    0.93,
+                    0.93
+                ],
+                "density": 0.004
+            }
+        },
+        {
             "id": "light",
             "type": "diffuse_light",
             "data": {
@@ -71,6 +83,7 @@
     ],
     "primitives": [
         {
+            "id": "white_wall",
             "type": "rect",
             "material": {
                 "id": "white"
@@ -81,6 +94,7 @@
             ]
         },
         {
+            "id": "box",
             "type": "box",
             "material": {
                 "id": "white"
@@ -89,6 +103,18 @@
                 165,
                 165,
                 165
+            ]
+        },
+        {
+            "id": "fog_box",
+            "type": "box",
+            "material": {
+                "id": "isotropic"
+            },
+            "size": [
+                555,
+                555,
+                555
             ]
         }
     ],
@@ -99,7 +125,6 @@
                 "id": "white_wall"
             },
             "transform": {
-                "scale": 1.0,
                 "translate": [
                     277.5,
                     0.0,
@@ -132,7 +157,7 @@
             },
             "transform": {
                 "rotate": [
-                    0.5,
+                    1.5,
                     0,
                     0
                 ],
@@ -215,19 +240,19 @@
                     165,
                     330,
                     165
+                ]
+            },
+            "transform": {
+                "translate": [
+                    347.5,
+                    165,
+                    377.5
                 ],
-                "transform": {
-                    "translate": [
-                        347.5,
-                        165,
-                        377.5
-                    ],
-                    "rotate": [
-                        0.0,
-                        0.05,
-                        0.0
-                    ]
-                }
+                "rotate": [
+                    0.0,
+                    0.05,
+                    0.0
+                ]
             }
         },
         {

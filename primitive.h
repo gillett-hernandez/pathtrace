@@ -69,19 +69,19 @@ public:
     rect(float _x0, float _z0, float _x1, float _z1, float _y, material *mat, plane_enum type = XZ, bool flipped = false)
         : x0(_x0), z0(_z0), x1(_x1), z1(_z1), y(_y), mp(mat), type(type), normal(!flipped)
     {
-        std::cout << "constructor called with " << type << '\n';
+        // std::cout << "constructor called with " << type << '\n';
     }
     rect(float x, float z, material *mat, plane_enum type = XZ, bool flipped = false)
         : rect(-x / 2.0, -z / 2.0, x / 2.0, z / 2.0, 0.0, mat, type, flipped)
     {
-        std::cout << "constructor called with " << type << '\n';
+        // std::cout << "constructor called with " << type << '\n';
     }
 
     rect(float x, float z, float _y, material *mat, plane_enum type = XZ, bool flipped = false)
         : rect(x, z, mat, type, flipped)
     {
         y = _y;
-        std::cout << "constructor called with " << type << '\n';
+        // std::cout << "constructor called with " << type << '\n';
     }
     virtual bool hit(const ray &r, float t0, float t1, hit_record &rec) const;
     virtual bool bounding_box(float t0, float t1, aabb &box) const
@@ -93,19 +93,19 @@ public:
         {
         case XY:
         {
-            std::cout << "set xy aabb" << '\n';
+            // std::cout << "set xy aabb" << '\n';
             box = aabb(vec3(x0, z0, y - 0.001), vec3(x1, z1, y + 0.001));
             break;
         }
         case YZ:
         {
-            std::cout << "set yz aabb" << '\n';
+            // std::cout << "set yz aabb" << '\n';
             box = aabb(vec3(y - 0.001, x0, z0), vec3(y + 0.001, x1, z1));
             break;
         }
         default:
         {
-            std::cout << "set default aabb" << '\n';
+            // std::cout << "set default aabb" << '\n';
             box = aabb(vec3(x0, y - 0.001, z0), vec3(x1, y + 0.001, z1));
             break;
         }
