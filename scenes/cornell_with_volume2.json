@@ -96,25 +96,21 @@
         {
             "id": "box",
             "type": "box",
-            "material": {
-                "id": "white"
-            },
-            "size": [
-                165,
-                165,
-                165
-            ]
-        },
-        {
-            "id": "fog_box",
-            "type": "box",
-            "material": {
-                "id": "isotropic"
-            },
             "size": [
                 555,
                 555,
                 555
+            ]
+        },
+        {
+            "id": "fog",
+            "type": "volume",
+            "primitive": "box",
+            "density": 0.001,
+            "color": [
+                0.9,
+                0.9,
+                0.9
             ]
         }
     ],
@@ -212,6 +208,7 @@
             }
         },
         {
+            "skip": true,
             "type": "ref",
             "primitive": {
                 "id": "box"
@@ -226,6 +223,19 @@
                     0.0,
                     -0.1,
                     0.0
+                ]
+            }
+        },
+        {
+            "type": "ref",
+            "primitive": {
+                "id": "fog"
+            },
+            "transform": {
+                "translate": [
+                    277.5,
+                    277.5,
+                    277.5
                 ]
             }
         },

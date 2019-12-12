@@ -6,7 +6,8 @@
         "gamma": 2.2
     },
     "output_path": "out2.ppm",
-    "samples": 40,
-    "threads": 6,
+    "scene": "scenes/cornell_with_volume2.json",
+    "samples": 400,
+    "threads": 11,
     "max_bounces": 10
 }

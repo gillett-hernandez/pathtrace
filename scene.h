@@ -12,11 +12,13 @@
 #include <map>
 #include <string>
 
+#define MAUVE vec3(0.8, 0.2, 0.8)
+
 using json = nlohmann::json;
 
 material *error_material()
 {
-    static material *mat = new lambertian(vec3(0.8, 0.2, 0.8));
+    static material *mat = new lambertian(MAUVE);
     return mat;
 }
 
@@ -33,13 +35,14 @@ vec3 json_to_vec3(json color)
     return vec3(color.at(0), color.at(1), color.at(2));
 }
 
-hittable *parse_prim_or_instance(std::map<std::string, material *> materials, json element)
+hittable *parse_prim_or_instance(std::map<std::string, hittable *> primitives, std::map<std::string, material *> materials, json element)
 {
     // material assign
     material *_material;
     hittable *primitive;
+    std::cout << element << '\n';
 
-    if (element["material"].contains("id"))
+    if (element.contains("material") && element["material"].contains("id"))
     {
         std::string material_id = element["material"]["id"].get<std::string>();
         assert(materials.count(material_id) > 0);
@@ -129,6 +132,26 @@ hittable *parse_prim_or_instance(std::map<std::string, material *> materials, js
             }
             primitive = new box(size.x(), size.y(), size.z(), _material);
         }
+        break;
+    }
+
+    case VOLUME:
+    {
+        std::cout << "found VOLUME" << '\n';
+        std::string primitive_id = element["primitive"].get<std::string>();
+        float density = element["density"].get<float>();
+        vec3 color;
+        if (element.contains("color"))
+        {
+            color = json_to_vec3(element["color"]);
+            // } else if (element.contains("texture")) {
+        }
+        else
+        {
+            std::cout << "unimplemented\n";
+            color = MAUVE;
+        }
+        primitive = new constant_medium(primitives[primitive_id], density, color);
         break;
     }
 
@@ -272,7 +295,7 @@ world *build_scene(json scene)
         {
             primitive_id = element["id"].get<std::string>();
         }
-        primitives.emplace(primitive_id, parse_prim_or_instance(materials, element));
+        primitives.emplace(primitive_id, parse_prim_or_instance(primitives, materials, element));
     }
     std::cout << "finshed primitives read, scanning instances" << '\n';
     for (auto &element : scene["instances"])
@@ -285,7 +308,7 @@ world *build_scene(json scene)
 
         // replace directs with references to the primitive mapping
         std::string primitive_id = generate_new_id();
-        primitives.emplace(primitive_id, parse_prim_or_instance(materials, element["primitive"]));
+        primitives.emplace(primitive_id, parse_prim_or_instance(primitives, materials, element["primitive"]));
         element["type"] = "ref";
         json new_prim_contents = {{"id", primitive_id}};
         // json new_prim = {"primitive", new_prim_contents};
@@ -367,17 +390,17 @@ world *build_scene(json scene)
         background = new constant_texture(vec3(0.3, 0.3, 0.3));
     }
 
-    list.push_back(
-        new instance(
-            new constant_medium(new box(165, 165, 165, error_material()), 0.01, vec3(0.9, 0.9, 0.9)),
-            transform3::from_rotate_and_translate(vec3(
-                                                      0.0,
-                                                      -0.1,
-                                                      0.0),
-                                                  vec3(
-                                                      212.5,
-                                                      82.5,
-                                                      147.5))));
+    // list.push_back(
+    //     new instance(
+    //         new constant_medium(new box(165, 165, 165, error_material()), 0.01, vec3(0.9, 0.9, 0.9)),
+    //         transform3::from_rotate_and_translate(vec3(
+    //                                                   0.0,
+    //                                                   -0.1,
+    //                                                   0.0),
+    //                                               vec3(
+    //                                                   212.5,
+    //                                                   82.5,
+    //                                                   147.5))));
 
     // iterate through objects which are collections of instances
     int size = list.size();

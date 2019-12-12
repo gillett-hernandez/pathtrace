@@ -119,11 +119,10 @@ int main(int argc, char *argv[])
     int total_pixels = width * height;
 
     // other config
+    std::string scene_path = config.value("scene", "scenes/scene.json");
     int n_samples = config.value("samples", 20);
     int N_THREADS = config.value("threads", 4);
     int MAX_BOUNCES = config.value("max_bounces", 10);
-
-    // round up to nearest multiple of N_THREADS
 
     int min_camera_rays = n_samples * total_pixels;
 
@@ -149,7 +148,7 @@ int main(int argc, char *argv[])
     std::cout << "reading scene data" << std::endl;
 
     json scene;
-    std::ifstream scene_file("scenes/scene.json");
+    std::ifstream scene_file(scene_path);
     scene_file >> scene;
 
     auto t1 = std::chrono::high_resolution_clock::now();
@@ -175,7 +174,6 @@ int main(int argc, char *argv[])
     float vfov = camera_json.value("fov", 30.0);
     float aperture = camera_json.value("aperture", 0.0);
     float dist_to_focus = camera_json.value("dist_to_focus", 10.0);
-
 
     camera cam(lookfrom, lookat, vec3(0, 1, 0), vfov, float(width) / float(height),
                aperture, dist_to_focus, 0.0, 1.0);
