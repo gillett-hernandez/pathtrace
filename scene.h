@@ -64,7 +64,15 @@ hittable *parse_prim_or_instance(std::map<std::string, hittable *> primitives, s
     case SPHERE:
     {
         std::cout << "found SPHERE" << '\n';
-        primitive = new sphere(vec3(0, 0, 0), 1.0, _material);
+        float r = 1.0;
+        vec3 origin = vec3(0.0, 0.0, 0.0);
+        if (element.contains("radius")) {
+            r = element["radius"].get<float>();
+        }
+        if (element.contains("origin")) {
+            origin = json_to_vec3(element["origin"]);
+        }
+        primitive = new sphere(origin, r, _material);
         break;
     }
     case RECT:
@@ -250,7 +258,16 @@ world *build_scene(json scene)
         }
         case DIELECTRIC:
         {
-            std::cout << "found DIELECTRIC. TODO: PROGRAM THIS!" << '\n';
+            std::cout << "found DIELECTRIC" << '\n';
+            float ri = 1.450;
+            if (data.contains("ior")) {
+                ri = data["ior"].get<float>();
+            }
+            if (data.contains("color"))
+            {
+                std::cout << "colored dielectrics are currently unsupported\n";
+            }
+            materials.emplace(mat_id, new dielectric(ri));
             break;
         }
         case DIFFUSE_LIGHT:

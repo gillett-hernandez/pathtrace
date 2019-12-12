@@ -6,37 +6,6 @@
 #include "material.h"
 #include "primitive.h"
 
-hittable *cornell_box()
-{
-    hittable **list = new hittable *[8];
-    int i = 0;
-    material *red = new lambertian(new constant_texture(vec3(0.65, 0.05, 0.05)));
-    material *white = new lambertian(new constant_texture(vec3(0.13, 0.13, 0.13)));
-    material *green = new lambertian(new constant_texture(vec3(0.12, 0.45, 0.15)));
-    material *light = new diffuse_light(new constant_texture(vec3(150, 150, 150)));
-
-    rect *white_wall = new rect(555, 555, white);
-    // back wall
-    list[i++] = new instance(white_wall, transform3(vec3(1.0, 1.0, 1.0), vec3(0.5, 0.0, 0.0), vec3(555 / 2.0, 555.0 / 2.0, 555)));
-    // green wall
-    list[i++] = new instance(new rect(555, 555, green), transform3::from_rotate_and_translate(vec3(0.0, 0.0, -0.5), vec3(555, 555 / 2, 555 / 2)));
-    // red wall
-    list[i++] = new instance(new rect(555, 555, red), transform3::from_rotate_and_translate(vec3(0.0, 0, 0.5), vec3(0, 555 / 2, 555 / 2)));
-    // top wall
-    list[i++] = new instance(white_wall, transform3(vec3(1.0, 1.0, 1.0), vec3(1.0, 0.0, 0.0), vec3(555 / 2.0, 555.0, 555 / 2.0)));
-    // bottom wall
-    list[i++] = new instance(white_wall, transform3(vec3(1.0, 1.0, 1.0), vec3(0.0, 0.0, 0.0), vec3(555 / 2.0, 0.0, 555 / 2.0)));
-    // light
-    list[i++] = new instance(new rect(120, 115, light), transform3::from_translate(vec3(273, 554.0, 171)));
-    // sphere test light
-    list[i++] = new instance(new sphere(vec3(0, 0, 0), 1, light), transform3::from_scale_and_translate(vec3(100, 20, 100), vec3(273, 200, 171)));
-    // list[i++] = new sphere(vec3(0, 100, 0), 100, light);
-    // xy rect
-    // list[i++] = new instance(new rect(0, 555, 0, 555, 555, white), transform3::from_rotate(vec3(0.0, 1.0, 0.0)));
-
-    return new bvh_node(list, i, 0.0f, 0.0f);
-}
-
 hittable *random_scene1()
 {
     int n = 500;

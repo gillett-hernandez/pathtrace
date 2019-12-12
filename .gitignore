@@ -6,4 +6,7 @@
 main
 sendgrid.env
 *.txt
+*.code-workspace
+*.sublime-workspace
+*.sublime-project
 
