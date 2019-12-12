@@ -58,6 +58,18 @@
             }
         },
         {
+            "id": "isotropic",
+            "type": "isotropic",
+            "data": {
+                "color": [
+                    0.93,
+                    0.93,
+                    0.93
+                ],
+                "density": 0.004
+            }
+        },
+        {
             "id": "light",
             "type": "diffuse_light",
             "data": {
@@ -91,6 +103,18 @@
                 165,
                 165,
                 165
+            ]
+        },
+        {
+            "id": "fog_box",
+            "type": "box",
+            "material": {
+                "id": "isotropic"
+            },
+            "size": [
+                555,
+                555,
+                555
             ]
         }
     ],
