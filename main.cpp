@@ -1,33 +1,34 @@
-#include "float.h"
-#include "hittable_list.h"
-#include "camera.h"
-#include "random.h"
-#include "helpers.h"
 #include "bvh.h"
-#include "texture.h"
+#include "camera.h"
+#include "example_scenes.h"
+#include "float.h"
+#include "helpers.h"
+#include "hittable_list.h"
 #include "material.h"
 #include "primitive.h"
-#include "thirdparty/json.hpp"
-#include "example_scenes.h"
+#include "random.h"
 #include "scene.h"
+#include "texture.h"
+#include "thirdparty/json.hpp"
 #include "world.h"
 
 using json = nlohmann::json;
 
-#include <iostream>
-#include <fstream>
-#include <thread>
-#include <mutex>
 #include <chrono>
+#include <fstream>
+#include <iostream>
+#include <mutex>
+#include <thread>
 
 vec3 color(const ray &r, world *world, int depth, int max_bounces, long *bounce_count, std::vector<vec3> *path)
 {
     hit_record rec;
     if (world->hit(r, 0.001, MAXFLOAT, rec))
     {
-	if (path != nullptr){
-	    path->push_back(rec.p);
-	}
+        if (path != nullptr)
+        {
+            path->push_back(rec.p);
+        }
         ray scattered;
         vec3 attenuation;
         vec3 emitted = rec.mat_ptr->emitted(rec.u, rec.v, rec.p);
@@ -43,10 +44,11 @@ vec3 color(const ray &r, world *world, int depth, int max_bounces, long *bounce_
     }
     else
     {
-	if (path != nullptr){
+        if (path != nullptr)
+        {
             path->push_back(rec.p);
-	}
-	// world background color here
+        }
+        // world background color here
         // vec3 unit_direction = unit_vector(r.direction());
         // float t = 0.5 * (unit_direction.y() + 1.0);
         // return (1.0 - t) * vec3(1.0, 1.0, 1.0) + t * vec3(0.2, 0.1, 0.7);
@@ -77,8 +79,11 @@ void compute_rays(long ray_ct, vec3 **buffer, int width, int height, int samples
             // std::cout << "computing column " << i << std::endl
             vec3 col = vec3(0, 0, 0);
             long *count = new long(0);
-	    std::vector<vec3> *path = nullptr;
-	    if (random_double() < 0.0001) {                                     path = new std::vector<vec3>();                                 // memory leak here
+            std::vector<vec3> *path = nullptr;
+            if (random_double() < 0.0001)
+            {
+                path = new std::vector<vec3>();
+                // memory leak here
             }
             for (int s = 0; s < samples; s++)
             {
@@ -91,10 +96,11 @@ void compute_rays(long ray_ct, vec3 **buffer, int width, int height, int samples
             framebuffer_lock.lock();
             buffer[j][i] += col;
             ray_ct += *count;
-	    if (path != nullptr){
-		std::cout << path->size() << '\n';
-		delete path;
-	    }
+            if (path != nullptr)
+            {
+                std::cout << path->size() << '\n';
+                delete path;
+            }
             framebuffer_lock.unlock();
         }
     }
