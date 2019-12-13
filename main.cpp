@@ -266,7 +266,7 @@ int main(int argc, char *argv[])
         std::cout << ' ' << t << ':' << bounce_counts[t] << "bounces, ";
 
         auto paths = array_of_paths[t];
-        
+
         assert(paths.size() > 0 || !should_trace_paths);
         if (should_trace_paths)
         {
@@ -277,6 +277,25 @@ int main(int argc, char *argv[])
                 for (auto &point : *path)
                 {
                     traced_paths_output << point.x() << ',' << point.y() << ',' << point.z() << std::endl;
+
+                    // paths _paths = array_of_paths[0];
+                    // path *_path = _paths[1];
+                    // vec3 sample_point = (*_path)[1];
+                    if (point.x() == point.y() && point.y() == point.z() && point.z() == 0.0)
+                    {
+                        continue;
+                    }
+                    else if (point.x() > 1.0e+20 || point.x() < -1.0e+20 || point.y() > 1.0e20 || point.y() < -1.0e+20 || point.z() > 1.0e20 || point.z() < -1.0e+20)
+                    {
+                        continue;
+                    }
+                    // std::cout << point << '\n';
+                    float x, y;
+                    cam.project(point, x, y);
+                    if (0.0 < x && 0.0 < y) // && x <= 1.0 && y <= 1.0)
+                    {
+                        std::cout << x << ' ' << y << std::endl;
+                    }
                 }
                 traced_paths_output << std::endl;
             }
