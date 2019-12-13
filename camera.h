@@ -17,17 +17,19 @@ public:
         float half_height = tan(theta / 2);
         float half_width = aspect * half_height;
         origin = lookfrom;
-        std::cout << "before " << lookfrom - lookat << std::endl;
         w = unit_vector(lookfrom - lookat);
-        std::cout << "after " << w << ", " << w.length() << std::endl;
-        std::cout << "before " << cross(vup, w) << std::endl;
+        std::cout << "w " << w << std::endl;
         u = unit_vector(cross(vup, w));
-        std::cout << "after " << u << ", " << u.length() << std::endl;
+        std::cout << "u " << u << std::endl;
         v = cross(w, u);
-        std::cout << "v " << v << ", " << v.length() << std::endl;
+        std::cout << "v " << v << std::endl;
         lower_left_corner = origin - half_width * focus_dist * u - half_height * focus_dist * v - focus_dist * w;
+        std::cout << lower_left_corner << std::endl;
+
         horizontal = 2 * half_width * focus_dist * u;
+        std::cout << horizontal << std::endl;
         vertical = 2 * half_height * focus_dist * v;
+        std::cout << vertical << std::endl;
     }
 
     ray get_ray(float s, float t)
@@ -50,31 +52,40 @@ public:
         // for now, project onto uv plane
 
         // formula for projecting onto a plane is:
-        ray r = ray(point, origin - point);
-        // plane is defined from u and v
+        // ray r = ray(point, origin - point);
+        // camera_ray = ray(origin + offset,
+        //            lower_left_corner + s * horizontal + t * vertical - origin - offset,
+        //            time);
+        // camera_ray : origin + (lower_left_corner + x*horizontal + y*vertical - origin)*t
+        // origin + (lower_left_corner + x*horizontal + y*vertical - origin)*t = point
+        // vec3 pt = (point - origin) / t - lower_left_corner + origin;
+        // x = dot(pt, horizontal);
+        // y = dot(pt, vertical);
+        // plane is defined from horizontal and vertical
+        // ray is defined from
         // (ro + rd * t - p_0) = 0
-        // vec3 p_0 = u;
+        // vec3 p_0 = lower_left_corner;
 
-        // ray r = ray(point, point - (lower_left_corner + x * horizontal + y * vertical));
-        // solve r backwards
+        ray r = ray(point, origin - point);
 
-        float a = dot(r.origin() - lower_left_corner, w);
+        float a = dot(lower_left_corner - r.origin(), w);
         float b = dot(r.direction(), w);
 
-        float t = -a / b;
-        if (t < 0.0)
-        {
-            return;
-        }
+        float t = a / b;
+        // if (t < 0.0)
+        // {
+        //     t = -t;
+        // }
+        std::cout << " point: " << point << std::endl;
         // std::cout << " u:" << u << " v:" << v;
         // std::cout << " direction: " << r.direction() << std::endl;
         // std::cout << " a:" << a << " b:" << b;
         // std::cout << " t:" << t;
-        vec3 p = r.point_at_parameter(t);
-        // std::cout << " p:" << p;
+        vec3 p = r.point_at_parameter(t) - lower_left_corner;
+        std::cout << " p:" << p;
         // p is point in uv plane
-        x = dot(u, p);
-        y = dot(v, p);
+        x = dot(horizontal, p) / horizontal.squared_length();
+        y = dot(vertical, p) / vertical.squared_length();
         std::cout << " x:" << x;
         std::cout << " y:" << y << '\n';
         std::cout << std::endl;

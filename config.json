@@ -6,11 +6,11 @@
         "gamma": 2.2
     },
     "output_path": "out2.ppm",
-    "scene": "scenes/three_orbs.json",
+    "scene": "scenes/cornell_with_volume.json",
     "should_trace_paths": true,
     "avg_number_of_paths": 100,
     "traced_paths_output": "out.txt",
-    "samples": 60,
+    "samples": 20,
     "threads": 4,
     "max_bounces": 5
 }

@@ -20,18 +20,6 @@ using json = nlohmann::json;
 #include <mutex>
 #include <thread>
 
-inline vec3 de_nan(const vec3 &c)
-{
-    vec3 temp = c;
-    if (!(temp[0] == temp[0]))
-        temp[0] = 0;
-    if (!(temp[1] == temp[1]))
-        temp[1] = 0;
-    if (!(temp[2] == temp[2]))
-        temp[2] = 0;
-    return temp;
-}
-
 vec3 color(const ray &r, world *world, int depth, int max_bounces, long *bounce_count, std::vector<vec3> *path)
 {
     hit_record rec;
@@ -260,6 +248,7 @@ int main(int argc, char *argv[])
     {
         threads[t].join();
     }
+    int added_paths = 0;
     for (int t = 0; t < N_THREADS; t++)
     {
         total_bounces += (float)bounce_counts[t];
@@ -267,7 +256,7 @@ int main(int argc, char *argv[])
 
         auto paths = array_of_paths[t];
 
-        assert(paths.size() > 0 || !should_trace_paths);
+        added_paths += paths.size();
         if (should_trace_paths)
         {
             std::ofstream traced_paths_output(config.value("traced_paths_output", "paths.txt"));
@@ -276,7 +265,7 @@ int main(int argc, char *argv[])
             {
                 for (auto &point : *path)
                 {
-                    traced_paths_output << point.x() << ',' << point.y() << ',' << point.z() << std::endl;
+                    // traced_paths_output << point.x() << ',' << point.y() << ',' << point.z() << std::endl;
 
                     // paths _paths = array_of_paths[0];
                     // path *_path = _paths[1];
@@ -292,9 +281,9 @@ int main(int argc, char *argv[])
                     // std::cout << point << '\n';
                     float x, y;
                     cam.project(point, x, y);
-                    if (0.0 < x && 0.0 < y) // && x <= 1.0 && y <= 1.0)
+                    if (0.0 < x && 0.0 < y && x <= 1.0 && y <= 1.0)
                     {
-                        std::cout << x << ' ' << y << std::endl;
+                        traced_paths_output << x << ' ' << y << std::endl;
                     }
                 }
                 traced_paths_output << std::endl;
@@ -302,6 +291,7 @@ int main(int argc, char *argv[])
             traced_paths_output.close();
         }
     }
+    assert(added_paths > 0 || !should_trace_paths);
 
     std::cout << " done\n";
     auto t4 = std::chrono::high_resolution_clock::now();
