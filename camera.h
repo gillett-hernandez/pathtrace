@@ -43,7 +43,7 @@ public:
                    time);
     }
 
-    void project(vec3 point, float &x, float &y)
+    bool project(vec3 point, float &x, float &y)
     {
         // project a point through the camera and get the x and y values
         // this completely disregards lens effects.
@@ -66,29 +66,43 @@ public:
         // (ro + rd * t - p_0) = 0
         // vec3 p_0 = lower_left_corner;
 
+        // create ray from point towards the origin
         ray r = ray(point, origin - point);
 
+        //compute ray-plane intersection with film plane
         float a = dot(lower_left_corner - r.origin(), w);
         float b = dot(r.direction(), w);
 
         float t = a / b;
-        // if (t < 0.0)
-        // {
-        //     t = -t;
-        // }
-        // std::cout << " point: " << point << std::endl;
+        if (t < 0.0)
+        {
+            // only allow frontwards projections.
+            float max_in_world = 1.0e+10;
+            if (abs(point.x()) > max_in_world || abs(point.y()) > max_in_world || abs(point.z()) > max_in_world)
+            {
+                return false;
+            }
+            else
+            {
+                return true;
+            }
+        }
+        // std::cout << " point: " << point;
         // std::cout << " u:" << u << " v:" << v;
         // std::cout << " direction: " << r.direction() << std::endl;
         // std::cout << " a:" << a << " b:" << b;
         // std::cout << " t:" << t;
+        // point p should be in film plane now.
         vec3 p = r.point_at_parameter(t) - lower_left_corner;
         // std::cout << " p:" << p;
         // p is point in uv plane
         x = dot(horizontal, p) / horizontal.squared_length();
         y = dot(vertical, p) / vertical.squared_length();
+        // std::cout << " xp:"<< x / horizontal.length();
+        // std::cout << " yp:"<< y / vertical.length();
         // std::cout << " x:" << x;
         // std::cout << " y:" << y << '\n';
-        // std::cout << std::endl;
+        return true;
     }
 
     vec3 origin;

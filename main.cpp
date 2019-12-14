@@ -262,44 +262,50 @@ int main(int argc, char *argv[])
     std::cout << "computed " << total_bounces << " rays, at " << rate2 << " rays per second, or " << rate2 / N_THREADS << " per thread" << std::endl;
 
     int added_paths = 0;
-    for (int t = 0; t < N_THREADS; t++)
+    if (should_trace_paths)
     {
-        auto paths = array_of_paths[t];
-
-        added_paths += paths.size();
-        if (should_trace_paths)
+        std::ofstream traced_paths_output(config.value("traced_paths_output", "paths.txt"));
+        std::ofstream traced_paths_output2d(config.value("traced_paths_2d_output", "paths2d.txt"));
+        for (int t = 0; t < N_THREADS; t++)
         {
-            std::ofstream traced_paths_output(config.value("traced_paths_output", "paths.txt"));
+            auto paths = array_of_paths[t];
+
+            added_paths += paths.size();
+
             std::cout << ", adding " << paths.size() << " paths" << std::endl;
             for (auto &path : paths)
             {
                 for (auto &point : *path)
                 {
-                    traced_paths_output << point.x() << ',' << point.y() << ',' << point.z() << ' ';
+                    traced_paths_output << point.x() << ',' << point.y() << ',' << point.z() << '\n';
 
                     // paths _paths = array_of_paths[0];
                     // path *_path = _paths[1];
                     // vec3 sample_point = (*_path)[1];
-                    if (point.x() == point.y() && point.y() == point.z() && point.z() == 0.0)
-                    {
-                        continue;
-                    }
-                    else if (point.x() > 1.0e+20 || point.x() < -1.0e+20 || point.y() > 1.0e20 || point.y() < -1.0e+20 || point.z() > 1.0e20 || point.z() < -1.0e+20)
-                    {
-                        continue;
-                    }
+                    // if (point.x() == point.y() && point.y() == point.z() && point.z() == 0.0)
+                    // {
+                    //     continue;
+                    // }
+                    //
                     // std::cout << point << '\n';
-                    float x, y;
-                    cam.project(point, x, y);
-                    if (0.0 < x && 0.0 < y && x <= 1.0 && y <= 1.0)
+                    float x = 0;
+                    float y = 0;
+                    bool hit_scene = cam.project(point, x, y);
+                    if (0.0 < x && 0.0 < y && x <= 1.0 && y <= 1.0 && hit_scene)
                     {
-                        traced_paths_output << x << ',' << y << std::endl;
+                        traced_paths_output2d << x << ',' << y << std::endl;
+                    }
+                    if (!hit_scene)
+                    {
+                        traced_paths_output2d << x << ',' << y << '!' << std::endl;
                     }
                 }
                 traced_paths_output << std::endl;
+                traced_paths_output2d << std::endl;
             }
-            traced_paths_output.close();
         }
+        traced_paths_output.close();
+        traced_paths_output2d.close();
     }
     assert(added_paths > 0 || !should_trace_paths);
 
