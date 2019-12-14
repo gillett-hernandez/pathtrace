@@ -249,6 +249,7 @@ int main(int argc, char *argv[])
     {
         threads[t].join();
         total_bounces += (float)bounce_counts[t];
+        std::cout << ' ' << t << ':' << bounce_counts[t] << "bounces, ";
     }
 
     std::cout << " done\n";
@@ -263,8 +264,6 @@ int main(int argc, char *argv[])
     int added_paths = 0;
     for (int t = 0; t < N_THREADS; t++)
     {
-        std::cout << ' ' << t << ':' << bounce_counts[t] << "bounces, ";
-
         auto paths = array_of_paths[t];
 
         added_paths += paths.size();

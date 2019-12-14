@@ -10,3 +10,5 @@ sendgrid.env
 *.sublime-workspace
 *.sublime-project
 
+*.dSYM/*
+
