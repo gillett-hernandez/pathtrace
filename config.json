@@ -1,17 +1,17 @@
 {
     "film": {
-        "width": 500,
-        "height": 500,
+        "width": 2000,
+        "height": 2000,
         "exposure": -5.0,
         "gamma": 2.2
     },
-    "output_path": "out2.ppm",
+    "output_path": "out3.ppm",
     "scene": "scenes/cornell_with_volume2.json",
     "should_trace_paths": true,
-    "avg_number_of_paths": 100,
+    "avg_number_of_paths": 1000,
     "traced_paths_output": "out.txt",
     "traced_paths_2d_output": "out2.txt",
-    "samples": 20,
-    "threads": 4,
-    "max_bounces": 30
+    "max_bounces": 15,
+    "samples": 2000,
+    "threads": 11
 }

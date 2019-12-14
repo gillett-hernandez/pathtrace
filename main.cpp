@@ -65,7 +65,7 @@ vec3 color(const ray &r, world *world, int depth, int max_bounces, long *bounce_
 
 std::mutex framebuffer_lock;
 
-void compute_rays(int thread_id, long *ray_ct, vec3 **buffer, int width, int height, int samples, int max_bounces, camera cam, world *world, float trace_probability, std::vector<std::vector<vec3> *> *paths)
+void compute_rays(int thread_id, long *ray_ct, int *completed_samples, vec3 **buffer, int width, int height, int samples, int max_bounces, camera cam, world *world, float trace_probability, std::vector<std::vector<vec3> *> *paths)
 {
     if (samples == 0)
     {
@@ -102,6 +102,7 @@ void compute_rays(int thread_id, long *ray_ct, vec3 **buffer, int width, int hei
             framebuffer_lock.lock();
             buffer[j][i] += col;
             *ray_ct += *count;
+            completed_samples[thread_id] -= samples;
             framebuffer_lock.unlock();
         }
     }
@@ -137,7 +138,7 @@ int main(int argc, char *argv[])
     // end film setup
 
     int pixels = 0;
-    int total_pixels = width * height;
+    long total_pixels = width * height;
 
     // other config
     std::string scene_path = config.value("scene", "scenes/scene.json");
@@ -146,7 +147,7 @@ int main(int argc, char *argv[])
     int MAX_BOUNCES = config.value("max_bounces", 10);
     bool should_trace_paths = config.value("should_trace_paths", false);
     float trace_probability;
-    int min_camera_rays = n_samples * total_pixels;
+    long min_camera_rays = n_samples * total_pixels;
 
     if (should_trace_paths)
     {
@@ -223,6 +224,7 @@ int main(int argc, char *argv[])
     std::cout << "samples per thread " << min_samples << std::endl;
     std::cout << "leftover samples to be allocated " << remaining_samples << std::endl;
     long bounce_counts[N_THREADS];
+    int *samples_left = new int[N_THREADS];
     // create N_THREADS buckets to dump paths into.
 
     typedef std::vector<vec3> path;
@@ -234,8 +236,10 @@ int main(int argc, char *argv[])
     {
         bounce_counts[t] = 0;
         int samples = min_samples + (int)(t < remaining_samples);
+        bounce_counts[t] = 0;
+        samples_left[t] = width * height * samples;
         std::cout << ' ' << samples;
-        threads[t] = std::thread(compute_rays, t, &bounce_counts[t], std::ref(framebuffer), width, height, samples, MAX_BOUNCES, cam, world, trace_probability, array_of_paths);
+        threads[t] = std::thread(compute_rays, t, &bounce_counts[t], samples_left, std::ref(framebuffer), width, height, samples, MAX_BOUNCES, cam, world, trace_probability, array_of_paths);
     }
     std::cout << " done.\n";
     auto t3 = std::chrono::high_resolution_clock::now();
@@ -244,6 +248,32 @@ int main(int argc, char *argv[])
     std::cout << "joining threads";
 
     float total_bounces = 0;
+
+    bool any_samples_left = true;
+    long num_samples_left;
+    using namespace std::chrono_literals;
+    while (any_samples_left)
+    {
+        any_samples_left = false;
+        num_samples_left = 0;
+        for (int t = 0; t < N_THREADS; t++)
+        {
+            if (samples_left[t] > 0)
+            {
+                any_samples_left = true;
+            }
+            num_samples_left += samples_left[t];
+        }
+        auto intermediate = std::chrono::high_resolution_clock::now();
+        // rate was in rays per nanosecond
+        // first multiply by 1 billion to get rays per second
+        float rate = 1000000000 * (min_camera_rays - num_samples_left) / (intermediate - t3).count();
+
+        std::cout << "samples left " << num_samples_left << '\t'
+                  << "rate " << rate << "\t"
+                  << "time left " << num_samples_left / rate << '\n';
+        std::this_thread::sleep_for(0.5s);
+    }
 
     for (int t = 0; t < N_THREADS; t++)
     {
