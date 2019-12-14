@@ -9,7 +9,7 @@ message = Mail(
     subject='GitHub CI: Pathrace CI Render result',
     html_content='<img src="cid:myimagecid"/>')
 
-file_path = 'out2.png'
+file_path = 'render.png'
 with open(file_path, 'rb') as f:
     data = f.read()
 encoded = base64.b64encode(data).decode()
