@@ -76,19 +76,19 @@ public:
         // {
         //     t = -t;
         // }
-        std::cout << " point: " << point << std::endl;
+        // std::cout << " point: " << point << std::endl;
         // std::cout << " u:" << u << " v:" << v;
         // std::cout << " direction: " << r.direction() << std::endl;
         // std::cout << " a:" << a << " b:" << b;
         // std::cout << " t:" << t;
         vec3 p = r.point_at_parameter(t) - lower_left_corner;
-        std::cout << " p:" << p;
+        // std::cout << " p:" << p;
         // p is point in uv plane
         x = dot(horizontal, p) / horizontal.squared_length();
         y = dot(vertical, p) / vertical.squared_length();
-        std::cout << " x:" << x;
-        std::cout << " y:" << y << '\n';
-        std::cout << std::endl;
+        // std::cout << " x:" << x;
+        // std::cout << " y:" << y << '\n';
+        // std::cout << std::endl;
     }
 
     vec3 origin;

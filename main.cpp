@@ -65,7 +65,7 @@ vec3 color(const ray &r, world *world, int depth, int max_bounces, long *bounce_
 
 std::mutex framebuffer_lock;
 
-void compute_rays(int thread_id, long ray_ct, vec3 **buffer, int width, int height, int samples, int max_bounces, camera cam, world *world, float trace_probability, std::vector<std::vector<vec3> *> *paths)
+void compute_rays(int thread_id, long *ray_ct, vec3 **buffer, int width, int height, int samples, int max_bounces, camera cam, world *world, float trace_probability, std::vector<std::vector<vec3> *> *paths)
 {
     if (samples == 0)
     {
@@ -101,11 +101,11 @@ void compute_rays(int thread_id, long ray_ct, vec3 **buffer, int width, int heig
 
             framebuffer_lock.lock();
             buffer[j][i] += col;
-            ray_ct += *count;
+            *ray_ct += *count;
             framebuffer_lock.unlock();
         }
     }
-    std::cout << "total length of traced paths : " << paths[thread_id].size() << std::endl;
+    // std::cout << "total length of traced paths : " << paths[thread_id].size() << std::endl;
 }
 
 float A = 0.15;
@@ -232,9 +232,10 @@ int main(int argc, char *argv[])
     std::cout << "spawning threads";
     for (int t = 0; t < N_THREADS; t++)
     {
+        bounce_counts[t] = 0;
         int samples = min_samples + (int)(t < remaining_samples);
         std::cout << ' ' << samples;
-        threads[t] = std::thread(compute_rays, t, std::ref(bounce_counts[t]), std::ref(framebuffer), width, height, samples, MAX_BOUNCES, cam, world, trace_probability, array_of_paths);
+        threads[t] = std::thread(compute_rays, t, &bounce_counts[t], std::ref(framebuffer), width, height, samples, MAX_BOUNCES, cam, world, trace_probability, array_of_paths);
     }
     std::cout << " done.\n";
     auto t3 = std::chrono::high_resolution_clock::now();
@@ -247,11 +248,21 @@ int main(int argc, char *argv[])
     for (int t = 0; t < N_THREADS; t++)
     {
         threads[t].join();
+        total_bounces += (float)bounce_counts[t];
     }
+
+    std::cout << " done\n";
+    auto t4 = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> elapsed_seconds3 = t4 - t3;
+    std::cout << "time taken to compute " << elapsed_seconds3.count() << std::endl;
+    float rate1 = total_pixels * n_samples / elapsed_seconds3.count();
+    float rate2 = total_bounces / elapsed_seconds3.count();
+    std::cout << "computed " << total_pixels * n_samples << " camera rays in " << elapsed_seconds3.count() << "s, at " << rate1 << " rays per second, or " << rate1 / N_THREADS << "per thread" << std::endl;
+    std::cout << "computed " << total_bounces << " rays, at " << rate2 << " rays per second, or " << rate2 / N_THREADS << " per thread" << std::endl;
+
     int added_paths = 0;
     for (int t = 0; t < N_THREADS; t++)
     {
-        total_bounces += (float)bounce_counts[t];
         std::cout << ' ' << t << ':' << bounce_counts[t] << "bounces, ";
 
         auto paths = array_of_paths[t];
@@ -260,12 +271,12 @@ int main(int argc, char *argv[])
         if (should_trace_paths)
         {
             std::ofstream traced_paths_output(config.value("traced_paths_output", "paths.txt"));
-            std::cout << "adding " << paths.size() << " paths" << std::endl;
+            std::cout << ", adding " << paths.size() << " paths" << std::endl;
             for (auto &path : paths)
             {
                 for (auto &point : *path)
                 {
-                    // traced_paths_output << point.x() << ',' << point.y() << ',' << point.z() << std::endl;
+                    traced_paths_output << point.x() << ',' << point.y() << ',' << point.z() << ' ';
 
                     // paths _paths = array_of_paths[0];
                     // path *_path = _paths[1];
@@ -283,7 +294,7 @@ int main(int argc, char *argv[])
                     cam.project(point, x, y);
                     if (0.0 < x && 0.0 < y && x <= 1.0 && y <= 1.0)
                     {
-                        traced_paths_output << x << ' ' << y << std::endl;
+                        traced_paths_output << x << ',' << y << std::endl;
                     }
                 }
                 traced_paths_output << std::endl;
@@ -292,13 +303,6 @@ int main(int argc, char *argv[])
         }
     }
     assert(added_paths > 0 || !should_trace_paths);
-
-    std::cout << " done\n";
-    auto t4 = std::chrono::high_resolution_clock::now();
-    std::chrono::duration<double> elapsed_seconds3 = t4 - t3;
-    std::cout << "time taken to compute " << elapsed_seconds3.count() << std::endl;
-    std::cout << "computed " << total_pixels * n_samples << " rays in " << elapsed_seconds3.count() << "s, at " << total_pixels * n_samples / elapsed_seconds3.count() << " rays per second" << std::endl;
-    std::cout << total_bounces << " " << total_bounces / elapsed_seconds3.count() << std::endl;
 
     float max_luminance = -FLT_MAX;
     float total_luminance = 0.0;
