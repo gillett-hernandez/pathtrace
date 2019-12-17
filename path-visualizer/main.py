@@ -50,6 +50,7 @@ def main(args):
             p0, p1 = line.split(",")
             actual_paths[-1].append((float(p0), float(p1), exited_world))
 
+    actual_paths.sort(key=lambda l: len(l),  reverse=True)
     max_i = 0
     path_idx = 0
     while True:
