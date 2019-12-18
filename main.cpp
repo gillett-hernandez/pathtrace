@@ -63,6 +63,40 @@ vec3 color(const ray &r, world *world, int depth, int max_bounces, long *bounce_
     }
 }
 
+void output_to_file(std::ofstream &output, vec3 **buffer, int width, int height, int samples, float exposure, float gamma)
+{
+    output.seekp(0);
+    // output file
+    output << "P6\n"
+           << width << " " << height << "\n255\n";
+    for (int j = height - 1; j >= 0; j--)
+    {
+        for (int i = 0; i < width; i++)
+        {
+            vec3 col = buffer[j][i];
+            col /= float(samples);
+
+            col *= 16 + exposure;
+            // color space interpolation here
+            // first color mapping
+            // float lum = col.length();
+            float lum = std::max({col[0], col[1], col[2]});
+            // float new_lum = lum / (1 + lum);
+            float new_lum = 1.0 - expf(-0.2 * lum);
+            float factor = new_lum / lum;
+            // col = vec3(factor * col[0], factor * col[1], factor * col[2]);
+            col = col * factor;
+            // put gamma and exposure here
+
+            char ir = int(255.99 * powf(col[0], gamma));
+            char ig = int(255.99 * powf(col[1], gamma));
+            char ib = int(255.99 * powf(col[2], gamma));
+            output << ir << ig << ib;
+        }
+    }
+    output.flush();
+}
+
 std::mutex framebuffer_lock;
 
 void compute_rays(int thread_id, long *ray_ct, int *completed_samples, vec3 **buffer, int width, int height, int samples, int max_bounces, camera cam, world *world, float trace_probability, std::vector<std::vector<vec3> *> *paths)
@@ -272,6 +306,7 @@ int main(int argc, char *argv[])
         std::cout << "samples left " << num_samples_left << '\t'
                   << "rate " << rate << "\t"
                   << "time left " << num_samples_left / rate << '\n';
+        output_to_file(output, framebuffer, width, height, n_samples, exposure, gamma);
         std::this_thread::sleep_for(0.5s);
     }
 
@@ -360,33 +395,6 @@ int main(int argc, char *argv[])
     std::cout << "avg lum " << avg_luminance << std::endl;
     std::cout << "max lum " << max_luminance << std::endl;
 
-    // output file
-    output << "P6\n"
-           << width << " " << height << "\n255\n";
-    for (int j = height - 1; j >= 0; j--)
-    {
-        for (int i = 0; i < width; i++)
-        {
-            vec3 col = framebuffer[j][i];
-            col /= float(n_samples);
-
-            col *= 16 + exposure;
-            // color space interpolation here
-            // first color mapping
-            // float lum = col.length();
-            float lum = std::max({col[0], col[1], col[2]});
-            // float new_lum = lum / (1 + lum);
-            float new_lum = 1.0 - expf(-0.2 * lum);
-            float factor = new_lum / lum;
-            // col = vec3(factor * col[0], factor * col[1], factor * col[2]);
-            col = col * factor;
-            // put gamma and exposure here
-
-            char ir = int(255.99 * powf(col[0], gamma));
-            char ig = int(255.99 * powf(col[1], gamma));
-            char ib = int(255.99 * powf(col[2], gamma));
-            output << ir << ig << ib;
-        }
-    }
+    output_to_file(output, framebuffer, width, height, n_samples, exposure, gamma);
     output.close();
 }

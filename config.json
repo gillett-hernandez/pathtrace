@@ -6,11 +6,11 @@
         "gamma": 2.2
     },
     "output_path": "render.ppm",
-    "scene": "scenes/cornell_with_volume2.json",
+    "scene": "scenes/light_test.json",
     "should_trace_paths": true,
     "avg_number_of_paths": 1000,
-    "traced_paths_output": "cornell_with_large_volume.txt",
-    "traced_paths_2d_output": "cornell_with_large_volume2d.txt",
+    "traced_paths_output": "light_test.txt",
+    "traced_paths_2d_output": "light_test_2d.txt",
     "max_bounces": 15,
     "samples": 100,
     "threads": 11

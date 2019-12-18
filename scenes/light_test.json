@@ -1,0 +1,253 @@
+{
+    "camera": {
+        "look_from": [
+            0.0,
+            80.0,
+            -80.0
+        ],
+        "look_at": [
+            0.0,
+            0.0,
+            0.0
+        ],
+        "fov": 40.0,
+        "aperture": 0.0,
+        "dist_to_focus": 40.0
+    },
+    "world": {
+        "color": [
+            0.1,
+            0.1,
+            0.1
+        ]
+    },
+    "assets": [],
+    "textures": [],
+    "materials": [
+        {
+            "id": "white",
+            "type": "lambertian",
+            "data": {
+                "color": [
+                    0.7,
+                    0.7,
+                    0.7
+                ]
+            }
+        },
+        {
+            "id": "metal1",
+            "type": "metal",
+            "data": {
+                "color": [
+                    0.9,
+                    0.9,
+                    0.9
+                ],
+                "roughness": 0.3
+            }
+        },
+        {
+            "id": "metal2",
+            "type": "metal",
+            "data": {
+                "color": [
+                    0.9,
+                    0.9,
+                    0.9
+                ],
+                "roughness": 0.6
+            }
+        },
+        {
+            "id": "metal3",
+            "type": "metal",
+            "data": {
+                "color": [
+                    0.9,
+                    0.9,
+                    0.9
+                ],
+                "roughness": 0.9
+            }
+        },
+        {
+            "id": "light",
+            "type": "diffuse_light",
+            "data": {
+                "color": [
+                    25.0,
+                    25.0,
+                    25.0
+                ]
+            }
+        }
+    ],
+    "primitives": [
+        {
+            "id": "wall",
+            "type": "rect",
+            "material": {
+                "id": "white"
+            },
+            "size": [
+                80,
+                80
+            ]
+        }
+    ],
+    "instances": [
+        {
+            "type": "ref",
+            "primitive": {
+                "id": "wall"
+            }
+        },
+        {
+            "type": "ref",
+            "primitive": {
+                "id": "wall"
+            },
+            "transform": {
+                "rotate": [
+                    -0.5,
+                    0.0,
+                    0.0
+                ],
+                "translate": [
+                    0.0,
+                    40.0,
+                    40.0
+                ]
+            }
+        },
+        {
+            "type": "direct",
+            "primitive": {
+                "type": "sphere",
+                "material": {
+                    "id": "light"
+                },
+                "radius": 2
+            },
+            "transform": {
+                "translate": [
+                    -15,
+                    20.0,
+                    8.0
+                ]
+            }
+        },
+        {
+            "type": "direct",
+            "primitive": {
+                "type": "sphere",
+                "material": {
+                    "id": "light"
+                },
+                "radius": 1.5
+            },
+            "transform": {
+                "translate": [
+                    -5,
+                    20.0,
+                    8.0
+                ]
+            }
+        },
+        {
+            "type": "direct",
+            "primitive": {
+                "type": "sphere",
+                "material": {
+                    "id": "light"
+                },
+                "radius": 1
+            },
+            "transform": {
+                "translate": [
+                    5,
+                    20.0,
+                    8.0
+                ]
+            }
+        },
+        {
+            "type": "direct",
+            "primitive": {
+                "type": "sphere",
+                "material": {
+                    "id": "light"
+                },
+                "radius": 0.5
+            },
+            "transform": {
+                "translate": [
+                    15,
+                    20.0,
+                    8.0
+                ]
+            }
+        },
+        {
+            "type": "direct",
+            "primitive": {
+                "type": "rect",
+                "material": {
+                    "id": "metal1"
+                },
+                "size": [
+                    40,
+                    4
+                ]
+            },
+            "transform": {
+                "translate": [
+                    0,
+                    3,
+                    0
+                ]
+            }
+        },
+        {
+            "type": "direct",
+            "primitive": {
+                "type": "rect",
+                "material": {
+                    "id": "metal2"
+                },
+                "size": [
+                    40,
+                    4
+                ]
+            },
+            "transform": {
+                "translate": [
+                    0,
+                    4,
+                    6
+                ]
+            }
+        },
+        {
+            "type": "direct",
+            "primitive": {
+                "type": "rect",
+                "material": {
+                    "id": "metal3"
+                },
+                "size": [
+                    40,
+                    4
+                ]
+            },
+            "transform": {
+                "translate": [
+                    0,
+                    8,
+                    8
+                ]
+            }
+        }
+    ]
+}
