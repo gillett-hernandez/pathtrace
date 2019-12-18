@@ -73,4 +73,38 @@ inline vec3 de_nan(const vec3 &c)
     return temp;
 }
 
+float to_srgb(float color)
+{
+    if (color < 0.0031308)
+    {
+        return 323 * color / 25;
+    }
+    else
+    {
+        return (211 * powf(color, 5.0 / 12) - 11) / 200;
+    }
+}
+
+vec3 to_srgb(vec3 color)
+{
+    return vec3(to_srgb(color.x()), to_srgb(color.y()), to_srgb(color.z()));
+}
+
+template <class T>
+T clamp(T x, T l, T r)
+{
+    if (x > r)
+    {
+        return r;
+    }
+    else if (x < l)
+    {
+        return l;
+    }
+    else
+    {
+        return x;
+    }
+}
+
 #endif

@@ -11,6 +11,7 @@
 #include "texture.h"
 #include "thirdparty/json.hpp"
 #include "world.h"
+#include "tonemap.h"
 
 using json = nlohmann::json;
 
@@ -107,19 +108,6 @@ void compute_rays(int thread_id, long *ray_ct, int *completed_samples, vec3 **bu
         }
     }
     // std::cout << "total length of traced paths : " << paths[thread_id].size() << std::endl;
-}
-
-float A = 0.15;
-float B = 0.50;
-float C = 0.10;
-float D = 0.20;
-float E = 0.02;
-float F = 0.30;
-float W = 11.2;
-
-vec3 Uncharted2Tonemap(vec3 x)
-{
-    return ((x * (A * x + C * B) + D * E) / (x * (A * x + B) + D * F)) - E / F;
 }
 
 int main(int argc, char *argv[])
@@ -372,15 +360,10 @@ int main(int argc, char *argv[])
 
             col *= 16 + exposure;
             // color space interpolation here
-            // first color mapping
-            // float lum = col.length();
-            float lum = std::max({col[0], col[1], col[2]});
-            // float new_lum = lum / (1 + lum);
-            float new_lum = 1.0 - expf(-0.2 * lum);
-            float factor = new_lum / lum;
-            // col = vec3(factor * col[0], factor * col[1], factor * col[2]);
-            col = col * factor;
-            // put gamma and exposure here
+            // col = tonemap_uncharted(col, max_luminance);
+            // col = tonemap_2(col);
+            col = to_srgb(tonemap_uncharted(col, max_luminance));
+            // col = to_srgb(col);
 
             char ir = int(255.99 * powf(col[0], gamma));
             char ig = int(255.99 * powf(col[1], gamma));
