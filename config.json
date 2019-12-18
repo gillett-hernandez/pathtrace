@@ -2,8 +2,8 @@
     "film": {
         "width": 800,
         "height": 800,
-        "exposure": -5.0,
-        "gamma": 2.2
+        "exposure": -10.0,
+        "gamma": 1.0
     },
     "output_path": "render.ppm",
     "scene": "scenes/light_test.json",
