@@ -95,7 +95,7 @@ void output_to_file(std::ofstream &output, vec3 **buffer, int width, int height,
 
 std::mutex framebuffer_lock;
 
-void compute_rays(int thread_id, long *ray_ct, int *completed_samples, vec3 **buffer, int width, int height, int samples, int max_bounces, camera cam, world *world, float trace_probability, std::vector<std::vector<vec3> *> *paths)
+void compute_rays_single_pass(int thread_id, long *ray_ct, int *completed_samples, vec3 **buffer, int width, int height, int samples, int max_bounces, camera cam, world *world, float trace_probability, std::vector<std::vector<vec3> *> *paths)
 {
     if (samples == 0)
     {
@@ -134,6 +134,50 @@ void compute_rays(int thread_id, long *ray_ct, int *completed_samples, vec3 **bu
             *ray_ct += *count;
             completed_samples[thread_id] -= samples;
             framebuffer_lock.unlock();
+        }
+    }
+    // std::cout << "total length of traced paths : " << paths[thread_id].size() << std::endl;
+}
+
+void compute_rays_progressive(int thread_id, long *ray_ct, int *completed_samples, vec3 **buffer, int width, int height, int samples, int max_bounces, camera cam, world *world, float trace_probability, std::vector<std::vector<vec3> *> *paths)
+{
+    if (samples == 0)
+    {
+        return;
+    }
+    for (int s = 0; s < samples; s++)
+    {
+        for (int j = height - 1; j >= 0; j--)
+        {
+            // std::cout << "computing row " << j << std::endl;
+            for (int i = 0; i < width; i++)
+            {
+                // std::cout << "computing column " << i << std::endl;
+                vec3 col = vec3(0, 0, 0);
+                long *count = new long(0);
+
+                float u = float(i + random_double()) / float(width);
+                float v = float(j + random_double()) / float(height);
+                ray r = cam.get_ray(u, v);
+                std::vector<vec3> *path = nullptr;
+                if (random_double() < trace_probability)
+                {
+                    // std::cout << "creating path to trace" << std::endl;
+                    path = new std::vector<vec3>();
+                }
+                col += de_nan(color(r, world, 0, max_bounces, count, path));
+                if (path != nullptr)
+                {
+                    // std::cout << "traced path, size is " << path->size() << std::endl;
+                    paths[thread_id].push_back(path);
+                }
+
+                framebuffer_lock.lock();
+                buffer[j][i] += col;
+                *ray_ct += *count;
+                completed_samples[thread_id] -= 1;
+                framebuffer_lock.unlock();
+            }
         }
     }
     // std::cout << "total length of traced paths : " << paths[thread_id].size() << std::endl;
@@ -256,7 +300,7 @@ int main(int argc, char *argv[])
         bounce_counts[t] = 0;
         samples_left[t] = width * height * samples;
         std::cout << ' ' << samples;
-        threads[t] = std::thread(compute_rays, t, &bounce_counts[t], samples_left, std::ref(framebuffer), width, height, samples, MAX_BOUNCES, cam, world, trace_probability, array_of_paths);
+        threads[t] = std::thread(compute_rays_progressive, t, &bounce_counts[t], samples_left, std::ref(framebuffer), width, height, samples, MAX_BOUNCES, cam, world, trace_probability, array_of_paths);
     }
     std::cout << " done.\n";
     auto t3 = std::chrono::high_resolution_clock::now();
@@ -289,7 +333,7 @@ int main(int argc, char *argv[])
         std::cout << "samples left " << num_samples_left << '\t'
                   << "rate " << rate << "\t"
                   << "time left " << num_samples_left / rate << '\n';
-        output_to_file(output, framebuffer, width, height, n_samples, exposure, gamma);
+        output_to_file(output, framebuffer, width, height, (min_camera_rays - num_samples_left) / (width * height), 10.0, exposure, gamma);
         std::this_thread::sleep_for(0.5s);
     }
 
@@ -320,22 +364,12 @@ int main(int argc, char *argv[])
 
             added_paths += paths.size();
 
-            std::cout << ", adding " << paths.size() << " paths" << std::endl;
             for (auto &path : paths)
             {
                 for (auto &point : *path)
                 {
                     traced_paths_output << point.x() << ',' << point.y() << ',' << point.z() << '\n';
 
-                    // paths _paths = array_of_paths[0];
-                    // path *_path = _paths[1];
-                    // vec3 sample_point = (*_path)[1];
-                    // if (point.x() == point.y() && point.y() == point.z() && point.z() == 0.0)
-                    // {
-                    //     continue;
-                    // }
-                    //
-                    // std::cout << point << '\n';
                     float x = 0;
                     float y = 0;
                     bool hit_scene = cam.project(point, x, y);
@@ -356,6 +390,7 @@ int main(int argc, char *argv[])
         traced_paths_output2d.close();
     }
     assert(added_paths > 0 || !should_trace_paths);
+    std::cout << "added " << added_paths << " paths" << std::endl;
 
     float max_luminance = -FLT_MAX;
     float total_luminance = 0.0;
