@@ -152,7 +152,7 @@ void compute_rays_single_pass(int thread_id, long *ray_ct, int *completed_sample
             framebuffer_lock.lock();
             buffer[j][i] += col;
             *ray_ct += *count;
-            completed_samples[thread_id] -= samples;
+            completed_samples[thread_id] += samples;
             framebuffer_lock.unlock();
         }
     }
@@ -195,7 +195,7 @@ void compute_rays_progressive(int thread_id, long *ray_ct, int *completed_sample
                 framebuffer_lock.lock();
                 buffer[j][i] += col;
                 *ray_ct += *count;
-                completed_samples[thread_id] -= 1;
+                completed_samples[thread_id] += 1;
                 framebuffer_lock.unlock();
             }
         }
@@ -291,7 +291,7 @@ int main(int argc, char *argv[])
     std::cout << "samples per thread " << min_samples << std::endl;
     std::cout << "leftover samples to be allocated " << remaining_samples << std::endl;
     long bounce_counts[N_THREADS];
-    int *samples_left = new int[N_THREADS];
+    int *samples_done = new int[N_THREADS];
     // create N_THREADS buckets to dump paths into.
 
     typedef std::vector<vec3> path;
@@ -304,15 +304,15 @@ int main(int argc, char *argv[])
         bounce_counts[t] = 0;
         int samples = min_samples + (int)(t < remaining_samples);
         bounce_counts[t] = 0;
-        samples_left[t] = width * height * samples;
+        samples_done[t] = 0;
         std::cout << ' ' << samples;
         if (random_double() < progressive_proportion)
         {
-            threads[t] = std::thread(compute_rays_progressive, t, &bounce_counts[t], samples_left, std::ref(framebuffer), width, height, samples, MAX_BOUNCES, cam, world, trace_probability, array_of_paths);
+            threads[t] = std::thread(compute_rays_progressive, t, &bounce_counts[t], samples_done, std::ref(framebuffer), width, height, samples, MAX_BOUNCES, cam, world, trace_probability, array_of_paths);
         }
         else
         {
-            threads[t] = std::thread(compute_rays_single_pass, t, &bounce_counts[t], samples_left, std::ref(framebuffer), width, height, samples, MAX_BOUNCES, cam, world, trace_probability, array_of_paths);
+            threads[t] = std::thread(compute_rays_single_pass, t, &bounce_counts[t], samples_done, std::ref(framebuffer), width, height, samples, MAX_BOUNCES, cam, world, trace_probability, array_of_paths);
         }
     }
     std::cout << " done.\n";
@@ -323,30 +323,27 @@ int main(int argc, char *argv[])
 
     float total_bounces = 0;
 
-    bool any_samples_left = true;
-    long num_samples_left;
+    long num_samples_done;
+    long num_samples_left = 1;
     using namespace std::chrono_literals;
-    while (any_samples_left)
+    while (num_samples_left > 0)
     {
-        any_samples_left = false;
+        num_samples_done = 0;
         num_samples_left = 0;
         for (int t = 0; t < N_THREADS; t++)
         {
-            if (samples_left[t] > 0)
-            {
-                any_samples_left = true;
-            }
-            num_samples_left += samples_left[t];
+            num_samples_done += samples_done[t];
         }
+        num_samples_left = min_camera_rays - num_samples_done;
         auto intermediate = std::chrono::high_resolution_clock::now();
         // rate was in rays per nanosecond
         // first multiply by 1 billion to get rays per second
-        float rate = 1000000000 * (min_camera_rays - num_samples_left) / (intermediate - t3).count();
+        float rate = 1000000000 * num_samples_done / (intermediate - t3).count();
 
         std::cout << "samples left " << num_samples_left << '\t'
                   << "rate " << rate << "\t"
                   << "time left " << num_samples_left / rate << '\n';
-        output_to_file(output, framebuffer, width, height, (min_camera_rays - num_samples_left) / (width * height), 10.0, exposure, gamma);
+        output_to_file(output, framebuffer, width, height, num_samples_done / (width * height), 10.0, exposure, gamma);
         std::this_thread::sleep_for(0.5s);
     }
 
