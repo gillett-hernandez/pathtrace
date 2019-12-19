@@ -14,10 +14,10 @@ public:
         B = b;
         _time = ti;
     }
-    vec3 origin() const { return A; }
-    vec3 direction() const { return B; }
-    float time() const { return _time; }
-    vec3 point_at_parameter(float t) const { return A + t * B; }
+    inline vec3 origin() const { return A; }
+    inline vec3 direction() const { return B; }
+    inline float time() const { return _time; }
+    inline vec3 point_at_parameter(float t) const { return A + t * B; }
     ray apply(transform3 transform) const
     {
         // return ray(transform * A, transform * B, _time);

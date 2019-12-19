@@ -106,5 +106,4 @@ T clamp(T x, T l, T r)
         return x;
     }
 }
-
 #endif

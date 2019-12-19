@@ -9,9 +9,9 @@
 #include "random.h"
 #include "scene.h"
 #include "texture.h"
-#include "thirdparty/json.hpp"
 #include "world.h"
 #include "tonemap.h"
+#include "thirdparty/json.hpp"
 
 using json = nlohmann::json;
 
@@ -62,6 +62,26 @@ vec3 color(const ray &r, world *world, int depth, int max_bounces, long *bounce_
         // TODO: replace u and v with angle l->r and angle d->u;
         return world->value(u, v, unit_direction);
     }
+}
+
+camera setup_camera(json camera_json, float aspect_ratio, vec3 vup = vec3(0, 1, 0))
+{
+    vec3 lookfrom(
+        camera_json["look_from"].at(0),
+        camera_json["look_from"].at(1),
+        camera_json["look_from"].at(2));
+
+    vec3 lookat(
+        camera_json["look_at"].at(0),
+        camera_json["look_at"].at(1),
+        camera_json["look_at"].at(2));
+
+    float vfov = camera_json.value("fov", 30.0);
+    float aperture = camera_json.value("aperture", 0.0);
+    float dist_to_focus = camera_json.value("dist_to_focus", 10.0);
+
+    return camera(lookfrom, lookat, vup, vfov, aspect_ratio,
+                  aperture, dist_to_focus, 0.0, 1.0);
 }
 
 void output_to_file(std::ofstream &output, vec3 **buffer, int width, int height, int samples, float max_luminance, float exposure, float gamma)
@@ -206,6 +226,7 @@ int main(int argc, char *argv[])
     int n_samples = config.value("samples", 20);
     int N_THREADS = config.value("threads", 4);
     int MAX_BOUNCES = config.value("max_bounces", 10);
+    float progressive_proportion = config.value("progressive_render_proportion", 0.5);
     bool should_trace_paths = config.value("should_trace_paths", false);
     float trace_probability;
     long min_camera_rays = n_samples * total_pixels;
@@ -255,22 +276,7 @@ int main(int argc, char *argv[])
     // camera setup
 
     json camera_json = scene["camera"];
-    vec3 lookfrom(
-        camera_json["look_from"].at(0),
-        camera_json["look_from"].at(1),
-        camera_json["look_from"].at(2));
-
-    vec3 lookat(
-        camera_json["look_at"].at(0),
-        camera_json["look_at"].at(1),
-        camera_json["look_at"].at(2));
-
-    float vfov = camera_json.value("fov", 30.0);
-    float aperture = camera_json.value("aperture", 0.0);
-    float dist_to_focus = camera_json.value("dist_to_focus", 10.0);
-
-    camera cam(lookfrom, lookat, vec3(0, 1, 0), vfov, float(width) / float(height),
-               aperture, dist_to_focus, 0.0, 1.0);
+    camera cam = setup_camera(camera_json, float(width) / float(height));
 
     // end camera setup
 
@@ -300,7 +306,14 @@ int main(int argc, char *argv[])
         bounce_counts[t] = 0;
         samples_left[t] = width * height * samples;
         std::cout << ' ' << samples;
-        threads[t] = std::thread(compute_rays_progressive, t, &bounce_counts[t], samples_left, std::ref(framebuffer), width, height, samples, MAX_BOUNCES, cam, world, trace_probability, array_of_paths);
+        if (random_double() < progressive_proportion)
+        {
+            threads[t] = std::thread(compute_rays_progressive, t, &bounce_counts[t], samples_left, std::ref(framebuffer), width, height, samples, MAX_BOUNCES, cam, world, trace_probability, array_of_paths);
+        }
+        else
+        {
+            threads[t] = std::thread(compute_rays_single_pass, t, &bounce_counts[t], samples_left, std::ref(framebuffer), width, height, samples, MAX_BOUNCES, cam, world, trace_probability, array_of_paths);
+        }
     }
     std::cout << " done.\n";
     auto t3 = std::chrono::high_resolution_clock::now();
