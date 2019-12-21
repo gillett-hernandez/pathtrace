@@ -12,6 +12,13 @@ public:
     }
     virtual bool hit(const ray &r, float t_min, float t_max, hit_record &rec) const
     {
+        vec3 p0 = p_mesh->vertices[idx];
+        vec3 p1 = p_mesh->vertices[idx + 1];
+        vec3 p2 = p_mesh->vertices[idx + 2];
+        vec3 p0t = p0 - r.origin();
+        vec3 p1t = p1 - r.origin();
+        vec3 p2t = p2 - r.origin();
+
     }
     virtual bool bounding_box(float t0, float t1, aabb &box) const
     {
