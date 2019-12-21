@@ -7,6 +7,22 @@
 #define PI 3.14159265358979323
 #define TAU 2 * PI
 
+template <class T>
+struct list
+{
+    T *array;
+    size_t length;
+    T operator[](int idx)
+    {
+        if (idx < 0)
+        {
+            idx = length + idx;
+        }
+        assert(idx < length);
+        return array[idx];
+    }
+};
+
 vec3 random_in_unit_sphere()
 {
     // vec3 p;

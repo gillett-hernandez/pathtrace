@@ -16,6 +16,12 @@ check:
 strict:
 	g++ $(opts) -Wall -Wpedantic main.cpp -o main.exe -I.
 
+test.exe: test.cpp mesh_loader.h mesh.h triangle.h
+	g++ $(opts) test.cpp -o test.exe -I.
+
+test: test.exe
+	./test.exe
+
 run: main.exe
 	./main.exe
 	python3 -m pip install Pillow
@@ -30,4 +36,4 @@ clean:
 	rm *.o
 	rm *.gch
 
-.PHONY: run clean run_and_send strict
+.PHONY: run clean run_and_send strict test

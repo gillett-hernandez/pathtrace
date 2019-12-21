@@ -11,15 +11,34 @@ class aabb
 {
 public:
     aabb() {}
-    aabb(const vec3 &a, const vec3 &b)
+    aabb(const vec3 &a, const vec3 &b, bool skip_check = true)
     {
-        _min = a;
-        _max = b;
+        if (skip_check)
+        {
+            _min = a;
+            _max = b;
+        }
+        else
+        {
+            _min = vec3(ffmin(a.x(), b.x()), ffmin(a.y(), b.y()), ffmin(a.z(), b.z()));
+            _max = vec3(ffmax(a.x(), b.x()), ffmax(a.y(), b.y()), ffmax(a.z(), b.z()));
+        }
     }
 
     aabb apply(transform3 transform) const
     {
         return aabb(transform * _min, transform * _max);
+    }
+
+    inline aabb extend(vec3 new_point) const
+    {
+        vec3 small(ffmin(_min.x(), new_point.x()),
+                   ffmin(_min.y(), new_point.y()),
+                   ffmin(_min.z(), new_point.z()));
+        vec3 big(ffmax(_max.x(), new_point.x()),
+                 ffmax(_max.y(), new_point.y()),
+                 ffmax(_max.z(), new_point.z()));
+        return aabb(small, big);
     }
 
     vec3 min() const { return _min; }
