@@ -294,13 +294,13 @@ int main(int argc, char *argv[])
     std::ofstream output(config.value("output_path", "out.ppm"));
 
     // start thread setup
-    std::thread threads[N_THREADS];
+    std::thread *threads = new std::thread[N_THREADS];
     int min_samples = n_samples / N_THREADS;
     int remaining_samples = n_samples % N_THREADS;
 
     std::cout << "samples per thread " << min_samples << std::endl;
     std::cout << "leftover samples to be allocated " << remaining_samples << std::endl;
-    long bounce_counts[N_THREADS];
+    long *bounce_counts = new long[N_THREADS];
     int *samples_done = new int[N_THREADS];
     // create N_THREADS buckets to dump paths into.
 
