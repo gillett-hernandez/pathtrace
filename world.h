@@ -4,23 +4,36 @@
 #include "hittable.h"
 #include "texture.h"
 
-class world : public hittable {
+class world : public hittable
+{
 public:
-    world(hittable* ptr, texture* background): ptr(ptr), background(background) {}
+    world(bvh_node *ptr, texture *background) : ptr(ptr), background(background)
+    {
+        // search through and find lights
+        ptr->find_lights(&lights);
+    }
     virtual bool hit(const ray &r, float tmin, float tmax, hit_record &rec) const
     {
         return ptr->hit(r, tmin, tmax, rec);
     }
-    virtual bool bounding_box(float t0, float t1, aabb &box) const {
+    virtual bool bounding_box(float t0, float t1, aabb &box) const
+    {
         return ptr->bounding_box(t0, t1, box);
     }
 
-    vec3 value(float u, float v, vec3 &p) {
+    vec3 value(float u, float v, vec3 &p)
+    {
         return background->value(u, v, p);
     }
 
-    hittable* ptr;
-    texture* background;
+    hittable *get_random_light()
+    {
+        ;
+    }
+
+    bvh_node *ptr;
+    std::vector<hittable *> lights;
+    texture *background;
 };
 
 #endif

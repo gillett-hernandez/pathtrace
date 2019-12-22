@@ -9,9 +9,9 @@
 #include "random.h"
 #include "scene.h"
 #include "texture.h"
-#include "world.h"
-#include "tonemap.h"
 #include "thirdparty/json.hpp"
+#include "tonemap.h"
+#include "world.h"
 
 using json = nlohmann::json;
 
@@ -21,6 +21,7 @@ using json = nlohmann::json;
 #include <mutex>
 #include <thread>
 
+// vec3 color(const ray &r, world *world, int light_samples, int depth, int max_bounces, long *bounce_count, std::vector<vec3> *path)
 vec3 color(const ray &r, world *world, int depth, int max_bounces, long *bounce_count, std::vector<vec3> *path)
 {
     hit_record rec;
@@ -33,10 +34,17 @@ vec3 color(const ray &r, world *world, int depth, int max_bounces, long *bounce_
         ray scattered;
         vec3 attenuation;
         vec3 emitted = rec.mat_ptr->emitted(rec.u, rec.v, rec.p);
-        if (depth < max_bounces && rec.mat_ptr->scatter(r, rec, attenuation, scattered))
+        float pdf;
+        if (depth < max_bounces && rec.mat_ptr->scatter(r, rec, attenuation, scattered, pdf))
         {
             (*bounce_count)++;
-            return emitted + attenuation * color(scattered, world, depth + 1, max_bounces, bounce_count, path);
+            hittable *random_light = world->get_random_light();
+            hittable_pdf p0(random_light, rec.p);
+            // cosine_pdf p1(rec.normal);
+            mixture_pdf p(&p0, rec.mat_ptr->pdf);
+            scattered = ray(rec.p, p.generate(), r.time());
+            pdf_val = p.value(scattered.direction());
+            return emitted + attenuation * rec.mat_ptr->scattering_pdf(r, rec, scattered) * color(scattered, world, depth + 1, max_bounces, bounce_count, path) / pdf;
         }
         else
         {

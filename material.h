@@ -1,5 +1,5 @@
-#ifndef MATERIALH
-#define MATERIALH
+#pragma once
+#include "helpers.h"
 #include "hittable.h"
 #include "texture.h"
 #include "vec3.h"
@@ -9,7 +9,15 @@ class material
 public:
     virtual bool scatter(
         const ray &r_in, const hit_record &rec, vec3 &attenuation,
-        ray &scattered) const = 0;
+        ray &scattered, float &pdf) const
+    {
+        return false;
+    }
+    virtual float scattering_pdf(const ray &r_in, const hit_record &rec,
+                                 const ray &scattered) const
+    {
+        return 0;
+    }
     virtual vec3 emitted(float u, float v, const vec3 &p) const
     {
         return vec3(0, 0, 0);
@@ -24,14 +32,36 @@ public:
     {
         albedo = new constant_texture(v);
     }
-    virtual bool scatter(const ray &r_in, const hit_record &rec,
-                         vec3 &attenuation, ray &scattered) const
+    bool scatter(const ray &r_in,
+                 const hit_record &rec, vec3 &alb, ray &scattered, float &pdf) const
     {
-        vec3 target = rec.p + rec.normal + random_in_unit_sphere();
-        scattered = ray(rec.p, target - rec.p);
-        attenuation = albedo->value(rec.u, rec.v, rec.p);
+        // vec3 target = rec.p + rec.normal + random_in_unit_sphere();
+        // scattered = ray(rec.p, unit_vector(target - rec.p), r_in.time());
+        // vec3 direction;
+        // do
+        // {
+        //     direction = random_in_unit_sphere();
+        // } while (dot(direction, rec.normal) < 0);
+
+        // scattered = ray(rec.p, unit_vector(direction), r_in.time());
+
+        onb uvw;
+        uvw.build_from_w(rec.normal);
+        vec3 direction = uvw.local(random_cosine_direction());
+        scattered = ray(rec.p, unit_vector(direction), r_in.time());
+        alb = albedo->value(rec.u, rec.v, rec.p);
+        pdf = dot(rec.normal, scattered.direction()) / M_PI;
         return true;
     }
+    float scattering_pdf(const ray &r_in,
+                         const hit_record &rec, const ray &scattered) const
+    {
+        float cosine = dot(rec.normal, unit_vector(scattered.direction()));
+        if (cosine < 0)
+            return 0;
+        return cosine / M_PI;
+    }
+
     texture *albedo;
 };
 
@@ -130,5 +160,3 @@ public:
     }
     texture *emit;
 };
-
-#endif

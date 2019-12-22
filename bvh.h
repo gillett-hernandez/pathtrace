@@ -1,9 +1,9 @@
 
 #ifndef BVHH
 #define BVHH
-#include <stdlib.h>
-#include "hittable.h"
 #include "aabb.h"
+#include "hittable.h"
+#include <stdlib.h>
 
 class bvh_node : public hittable
 {
@@ -13,6 +13,11 @@ public:
 
     virtual bool hit(const ray &r, float tmin, float tmax, hit_record &rec) const;
     virtual bool bounding_box(float t0, float t1, aabb &box) const;
+
+    void find_lights(std::vector<hittable *> *lights)
+    {
+        // lights->push_back
+    }
 
     hittable *left;
     hittable *right;
@@ -35,9 +40,13 @@ bool bvh_node::hit(const ray &r, float t_min, float t_max, hit_record &rec) cons
         if (hit_left && hit_right)
         {
             if (left_rec.t < right_rec.t)
+            {
                 rec = left_rec;
+            }
             else
+            {
                 rec = right_rec;
+            }
             return true;
         }
         else if (hit_left)
@@ -51,10 +60,14 @@ bool bvh_node::hit(const ray &r, float t_min, float t_max, hit_record &rec) cons
             return true;
         }
         else
+        {
             return false;
+        }
     }
     else
+    {
         return false;
+    }
 }
 
 int box_x_compare(const void *a, const void *b)
@@ -64,12 +77,18 @@ int box_x_compare(const void *a, const void *b)
     hittable *bh = *(hittable **)b;
 
     if (!ah->bounding_box(0, 0, box_left) || !bh->bounding_box(0, 0, box_right))
+    {
         std::cerr << "no bounding box in bvh_node constructor\n";
+    }
 
     if (box_left.min().x() - box_right.min().x() < 0.0)
+    {
         return -1;
+    }
     else
+    {
         return 1;
+    }
 }
 
 int box_y_compare(const void *a, const void *b)
@@ -79,12 +98,18 @@ int box_y_compare(const void *a, const void *b)
     hittable *bh = *(hittable **)b;
 
     if (!ah->bounding_box(0, 0, box_left) || !bh->bounding_box(0, 0, box_right))
+    {
         std::cerr << "no bounding box in bvh_node constructor\n";
+    }
 
     if (box_left.min().y() - box_right.min().y() < 0.0)
+    {
         return -1;
+    }
     else
+    {
         return 1;
+    }
 }
 
 int box_z_compare(const void *a, const void *b)
@@ -94,12 +119,17 @@ int box_z_compare(const void *a, const void *b)
     hittable *bh = *(hittable **)b;
 
     if (!ah->bounding_box(0, 0, box_left) || !bh->bounding_box(0, 0, box_right))
+    {
         std::cerr << "no bounding box in bvh_node constructor\n";
-
+    }
     if (box_left.min().z() - box_right.min().z() < 0.0)
+    {
         return -1;
+    }
     else
+    {
         return 1;
+    }
 }
 
 bvh_node::bvh_node(hittable **l, int n, float time0, float time1)
@@ -107,11 +137,17 @@ bvh_node::bvh_node(hittable **l, int n, float time0, float time1)
     int axis = int(3 * random_double());
 
     if (axis == 0)
+    {
         qsort(l, n, sizeof(hittable *), box_x_compare);
+    }
     else if (axis == 1)
+    {
         qsort(l, n, sizeof(hittable *), box_y_compare);
+    }
     else
+    {
         qsort(l, n, sizeof(hittable *), box_z_compare);
+    }
 
     if (n == 1)
     {
