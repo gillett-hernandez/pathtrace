@@ -19,6 +19,7 @@ using json = nlohmann::json;
 #include <chrono>
 #include <fstream>
 #include <iostream>
+#include <iomanip>
 #include <mutex>
 #include <thread>
 
@@ -215,6 +216,20 @@ void compute_rays_progressive(int thread_id, long *ray_ct, int *completed_sample
     // std::cout << "total length of traced paths : " << paths[thread_id].size() << std::endl;
 }
 
+
+void print_out_progress(long num_samples_done, long num_samples_left, std::chrono::high_resolution_clock::time_point start_time) {
+    auto intermediate = std::chrono::high_resolution_clock::now();
+    // rate was in rays per nanosecond
+    // first multiply by 1 billion to get rays per second
+    float rate = 1000000000 * num_samples_done / (intermediate - start_time).count();
+
+    std::cout << "samples left" << std::setw(20) << num_samples_left
+                << " rate " << std::setw(10) << rate
+                << " time left " << std::setw(5) << num_samples_left / rate
+                << "                                           " << '\r' << std::flush;
+        
+}
+
 int main(int argc, char *argv[])
 {
     std::ifstream config_file("config.json");
@@ -331,7 +346,7 @@ int main(int argc, char *argv[])
     auto t3 = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsed_seconds2 = t3 - t2;
     std::cout << "time taken to setup the rest and spawn threads " << elapsed_seconds2.count() << std::endl;
-    std::cout << "joining threads";
+    std::cout << "joining threads\n";
 
     float total_bounces = 0;
 
@@ -347,18 +362,12 @@ int main(int argc, char *argv[])
             num_samples_done += samples_done[t];
         }
         num_samples_left = min_camera_rays - num_samples_done;
-        auto intermediate = std::chrono::high_resolution_clock::now();
-        // rate was in rays per nanosecond
-        // first multiply by 1 billion to get rays per second
-        float rate = 1000000000 * num_samples_done / (intermediate - t3).count();
-
-        std::cout << "samples left " << num_samples_left << '\t'
-                  << "rate " << rate << "\t"
-                  << "time left " << num_samples_left / rate << '\n';
+        print_out_progress(num_samples_done, num_samples_left, t3);
         output_to_file(output, framebuffer, width, height, num_samples_done / (width * height), 10.0, exposure, gamma);
         std::this_thread::sleep_for(0.5s);
     }
 
+    std::cout << '\n';
     for (int t = 0; t < N_THREADS; t++)
     {
         threads[t].join();
