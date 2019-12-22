@@ -444,6 +444,7 @@ world *build_scene(json scene)
         list.push_back(_instance);
         if (mat_type == "diffuse_light")
         {
+            std::cout << "found diffuse light\n";
             lights.push_back(_instance);
         }
     }
@@ -478,8 +479,9 @@ world *build_scene(json scene)
     //                                                   147.5))));
 
     // iterate through objects which are collections of instances
-    int size = list.size();
-    return new world(new bvh_node(list.data(), size, 0.0f, 0.0f), background, lights);
+
+    std::cout << "found " << lights.size() << " lights\n";
+    return new world(new bvh_node(list.data(), list.size(), 0.0f, 0.0f), background, lights);
 }
 
 #endif

@@ -43,6 +43,8 @@ vec3 color(const ray &r, world *world, int depth, int max_bounces, long *bounce_
             hittable_pdf p0(random_light, rec.p);
             cosine_pdf p1(rec.normal);
             mixture_pdf p(&p0, &p1);
+            // hittable_pdf p = p0;
+            // cosine_pdf p = p1;
             // mixture_pdf p(&p0, rec.mat_ptr->pdf);
             scattered = ray(rec.p, p.generate(), r.time());
             pdf_val = p.value(scattered.direction());

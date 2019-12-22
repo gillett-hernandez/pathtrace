@@ -121,8 +121,9 @@ public:
         if (this->hit(ray(o, v), 0.001, FLT_MAX, rec))
         {
             float area = (x1 - x0) * (z1 - z0);
-            float distance_squared = rec.t * rec.t * v.squared_length();
-            float cosine = fabs(dot(v, rec.normal) / v.length());
+            float vlen = v.length();
+            float distance_squared = powf(rec.t * vlen, 2.0);
+            float cosine = fabs(dot(v, rec.normal) / vlen);
             return distance_squared / (cosine * area);
         }
         else
@@ -261,6 +262,30 @@ public:
     {
         box = bbox;
         return hasbbox;
+    }
+    virtual float pdf_value(const vec3 &o, const vec3 &v) const
+    {
+        // hit_record rec;
+        // if (this->hit(ray(o, v), 0.001, FLT_MAX, rec))
+        // {
+        //     float area = (x1 - x0) * (z1 - z0);
+        //     float vlen = v.length();
+        //     float distance_squared = powf(rec.t * vlen, 2.0);
+        //     float cosine = fabs(dot(v, rec.normal) / vlen);
+        //     return distance_squared / (cosine * area);
+        // }
+        // else
+        // {
+        //     return 0;
+        // }
+
+        // inverse transform to local space
+        return ptr->pdf_value(transform.inverse() * o, transform.inverse().apply_linear(v));
+    }
+    virtual vec3 random(const vec3 &o) const
+    {
+        // inverse transform
+        return transform.apply_linear(ptr->random(transform.inverse() * o));
     }
 
     transform3 transform;

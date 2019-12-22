@@ -9,10 +9,10 @@
     "scene": "scenes/cornell.json",
     "should_trace_paths": true,
     "avg_number_of_paths": 1000,
-    "progressive_render_proportion": 0.0,
+    "progressive_render_proportion": 1.0,
     "traced_paths_output": "cornell.txt",
     "traced_paths_2d_output": "cornell_2d.txt",
-    "max_bounces": 15,
-    "samples": 100,
+    "max_bounces": 2,
+    "samples": 10,
     "threads": 11
 }
