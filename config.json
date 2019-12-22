@@ -13,6 +13,6 @@
     "traced_paths_output": "cornell.txt",
     "traced_paths_2d_output": "cornell_2d.txt",
     "max_bounces": 15,
-    "samples": 10,
+    "samples": 100,
     "threads": 11
 }

@@ -54,8 +54,8 @@ public:
 class wrapped_hittable
 {
 public:
-    // wrapped_hittable() : _hittable(nullptr) {}
-    wrapped_hittable() {}
+    wrapped_hittable() : _hittable(nullptr), _material(wrapped_material()) {}
+    // wrapped_hittable() {}
     wrapped_hittable(hittable *_hittable, wrapped_material _material) : _hittable(_hittable), _material(_material) {}
     hittable *_hittable;
     wrapped_material _material;
@@ -256,7 +256,7 @@ world *build_scene(json scene)
         std::string mat_id = element["id"].get<std::string>();
         if (!element.contains("data"))
         {
-            materials.emplace(mat_id, error_material());
+            materials.emplace(mat_id, wrapped_error_material());
             continue;
         }
         std::cout << element << '\n';
@@ -280,7 +280,7 @@ world *build_scene(json scene)
             {
                 // default to using a mauve-like color to indicate an invalid specification, or the lack of a specification
                 std::cout << "material misconfigured, check" << '\n';
-                materials.emplace(mat_id, error_material());
+                materials.emplace(mat_id, wrapped_error_material());
             }
             break;
         case METAL:
