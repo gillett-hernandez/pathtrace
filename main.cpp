@@ -5,6 +5,7 @@
 #include "helpers.h"
 #include "hittable_list.h"
 #include "material.h"
+#include "pdf.h"
 #include "primitive.h"
 #include "random.h"
 #include "scene.h"
@@ -34,17 +35,18 @@ vec3 color(const ray &r, world *world, int depth, int max_bounces, long *bounce_
         ray scattered;
         vec3 attenuation;
         vec3 emitted = rec.mat_ptr->emitted(rec.u, rec.v, rec.p);
-        float pdf;
-        if (depth < max_bounces && rec.mat_ptr->scatter(r, rec, attenuation, scattered, pdf))
+        float pdf_val;
+        if (depth < max_bounces && rec.mat_ptr->scatter(r, rec, attenuation, scattered))
         {
             (*bounce_count)++;
             hittable *random_light = world->get_random_light();
             hittable_pdf p0(random_light, rec.p);
-            // cosine_pdf p1(rec.normal);
-            mixture_pdf p(&p0, rec.mat_ptr->pdf);
+            cosine_pdf p1(rec.normal);
+            mixture_pdf p(&p0, &p1);
+            // mixture_pdf p(&p0, rec.mat_ptr->pdf);
             scattered = ray(rec.p, p.generate(), r.time());
             pdf_val = p.value(scattered.direction());
-            return emitted + attenuation * rec.mat_ptr->scattering_pdf(r, rec, scattered) * color(scattered, world, depth + 1, max_bounces, bounce_count, path) / pdf;
+            return emitted + attenuation * rec.mat_ptr->scattering_pdf(r, rec, scattered) * color(scattered, world, depth + 1, max_bounces, bounce_count, path) / pdf_val;
         }
         else
         {

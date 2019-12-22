@@ -7,10 +7,10 @@
 class world : public hittable
 {
 public:
-    world(bvh_node *ptr, texture *background) : ptr(ptr), background(background)
+    world(bvh_node *ptr, texture *background, std::vector<hittable *> lights) : ptr(ptr), background(background), lights(lights)
     {
-        // search through and find lights
-        ptr->find_lights(&lights);
+        // search through bvh and find lights
+        // ptr->find_lights(&lights);
     }
     virtual bool hit(const ray &r, float tmin, float tmax, hit_record &rec) const
     {
@@ -28,7 +28,8 @@ public:
 
     hittable *get_random_light()
     {
-        ;
+        int idx = (int)(random_double() * lights.size());
+        return lights[idx];
     }
 
     bvh_node *ptr;

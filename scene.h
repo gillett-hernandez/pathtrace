@@ -35,11 +35,23 @@ vec3 json_to_vec3(json color)
     return vec3(color.at(0), color.at(1), color.at(2));
 }
 
-hittable *parse_prim_or_instance(std::map<std::string, hittable *> primitives, std::map<std::string, material *> materials, json element)
+template <class T>
+class wrapped
+{
+public:
+    T item;
+    json data;
+};
+
+typedef wrapped<material *> wrapped_material;
+typedef wrapped<hittable *> wrapped_hittable;
+
+hittable *parse_prim_or_instance(std::map<std::string, wrapped_hittable> primitives, std::map<std::string, wrapped_material> materials, json element)
 {
     // material assign
-    material *_material;
-    hittable *primitive;
+    wrapped_material _material;
+    wrapped_hittable primitive;
+    bool is_light = false;
     std::cout << element << '\n';
 
     if (element.contains("material") && element["material"].contains("id"))
@@ -47,6 +59,10 @@ hittable *parse_prim_or_instance(std::map<std::string, hittable *> primitives, s
         std::string material_id = element["material"]["id"].get<std::string>();
         assert(materials.count(material_id) > 0);
         _material = materials[material_id];
+        if (_material.item->name == "diffuse_light")
+        {
+            is_light = true;
+        }
     }
     else
     {
@@ -66,10 +82,12 @@ hittable *parse_prim_or_instance(std::map<std::string, hittable *> primitives, s
         std::cout << "found SPHERE" << '\n';
         float r = 1.0;
         vec3 origin = vec3(0.0, 0.0, 0.0);
-        if (element.contains("radius")) {
+        if (element.contains("radius"))
+        {
             r = element["radius"].get<float>();
         }
-        if (element.contains("origin")) {
+        if (element.contains("origin"))
+        {
             origin = json_to_vec3(element["origin"]);
         }
         primitive = new sphere(origin, r, _material);
@@ -172,6 +190,7 @@ hittable *parse_prim_or_instance(std::map<std::string, hittable *> primitives, s
 world *build_scene(json scene)
 {
     std::vector<hittable *> list;
+    std::vector<hittable *> lights;
     std::map<std::string, texture *> textures;
     std::map<std::string, material *> materials;
     std::map<std::string, hittable *> primitives;
@@ -260,7 +279,8 @@ world *build_scene(json scene)
         {
             std::cout << "found DIELECTRIC" << '\n';
             float ri = 1.450;
-            if (data.contains("ior")) {
+            if (data.contains("ior"))
+            {
                 ri = data["ior"].get<float>();
             }
             if (data.contains("color"))
@@ -387,7 +407,18 @@ world *build_scene(json scene)
         std::string primitive_id = element["primitive"]["id"].get<std::string>();
         assert(primitives.count(primitive_id) > 0);
         hittable *primitive = primitives[primitive_id];
-        list.push_back(new instance(primitive, transform));
+
+        assert(element["primitive"].contains("id"));
+        std::string primitive_id = element["primitive"]["id"].get<std::string>();
+        assert(primitives.count(primitive_id) > 0);
+        material *_material = materials[material_id];
+
+        hittable *_instance = new instance(primitive, transform);
+        list.push_back(_instance);
+        if (element.value("is_light", false))
+        {
+            lights.push_back(_instance);
+        }
     }
 
     texture *background;
@@ -421,7 +452,7 @@ world *build_scene(json scene)
 
     // iterate through objects which are collections of instances
     int size = list.size();
-    return new world(new bvh_node(list.data(), size, 0.0f, 0.0f), background);
+    return new world(new bvh_node(list.data(), size, 0.0f, 0.0f), background, lights);
 }
 
 #endif

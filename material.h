@@ -9,7 +9,7 @@ class material
 public:
     virtual bool scatter(
         const ray &r_in, const hit_record &rec, vec3 &attenuation,
-        ray &scattered, float &pdf) const
+        ray &scattered) const
     {
         return false;
     }
@@ -22,6 +22,7 @@ public:
     {
         return vec3(0, 0, 0);
     }
+    const std::string name = "uninitialized_material";
 };
 
 class lambertian : public material
@@ -33,7 +34,7 @@ public:
         albedo = new constant_texture(v);
     }
     bool scatter(const ray &r_in,
-                 const hit_record &rec, vec3 &alb, ray &scattered, float &pdf) const
+                 const hit_record &rec, vec3 &alb, ray &scattered) const
     {
         // vec3 target = rec.p + rec.normal + random_in_unit_sphere();
         // scattered = ray(rec.p, unit_vector(target - rec.p), r_in.time());
@@ -50,7 +51,7 @@ public:
         vec3 direction = uvw.local(random_cosine_direction());
         scattered = ray(rec.p, unit_vector(direction), r_in.time());
         alb = albedo->value(rec.u, rec.v, rec.p);
-        pdf = dot(rec.normal, scattered.direction()) / M_PI;
+        // pdf = dot(rec.normal, scattered.direction()) / M_PI;
         return true;
     }
     float scattering_pdf(const ray &r_in,
@@ -63,6 +64,7 @@ public:
     }
 
     texture *albedo;
+    const std::string name = "lambertian";
 };
 
 class metal : public material
@@ -89,6 +91,7 @@ public:
     }
     vec3 albedo;
     float fuzz;
+    const std::string name = "metal";
 };
 
 class dielectric : public material
@@ -142,6 +145,7 @@ public:
     }
 
     float ref_idx;
+    const std::string name = "dielectric";
 };
 
 class diffuse_light : public material
@@ -159,4 +163,5 @@ public:
         return emit->value(u, v, p);
     }
     texture *emit;
+    const std::string name = "diffuse_light";
 };
