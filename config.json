@@ -12,7 +12,7 @@
     "progressive_render_proportion": 1.0,
     "traced_paths_output": "out.txt",
     "traced_paths_2d_output": "out2d.txt",
-    "max_bounces": 2,
+    "max_bounces": 1,
     "samples": 80,
     "threads": 20
 }
