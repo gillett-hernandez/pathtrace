@@ -4,16 +4,18 @@ else
 	opts=-pthread --std=c++14
 endif
 
-main.exe: ray.h vec3.h main.cpp hittable.h hittable_list.h helpers.h camera.h random.h primitive.h texture.h scene.h material.h
+HPP = $(wildcard *.h)
+
+main.exe: main.cpp $(HPP)
 	g++ $(opts) -O3 main.cpp -o main.exe -I.
 
-debug:
+debug: main.cpp $(HPP)
 	g++ $(opts) -g  main.cpp  -o main.exe -I.
 
-check:
+check: main.cpp $(HPP)
 	g++ $(opts) main.cpp -o main.exe -I.
 
-strict:
+check_strict: main.cpp $(HPP)
 	g++ $(opts) -Wall -Wpedantic main.cpp -o main.exe -I.
 
 run: main.exe
@@ -27,7 +29,8 @@ run_and_send: run
 	python3 send_result.py
 
 clean:
-	rm *.o
-	rm *.gch
+	rm *.o || echo
+	rm *.gch || echo
+	rm main.exe || echo
 
-.PHONY: run clean run_and_send strict
+.PHONY: run debug clean run_and_send check check_strict

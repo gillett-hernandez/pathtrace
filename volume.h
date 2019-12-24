@@ -5,25 +5,6 @@
 #include "material.h"
 #include "texture.h"
 
-class isotropic : public material
-{
-public:
-    isotropic(texture *a) : albedo(a) {}
-    isotropic(vec3 a) : albedo(new constant_texture(a)) {}
-    virtual bool scatter(
-        const ray &r_in,
-        const hit_record &rec,
-        vec3 &attenuation,
-        ray &scattered) const
-    {
-
-        scattered = ray(rec.p, random_in_unit_sphere());
-        attenuation = albedo->value(rec.u, rec.v, rec.p);
-        return true;
-    }
-    texture *albedo;
-};
-
 class constant_medium : public hittable
 {
 public:

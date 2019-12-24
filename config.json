@@ -14,6 +14,6 @@
     "traced_paths_output": "out.txt",
     "traced_paths_2d_output": "out2d.txt",
     "max_bounces": 10,
-    "samples": 22,
+    "samples": 32,
     "threads": 22
 }

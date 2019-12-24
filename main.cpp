@@ -27,9 +27,11 @@ typedef std::vector<vec3> path;
 typedef std::vector<path *> paths;
 
 // vec3 color(const ray &r, world *world, int light_samples, int depth, int max_bounces, long *bounce_count, std::vector<vec3> *path)
-vec3 color(const ray &r, world *world, int depth, int max_bounces, long *bounce_count, path *_path)
+vec3 color(const ray &r, float beta, world *world, int depth, int max_bounces, long *bounce_count, path *_path)
 {
     hit_record rec;
+    // assert non-nan time
+    assert(r.time() == r.time());
     if (world->hit(r, 0.001, MAXFLOAT, rec))
     {
         if (_path != nullptr)
@@ -41,17 +43,54 @@ vec3 color(const ray &r, world *world, int depth, int max_bounces, long *bounce_
         vec3 emitted = rec.mat_ptr->emitted(rec.u, rec.v, rec.p);
         if (depth < max_bounces && rec.mat_ptr->scatter(r, rec, attenuation, dummy_scattered))
         {
+            // assert non-nan time
+            assert(r.time() == r.time());
             (*bounce_count)++;
             hittable *random_light = world->get_random_light();
-            hittable_pdf p0(random_light, rec.p);
-            cosine_pdf p1(rec.normal);
-            mixture_pdf p(&p0, &p1);
+            hittable_pdf l_pdf(random_light, rec.p);
+            // pdf scatter_pdf;
+
+            // rec.mat_ptr->get_pdf(*scatter_pdf, r, rec);
+            // mixture_pdf p(&p0, &p1);
             // hittable_pdf p = p0;
             // cosine_pdf p = p1;
             // mixture_pdf p(&p0, rec.mat_ptr->pdf);
-            ray scattered = ray(rec.p, p.generate(), r.time());
-            float pdf_val = p.value(scattered.direction());
-            return emitted + attenuation * rec.mat_ptr->scattering_pdf(r, rec, scattered) * color(scattered, world, depth + 1, max_bounces, bounce_count, _path) / pdf_val;
+            ray light_ray = ray(rec.p, l_pdf.generate(), r.time());
+            ray scattered = ray(rec.p, rec.mat_ptr->generate(r, rec), r.time());
+
+            // assert non-nan time
+            assert(light_ray.time() == light_ray.time());
+            // assert non-nan time
+            assert(scattered.time() == scattered.time());
+            float weight;
+            vec3 _color = emitted;
+
+            {
+                float light_pdf = l_pdf.value(light_ray.direction());
+                float scatter_pdf = rec.mat_ptr->value(r, rec, light_ray.direction());
+                weight = 1;
+                if (light_pdf > 0)
+                {
+                    weight = power_heuristic(1, light_pdf, 1, scatter_pdf);
+
+                    _color += beta * attenuation * weight * color(light_ray, fabs(dot(light_ray.direction(), rec.normal)) * beta / light_pdf, world, depth + 1, 0, bounce_count, nullptr) / light_pdf;
+                }
+            }
+
+            {
+                float light_pdf = l_pdf.value(-scattered.direction());
+                float scatter_pdf = rec.mat_ptr->value(r, rec, scattered.direction());
+                if (scatter_pdf > 0)
+                {
+                    // if ()
+                    weight = power_heuristic(1, scatter_pdf, 1, light_pdf);
+                    // beta *= dot(r.direction(), rec.normal);
+                    _color += beta * attenuation * weight * color(scattered, fabs(dot(scattered.direction(), rec.normal)) * beta / scatter_pdf, world, depth + 1, max_bounces, bounce_count, _path) / scatter_pdf;
+                }
+            }
+            // _color += attenuation * color(scattered, world, depth + 1, max_bounces, bounce_count, _path);
+            // return emitted + _color;
+            return _color;
         }
         else
         {
@@ -130,7 +169,7 @@ void output_to_file(std::ofstream &output, vec3 **buffer, int width, int height,
 
 std::mutex framebuffer_lock;
 
-void compute_rays_single_pass(int thread_id, long *ray_ct, int *completed_samples, vec3 **buffer, int width, int height, int samples, int max_bounces, camera cam, world *world, float trace_probability, paths *array_of_paths)
+void compute_rays_single_pass(int thread_id, long *ray_ct, int *completed_samples, vec3 **buffer, int width, int height, int samples, int max_bounces, camera *cam, world *world, float trace_probability, paths *array_of_paths)
 {
     if (samples == 0)
     {
@@ -150,7 +189,7 @@ void compute_rays_single_pass(int thread_id, long *ray_ct, int *completed_sample
             {
                 float u = float(i + random_double()) / float(width);
                 float v = float(j + random_double()) / float(height);
-                ray r = cam.get_ray(u, v);
+                ray r = cam->get_ray(u, v);
                 std::vector<vec3> *_path = nullptr;
                 if (random_double() < trace_probability)
                 {
@@ -171,7 +210,7 @@ void compute_rays_single_pass(int thread_id, long *ray_ct, int *completed_sample
                 {
                     _path = nullptr;
                 }
-                col += de_nan(color(r, world, 0, max_bounces, count, _path));
+                col += de_nan(color(r, 1.0, world, 0, max_bounces, count, _path));
                 if (_path != nullptr)
                 {
                     // std::cout << "traced _path, size is " << _path->size() << std::endl;
@@ -192,7 +231,7 @@ void compute_rays_single_pass(int thread_id, long *ray_ct, int *completed_sample
     // std::cout << "total length of traced paths : " << paths[thread_id].size() << std::endl;
 }
 
-void compute_rays_progressive(int thread_id, long *ray_ct, int *completed_samples, vec3 **buffer, int width, int height, int samples, int max_bounces, camera cam, world *world, float trace_probability, paths *array_of_paths)
+void compute_rays_progressive(int thread_id, long *ray_ct, int *completed_samples, vec3 **buffer, int width, int height, int samples, int max_bounces, camera *cam, world *world, float trace_probability, paths *array_of_paths)
 {
     if (samples == 0)
     {
@@ -212,7 +251,7 @@ void compute_rays_progressive(int thread_id, long *ray_ct, int *completed_sample
 
                 float u = float(i + random_double()) / float(width);
                 float v = float(j + random_double()) / float(height);
-                ray r = cam.get_ray(u, v);
+                ray r = cam->get_ray(u, v);
                 std::vector<vec3> *_path = nullptr;
                 if (random_double() < trace_probability)
                 {
@@ -232,7 +271,7 @@ void compute_rays_progressive(int thread_id, long *ray_ct, int *completed_sample
                 {
                     _path = nullptr;
                 }
-                col += de_nan(color(r, world, 0, max_bounces, count, _path));
+                col += de_nan(color(r, 1.0, world, 0, max_bounces, count, _path));
                 if (_path != nullptr)
                 {
                     // std::cout << "traced _path, size is " << _path->size() << std::endl;
@@ -387,11 +426,11 @@ int main(int argc, char *argv[])
         std::cout << ' ' << samples;
         if (random_double() < progressive_proportion)
         {
-            threads[t] = std::thread(compute_rays_progressive, t, &bounce_counts[t], samples_done, std::ref(framebuffer), width, height, samples, MAX_BOUNCES, cam, world, trace_probability, array_of_paths);
+            threads[t] = std::thread(compute_rays_progressive, t, &bounce_counts[t], samples_done, std::ref(framebuffer), width, height, samples, MAX_BOUNCES, &cam, world, trace_probability, array_of_paths);
         }
         else
         {
-            threads[t] = std::thread(compute_rays_single_pass, t, &bounce_counts[t], samples_done, std::ref(framebuffer), width, height, samples, MAX_BOUNCES, cam, world, trace_probability, array_of_paths);
+            threads[t] = std::thread(compute_rays_single_pass, t, &bounce_counts[t], samples_done, std::ref(framebuffer), width, height, samples, MAX_BOUNCES, &cam, world, trace_probability, array_of_paths);
         }
     }
     std::cout << " done.\n";

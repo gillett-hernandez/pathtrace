@@ -8,32 +8,36 @@
 class material
 {
 public:
+    // material()
+    // {
+    //     assert(false);
+    //     std::cout << "material should not be instantiated\n";
+    // }
     virtual bool scatter(
         const ray &r_in, const hit_record &rec, vec3 &attenuation,
         ray &scattered) const
     {
         return false;
     }
-    virtual void get_pdf(pdf &_pdf, const ray &r, const hit_record &rec) const {
-        // _pdf, hittable_pdf
-    };
-    virtual float scattering_pdf(const ray &r_in, const hit_record &rec,
-                                 const ray &scattered) const
-    {
-        return 0;
-    }
+    virtual vec3 generate(const ray &r, const hit_record &rec) = 0;
+    virtual float value(const ray &r, const hit_record &rec, const vec3 &direction) = 0;
+    // virtual float scattering_pdf(const ray &r_in, const hit_record &rec,
+    //                              const ray &scattered) const
+    // {
+    //     return 0;
+    // }
     virtual vec3 emitted(float u, float v, const vec3 &p) const
     {
         return vec3(0, 0, 0);
     }
-    const std::string name = "uninitialized_material";
+    std::string name;
 };
 
 class lambertian : public material
 {
 public:
-    lambertian(texture *a) : albedo(a) {}
-    lambertian(vec3 v)
+    lambertian(texture *a, std::string name = "lambertian") : albedo(a), name(name) {}
+    lambertian(vec3 v, std::string name = "lambertian") : name(name)
     {
         albedo = new constant_texture(v);
     }
@@ -50,29 +54,33 @@ public:
         alb = albedo->value(rec.u, rec.v, rec.p);
         return true;
     }
-    float scattering_pdf(const ray &r_in,
-                         const hit_record &rec, const ray &scattered) const
+    // float scattering_pdf(const ray &r_in,
+    //                      const hit_record &rec, const ray &scattered) const
+    // {
+    //     float cosine = dot(rec.normal, unit_vector(scattered.direction()));
+    //     if (cosine < 0)
+    //     {
+    //         return 0;
+    //     }
+    //     return cosine / M_PI;
+    // }
+    vec3 generate(const ray &r_in, const hit_record &rec)
     {
-        float cosine = dot(rec.normal, unit_vector(scattered.direction()));
-        if (cosine < 0)
-        {
-            return 0;
-        }
-        return cosine / M_PI;
-    }
-    virtual void get_pdf(pdf &_pdf, const ray &r, const hit_record &rec) const
-    {
-        _pdf = cosine_pdf(rec.normal);
+        return cosine_pdf(rec.normal).generate();
     };
+    float value(const ray &r, const hit_record &rec, const vec3 &direction)
+    {
+        return cosine_pdf(rec.normal).value(direction);
+    }
 
     texture *albedo;
-    const std::string name = "lambertian";
+    std::string name;
 };
 
 class metal : public material
 {
 public:
-    metal(const vec3 &a, float f) : albedo(a)
+    metal(const vec3 &a, float f, std::string name = "metal") : albedo(a), name(name)
     {
         if (f < 1)
         {
@@ -91,15 +99,25 @@ public:
         attenuation = albedo;
         return (dot(scattered.direction(), rec.normal) > 0);
     }
+    vec3 generate(const ray &r_in, const hit_record &rec)
+    {
+        // for now use cosine.
+        // in the future, program a microfaced brdf
+        return cosine_pdf(rec.normal).generate();
+    };
+    float value(const ray &r, const hit_record &rec, const vec3 &direction)
+    {
+        return cosine_pdf(rec.normal).value(direction);
+    }
     vec3 albedo;
     float fuzz;
-    const std::string name = "metal";
+    std::string name;
 };
 
 class dielectric : public material
 {
 public:
-    dielectric(float ri) : ref_idx(ri) {}
+    dielectric(float ri, std::string name = "dielectric") : ref_idx(ri), name(name) {}
     virtual bool scatter(const ray &r_in, const hit_record &rec,
                          vec3 &attenuation, ray &scattered) const
     {
@@ -145,16 +163,24 @@ public:
 
         return true;
     }
+    vec3 generate(const ray &r_in, const hit_record &rec)
+    {
+        return void_pdf().generate();
+    };
+    float value(const ray &r, const hit_record &rec, const vec3 &direction)
+    {
+        return void_pdf().value(direction);
+    }
 
     float ref_idx;
-    const std::string name = "dielectric";
+    std::string name;
 };
 
 class diffuse_light : public material
 {
 public:
-    diffuse_light(texture *a) : emit(a) {}
-    diffuse_light(vec3 &a)
+    diffuse_light(texture *a, std::string name = "diffuse_light") : emit(a), name(name) {}
+    diffuse_light(vec3 &a, std::string name = "diffuse_light") : name(name)
     {
         emit = new constant_texture(a);
     }
@@ -164,6 +190,46 @@ public:
     {
         return emit->value(u, v, p);
     }
+    vec3 generate(const ray &r_in, const hit_record &rec)
+    {
+        return void_pdf().generate();
+    };
+    float value(const ray &r, const hit_record &rec, const vec3 &direction)
+    {
+        return void_pdf().value(direction);
+    }
     texture *emit;
-    const std::string name = "diffuse_light";
+    std::string name;
+};
+class isotropic : public material
+{
+public:
+    isotropic(texture *a, vec3 emission = vec3(0, 0, 0), std::string name = "dielectric") : albedo(a), emission(emission), name(name) {}
+    isotropic(vec3 a, vec3 emission = vec3(0, 0, 0), std::string name = "dielectric") : albedo(new constant_texture(a)), emission(emission), name(name) {}
+    virtual bool scatter(
+        const ray &r_in,
+        const hit_record &rec,
+        vec3 &attenuation,
+        ray &scattered) const
+    {
+
+        scattered = ray(rec.p, random_in_unit_sphere());
+        attenuation = albedo->value(rec.u, rec.v, rec.p);
+        return true;
+    }
+    virtual vec3 emitted(float u, float v, const vec3 &p) const
+    {
+        return emission;
+    }
+    vec3 generate(const ray &r_in, const hit_record &rec)
+    {
+        return random_pdf().generate();
+    };
+    float value(const ray &r, const hit_record &rec, const vec3 &direction)
+    {
+        return random_pdf().value(direction);
+    }
+    texture *albedo;
+    vec3 emission;
+    std::string name;
 };

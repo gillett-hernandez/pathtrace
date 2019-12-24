@@ -269,10 +269,12 @@ world *build_scene(json scene)
 
             if (data.contains("color"))
             {
+                std::cout << "color path\n";
                 materials.emplace(mat_id, wrapped_material(new lambertian(json_to_vec3(data["color"])), "lambertian"));
             }
             else if (data.contains("texture"))
             {
+                std::cout << "texture path\n";
                 // construct the material from the reference to a texture
                 materials.emplace(mat_id, wrapped_material(new lambertian(textures[data["texture"].get<std::string>()]), "lambertian"));
             }

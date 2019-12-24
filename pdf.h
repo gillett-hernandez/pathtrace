@@ -34,6 +34,20 @@ public:
     onb uvw;
 };
 
+class random_pdf : public pdf
+{
+public:
+    random_pdf() {}
+    virtual float value(const vec3 &direction) const
+    {
+        return 1 / (4 * M_PI);
+    }
+    virtual vec3 generate() const
+    {
+        return random_in_unit_sphere();
+    }
+};
+
 class hittable_pdf : public pdf
 {
 public:
@@ -48,6 +62,20 @@ public:
     }
     vec3 o;
     hittable *ptr;
+};
+
+class void_pdf : public pdf
+{
+public:
+    void_pdf() {}
+    virtual float value(const vec3 &direction) const
+    {
+        return 0;
+    }
+    virtual vec3 generate() const
+    {
+        return random_in_unit_sphere();
+    }
 };
 
 class mixture_pdf : public pdf

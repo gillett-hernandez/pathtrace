@@ -16,6 +16,10 @@ public:
         float theta = vfov * M_PI / 180;
         float half_height = tan(theta / 2);
         float half_width = aspect * half_height;
+        assert(t0 == t0);
+        assert(t1 == t1);
+        time0 = t0;
+        time1 = t1;
         origin = lookfrom;
         w = unit_vector(lookfrom - lookat);
         std::cout << "w " << w << std::endl;
