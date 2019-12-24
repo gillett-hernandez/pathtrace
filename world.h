@@ -3,6 +3,9 @@
 
 #include "hittable.h"
 #include "texture.h"
+#include "thirdparty/json.hpp"
+
+using json=nlohmann::json;
 
 class world : public hittable
 {
@@ -32,6 +35,8 @@ public:
         return lights[idx];
     }
 
+
+    json config;
     bvh_node *ptr;
     std::vector<hittable *> lights;
     texture *background;

@@ -19,9 +19,13 @@ public:
     {
         float cosine = dot(unit_vector(direction), uvw.w());
         if (cosine > 0)
+        {
             return cosine / M_PI;
+        }
         else
+        {
             return 0;
+        }
     }
     virtual vec3 generate() const
     {
@@ -61,9 +65,13 @@ public:
     virtual vec3 generate() const
     {
         if (random_double() < 0.5)
+        {
             return p[0]->generate();
+        }
         else
+        {
             return p[1]->generate();
+        }
     }
     pdf *p[2];
 };

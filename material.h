@@ -3,6 +3,7 @@
 #include "hittable.h"
 #include "texture.h"
 #include "vec3.h"
+#include "pdf.h"
 
 class material
 {
@@ -13,6 +14,7 @@ public:
     {
         return false;
     }
+    virtual pdf *get_pdf(const ray &r, const hit_record &rec) const = 0;
     virtual float scattering_pdf(const ray &r_in, const hit_record &rec,
                                  const ray &scattered) const
     {
@@ -33,25 +35,17 @@ public:
     {
         albedo = new constant_texture(v);
     }
-    bool scatter(const ray &r_in,
-                 const hit_record &rec, vec3 &alb, ray &scattered) const
+    bool scatter(const ray &r_in, const hit_record &rec, vec3 &alb, ray &scattered) const
+    // bool scatter(const ray &r_in, const hit_record &rec, vec3 &alb) const
     {
-        // vec3 target = rec.p + rec.normal + random_in_unit_sphere();
-        // scattered = ray(rec.p, unit_vector(target - rec.p), r_in.time());
-        // vec3 direction;
-        // do
-        // {
-        //     direction = random_in_unit_sphere();
-        // } while (dot(direction, rec.normal) < 0);
 
+        // onb uvw;
+        // uvw.build_from_w(rec.normal);
+        // vec3 direction = uvw.local(random_cosine_direction());
         // scattered = ray(rec.p, unit_vector(direction), r_in.time());
-
-        onb uvw;
-        uvw.build_from_w(rec.normal);
-        vec3 direction = uvw.local(random_cosine_direction());
-        scattered = ray(rec.p, unit_vector(direction), r_in.time());
+        cosine_pdf pdf = cosine_pdf(rec.normal);
+        scattered = ray(rec.p, pdf.generate(), r_in.time());
         alb = albedo->value(rec.u, rec.v, rec.p);
-        // pdf = dot(rec.normal, scattered.direction()) / M_PI;
         return true;
     }
     float scattering_pdf(const ray &r_in,
@@ -59,7 +53,9 @@ public:
     {
         float cosine = dot(rec.normal, unit_vector(scattered.direction()));
         if (cosine < 0)
+        {
             return 0;
+        }
         return cosine / M_PI;
     }
 

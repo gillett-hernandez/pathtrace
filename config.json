@@ -2,17 +2,18 @@
     "film": {
         "width": 800,
         "height": 800,
-        "exposure": -10.0,
+        "exposure": -5.0,
         "gamma": 1.0
     },
     "output_path": "render.ppm",
     "scene": "scenes/cornell_box_small_lights.json",
     "should_trace_paths": true,
     "avg_number_of_paths": 1000,
-    "progressive_render_proportion": 1.0,
+    "progressive_render_proportion": 0.0,
+    "mis_weight": 0.0,
     "traced_paths_output": "out.txt",
     "traced_paths_2d_output": "out2d.txt",
-    "max_bounces": 1,
-    "samples": 80,
-    "threads": 20
+    "max_bounces": 10,
+    "samples": 1000,
+    "threads": 22
 }

@@ -12,16 +12,33 @@ parser.add_argument(
 
 
 def main(args):
+    # print(args)
     for a, b, c in os.walk("."):
         for file in c:
             if file.endswith(".ppm"):
-                try:
-                    im = Image.open(file)
-                    im.save(file.replace(".ppm", ".png"))
-                    if not args.no_delete:
-                        os.remove(file)
-                except:
-                    pass
+                ppmstat = os.stat(file)
+                filepng = file.replace(".ppm", ".png")
+                should_replace = True
+                if os.path.exists(filepng):
+                    # check if ppm is newer than png, only then will we overwrite
+                    pngstat = os.stat(filepng)
+                    if ppmstat.st_mtime <= pngstat.st_mtime:
+                        should_replace = False
+                # print(file, filepng)
+                if should_replace:
+                    try:
+                        tmp_file_png = filepng.replace(".png", ".tmp.png")
+                        im = Image.open(file)
+                        im.save(tmp_file_png)
+                        os.remove(filepng)
+                        os.rename(tmp_file_png, filepng)
+                        os.remove(tmp_file_png)
+                        if not args.no_delete:
+                            # print("deleting")
+                            os.remove(file)
+                    except Exception as e:
+                        # print(e)
+                        pass
 
 
 if __name__ == "__main__":
