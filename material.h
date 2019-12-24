@@ -14,7 +14,9 @@ public:
     {
         return false;
     }
-    virtual pdf *get_pdf(const ray &r, const hit_record &rec) const = 0;
+    virtual void get_pdf(pdf &_pdf, const ray &r, const hit_record &rec) const {
+        // _pdf, hittable_pdf
+    };
     virtual float scattering_pdf(const ray &r_in, const hit_record &rec,
                                  const ray &scattered) const
     {
@@ -58,6 +60,10 @@ public:
         }
         return cosine / M_PI;
     }
+    virtual void get_pdf(pdf &_pdf, const ray &r, const hit_record &rec) const
+    {
+        _pdf = cosine_pdf(rec.normal);
+    };
 
     texture *albedo;
     const std::string name = "lambertian";

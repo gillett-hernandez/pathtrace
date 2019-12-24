@@ -49,9 +49,9 @@ vec3 color(const ray &r, world *world, int depth, int max_bounces, long *bounce_
             // hittable_pdf p = p0;
             // cosine_pdf p = p1;
             // mixture_pdf p(&p0, rec.mat_ptr->pdf);
-            scattered = ray(rec.p, p.generate(), r.time());
-            pdf_val = p.value(scattered.direction());
-            return emitted + attenuation * rec.mat_ptr->scattering_pdf(r, rec, scattered) * color(scattered, world, depth + 1, max_bounces, bounce_count, path) / pdf_val;
+            ray scattered = ray(rec.p, p.generate(), r.time());
+            float pdf_val = p.value(scattered.direction());
+            return emitted + attenuation * rec.mat_ptr->scattering_pdf(r, rec, scattered) * color(scattered, world, depth + 1, max_bounces, bounce_count, _path) / pdf_val;
         }
         else
         {
@@ -159,6 +159,7 @@ void compute_rays_single_pass(int thread_id, long *ray_ct, int *completed_sample
                     if (traces < array_of_paths[thread_id].size())
                     {
                         _path = array_of_paths[thread_id][traces];
+                        assert(_path->size() == 0);
                     }
                     else
                     {
@@ -174,7 +175,10 @@ void compute_rays_single_pass(int thread_id, long *ray_ct, int *completed_sample
                 if (_path != nullptr)
                 {
                     // std::cout << "traced _path, size is " << _path->size() << std::endl;
-                    array_of_paths[thread_id].push_back(_path);
+                    if (traces > array_of_paths[thread_id].size())
+                    {
+                        array_of_paths[thread_id].push_back(_path);
+                    }
                 }
             }
 
@@ -231,8 +235,11 @@ void compute_rays_progressive(int thread_id, long *ray_ct, int *completed_sample
                 col += de_nan(color(r, world, 0, max_bounces, count, _path));
                 if (_path != nullptr)
                 {
-                    // std::cout << "traced path, size is " << path->size() << std::endl;
-                    array_of_paths[thread_id].push_back(_path);
+                    // std::cout << "traced _path, size is " << _path->size() << std::endl;
+                    if (traces > array_of_paths[thread_id].size())
+                    {
+                        array_of_paths[thread_id].push_back(_path);
+                    }
                 }
 
                 framebuffer_lock.lock();
@@ -438,10 +445,15 @@ int main(int argc, char *argv[])
         {
             auto paths = array_of_paths[t];
 
-            added_paths += paths.size();
+            // added_paths += paths.size();
 
             for (auto &path : paths)
             {
+                if (path->size() == 0)
+                {
+                    continue;
+                }
+                added_paths++;
                 for (auto &point : *path)
                 {
                     traced_paths_output << point.x() << ',' << point.y() << ',' << point.z() << '\n';
