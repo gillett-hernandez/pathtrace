@@ -5,7 +5,7 @@
 #include "texture.h"
 #include "thirdparty/json.hpp"
 
-using json=nlohmann::json;
+using json = nlohmann::json;
 
 class world : public hittable
 {
@@ -34,7 +34,6 @@ public:
         int idx = (int)(random_double() * lights.size());
         return lights[idx];
     }
-
 
     json config;
     bvh_node *ptr;
