@@ -21,7 +21,8 @@ using json = nlohmann::json;
 #include <mutex>
 #include <thread>
 
-vec3 color(const ray &r, world *world, int depth, int max_bounces, long *bounce_count, std::vector<vec3> *path)
+// reuse this for branched path tracing
+vec3 recursive_color(const ray &r, world *world, int depth, int max_bounces, long *bounce_count, std::vector<vec3> *path)
 {
     hit_record rec;
     if (world->hit(r, 0.001, MAXFLOAT, rec))
@@ -36,7 +37,7 @@ vec3 color(const ray &r, world *world, int depth, int max_bounces, long *bounce_
         if (depth < max_bounces && rec.mat_ptr->scatter(r, rec, attenuation, scattered))
         {
             (*bounce_count)++;
-            return emitted + attenuation * color(scattered, world, depth + 1, max_bounces, bounce_count, path);
+            return emitted + attenuation * recursive_color(scattered, world, depth + 1, max_bounces, bounce_count, path);
         }
         else
         {
@@ -64,7 +65,8 @@ vec3 color(const ray &r, world *world, int depth, int max_bounces, long *bounce_
     }
 }
 
-vec3 color2(ray &r, world *world, int depth, int max_bounces, long *bounce_count, std::vector<vec3> *path)
+//
+vec3 iterative_color(ray &r, world *world, int depth, int max_bounces, long *bounce_count, std::vector<vec3> *path)
 {
     hit_record rec;
     vec3 _color = vec3(0, 0, 0);
@@ -192,8 +194,8 @@ void compute_rays_single_pass(int thread_id, long *ray_ct, int *completed_sample
                     // std::cout << "creating path to trace" << std::endl;
                     path = new std::vector<vec3>();
                 }
-                col += de_nan(color2(r, world, 0, max_bounces, count, path));
-                // col += de_nan(color(r, world, 0, max_bounces, count, path));
+                col += de_nan(iterative_color(r, world, 0, max_bounces, count, path));
+                // col += de_nan(recursive_color(r, world, 0, max_bounces, count, path));
                 if (path != nullptr)
                 {
                     // std::cout << "traced path, size is " << path->size() << std::endl;
@@ -237,8 +239,8 @@ void compute_rays_progressive(int thread_id, long *ray_ct, int *completed_sample
                     // std::cout << "creating path to trace" << std::endl;
                     path = new std::vector<vec3>();
                 }
-                col += de_nan(color2(r, world, 0, max_bounces, count, path));
-                // col += de_nan(color(r, world, 0, max_bounces, count, path));
+                col += de_nan(iterative_color(r, world, 0, max_bounces, count, path));
+                // col += de_nan(recursive_color(r, world, 0, max_bounces, count, path));
                 if (path != nullptr)
                 {
                     // std::cout << "traced path, size is " << path->size() << std::endl;
