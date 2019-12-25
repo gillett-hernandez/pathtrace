@@ -12,7 +12,7 @@
     "progressive_render_proportion": 0.0,
     "traced_paths_output": "light_test.txt",
     "traced_paths_2d_output": "light_test_2d.txt",
-    "max_bounces": 15,
-    "samples": 100,
+    "max_bounces": 2,
+    "samples": 55,
     "threads": 11
 }

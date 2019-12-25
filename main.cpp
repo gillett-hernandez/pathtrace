@@ -64,6 +64,57 @@ vec3 color(const ray &r, world *world, int depth, int max_bounces, long *bounce_
     }
 }
 
+vec3 color2(ray &r, world *world, int depth, int max_bounces, long *bounce_count, std::vector<vec3> *path)
+{
+    hit_record rec;
+    vec3 _color = vec3(0, 0, 0);
+    ray scattered;
+    vec3 attenuation = vec3(0, 0, 0);
+    vec3 emitted = vec3(0, 0, 0);
+
+    vec3 beta = vec3(1.0, 1.0, 1.0);
+    for (int i = 0; i < max_bounces; i++)
+    {
+        if (path != nullptr)
+        {
+            path->push_back(rec.p);
+        }
+        if (world->hit(r, 0.001, MAXFLOAT, rec))
+        {
+            emitted = rec.mat_ptr->emitted(rec.u, rec.v, rec.p);
+            if (rec.mat_ptr->scatter(r, rec, attenuation, scattered))
+            {
+                (*bounce_count)++;
+                _color += beta * emitted;
+                beta *= attenuation;
+                r = scattered;
+            }
+            else
+            {
+                _color += beta * emitted;
+                break;
+            }
+        }
+        else
+        {
+            // world background color here
+            // vec3 unit_direction = unit_vector(r.direction());
+            // float t = 0.5 * (unit_direction.y() + 1.0);
+            // return (1.0 - t) * vec3(1.0, 1.0, 1.0) + t * vec3(0.2, 0.1, 0.7);
+
+            // generate world u v and then sample world texture?
+            // return vec3(0, 0, 0);
+            vec3 unit_direction = unit_vector(r.direction());
+            float u = unit_direction.x();
+            float v = unit_direction.y();
+            // TODO: replace u and v with angle l->r and angle d->u;
+            _color += beta * world->value(u, v, unit_direction);
+            break;
+        }
+    }
+    return _color;
+}
+
 camera setup_camera(json camera_json, float aspect_ratio, vec3 vup = vec3(0, 1, 0))
 {
     vec3 lookfrom(
@@ -141,7 +192,8 @@ void compute_rays_single_pass(int thread_id, long *ray_ct, int *completed_sample
                     // std::cout << "creating path to trace" << std::endl;
                     path = new std::vector<vec3>();
                 }
-                col += de_nan(color(r, world, 0, max_bounces, count, path));
+                col += de_nan(color2(r, world, 0, max_bounces, count, path));
+                // col += de_nan(color(r, world, 0, max_bounces, count, path));
                 if (path != nullptr)
                 {
                     // std::cout << "traced path, size is " << path->size() << std::endl;
@@ -185,7 +237,8 @@ void compute_rays_progressive(int thread_id, long *ray_ct, int *completed_sample
                     // std::cout << "creating path to trace" << std::endl;
                     path = new std::vector<vec3>();
                 }
-                col += de_nan(color(r, world, 0, max_bounces, count, path));
+                col += de_nan(color2(r, world, 0, max_bounces, count, path));
+                // col += de_nan(color(r, world, 0, max_bounces, count, path));
                 if (path != nullptr)
                 {
                     // std::cout << "traced path, size is " << path->size() << std::endl;
