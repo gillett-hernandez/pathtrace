@@ -13,7 +13,7 @@
     "mis_weight": 0.0,
     "traced_paths_output": "out.txt",
     "traced_paths_2d_output": "out2d.txt",
-    "max_bounces": 10,
+    "max_bounces": 5,
     "samples": 32,
     "threads": 22
 }

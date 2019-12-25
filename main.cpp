@@ -27,7 +27,7 @@ typedef std::vector<vec3> path;
 typedef std::vector<path *> paths;
 
 // vec3 color(const ray &r, world *world, int light_samples, int depth, int max_bounces, long *bounce_count, std::vector<vec3> *path)
-vec3 color(const ray &r, float beta, world *world, int depth, int max_bounces, long *bounce_count, path *_path)
+vec3 color(const ray &r, world *world, int depth, int max_bounces, long *bounce_count, path *_path)
 {
     hit_record rec;
     // assert non-nan time
@@ -62,32 +62,56 @@ vec3 color(const ray &r, float beta, world *world, int depth, int max_bounces, l
             assert(light_ray.time() == light_ray.time());
             // assert non-nan time
             assert(scattered.time() == scattered.time());
-            float weight;
+            // float weight;
             vec3 _color = emitted;
+            // pdf of light ray having gone directly towards light from hit point
+            float light_pdf_l = l_pdf.value(light_ray.direction());
+            // pdf of light ray having gone directly towards light from hit point
+            float scatter_pdf_l = rec.mat_ptr->value(r, rec, light_ray.direction());
 
-            {
-                float light_pdf = l_pdf.value(light_ray.direction());
-                float scatter_pdf = rec.mat_ptr->value(r, rec, light_ray.direction());
-                weight = 1;
-                if (light_pdf > 0)
-                {
-                    weight = power_heuristic(1, light_pdf, 1, scatter_pdf);
+            // pdf of scatter ray going towards light
+            float light_pdf_s = l_pdf.value(scattered.direction());
+            // chance of scatter ray going in
+            float scatter_pdf_s = rec.mat_ptr->value(r, rec, scattered.direction());
 
-                    _color += beta * attenuation * weight * color(light_ray, fabs(dot(light_ray.direction(), rec.normal)) * beta / light_pdf, world, depth + 1, 0, bounce_count, nullptr) / light_pdf;
-                }
-            }
+            float mix_l = (scatter_pdf_l + light_pdf_l) / 2.0;
+            float mix_s = (scatter_pdf_s + light_pdf_s) / 2.0;
 
-            {
-                float light_pdf = l_pdf.value(-scattered.direction());
-                float scatter_pdf = rec.mat_ptr->value(r, rec, scattered.direction());
-                if (scatter_pdf > 0)
-                {
-                    // if ()
-                    weight = power_heuristic(1, scatter_pdf, 1, light_pdf);
-                    // beta *= dot(r.direction(), rec.normal);
-                    _color += beta * attenuation * weight * color(scattered, fabs(dot(scattered.direction(), rec.normal)) * beta / scatter_pdf, world, depth + 1, max_bounces, bounce_count, _path) / scatter_pdf;
-                }
-            }
+            float weight_l = power_heuristic(1, light_pdf_l, 1, scatter_pdf_l);
+            float inv_weight_l = 1 - weight_l;
+            float cos_l = fabs(dot(light_ray.direction(), rec.normal));
+
+            float weight_s = power_heuristic(1, light_pdf_s, 1, scatter_pdf_s);
+            float inv_weight_s = 1 - weight_s;
+            float cos_s = fabs(dot(scattered.direction(), rec.normal));
+
+            // add contribution from next event estimation
+            _color += 1.0 * attenuation * weight_l / light_pdf_l * color(light_ray, world, depth + 1, 0, bounce_count, nullptr);
+            // add contribution from next and future bounces
+            _color += 1.0 * attenuation * (inv_weight_s / scatter_pdf_s) * color(scattered, world, depth + 1, max_bounces, bounce_count, _path);
+
+            // _color += beta * attenuation * mix_l * color(light_ray, cos_l * beta / light_pdf_l, world, depth + 1, 0, bounce_count, nullptr);
+            // _color += beta * attenuation * mix_s * color(scattered,cos_s * beta / scatter_pdf_s, world, depth + 1, max_bounces, bounce_count, _path);
+
+            // {
+            //     weight = 1;
+            //     if (light_pdf > 0)
+            //     {
+            //         weight = power_heuristic(1, light_pdf, 1, scatter_pdf);
+
+            //         _color += beta * attenuation * weight * color(light_ray, cos_l * beta / light_pdf, world, depth + 1, 0, bounce_count, nullptr) / light_pdf;
+            //     }
+            // }
+
+            // {
+            //     if (scatter_pdf > 0)
+            //     {
+            //         // if ()
+            //         weight = power_heuristic(1, scatter_pdf, 1, light_pdf);
+            //         // beta *= dot(r.direction(), rec.normal);
+            //         _color += beta * attenuation * weight * color(scattered,cos_s * beta / scatter_pdf, world, depth + 1, max_bounces, bounce_count, _path) / scatter_pdf;
+            //     }
+            // }
             // _color += attenuation * color(scattered, world, depth + 1, max_bounces, bounce_count, _path);
             // return emitted + _color;
             return _color;
@@ -210,7 +234,7 @@ void compute_rays_single_pass(int thread_id, long *ray_ct, int *completed_sample
                 {
                     _path = nullptr;
                 }
-                col += de_nan(color(r, 1.0, world, 0, max_bounces, count, _path));
+                col += de_nan(color(r, world, 0, max_bounces, count, _path));
                 if (_path != nullptr)
                 {
                     // std::cout << "traced _path, size is " << _path->size() << std::endl;
@@ -271,7 +295,7 @@ void compute_rays_progressive(int thread_id, long *ray_ct, int *completed_sample
                 {
                     _path = nullptr;
                 }
-                col += de_nan(color(r, 1.0, world, 0, max_bounces, count, _path));
+                col += de_nan(color(r, world, 0, max_bounces, count, _path));
                 if (_path != nullptr)
                 {
                     // std::cout << "traced _path, size is " << _path->size() << std::endl;

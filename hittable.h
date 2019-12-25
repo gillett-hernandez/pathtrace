@@ -7,12 +7,14 @@
 #define HITTABLEH
 
 class material;
+class hittable;
 
 struct hit_record
 {
     float t;
     vec3 p;
     vec3 normal;
+    hittable *primitive;
     float u;
     float v;
     material *mat_ptr;

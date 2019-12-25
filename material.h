@@ -51,7 +51,7 @@ public:
         // scattered = ray(rec.p, unit_vector(direction), r_in.time());
         cosine_pdf pdf = cosine_pdf(rec.normal);
         scattered = ray(rec.p, pdf.generate(), r_in.time());
-        alb = albedo->value(rec.u, rec.v, rec.p);
+        alb = albedo->value(rec.u, rec.v, rec.p) / M_PI;
         return true;
     }
     // float scattering_pdf(const ray &r_in,

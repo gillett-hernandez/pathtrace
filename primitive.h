@@ -39,8 +39,8 @@ bool sphere::hit(const ray &r, float t_min, float t_max, hit_record &rec) const
             rec.t = temp;
             rec.p = r.point_at_parameter(rec.t);
             rec.normal = (rec.p - center) / radius;
-            ;
             rec.mat_ptr = mat_ptr;
+            rec.primitive = (hittable *)this;
             return true;
         }
         temp = (-b + sqrt(discriminant)) / a;
@@ -50,6 +50,7 @@ bool sphere::hit(const ray &r, float t_min, float t_max, hit_record &rec) const
             rec.p = r.point_at_parameter(rec.t);
             rec.normal = (rec.p - center) / radius;
             rec.mat_ptr = mat_ptr;
+            rec.primitive = (hittable *)this;
             return true;
         }
     }
@@ -169,6 +170,7 @@ bool rect::hit(const ray &r, float t0, float t1, hit_record &rec) const
 
     rec.p = r.point_at_parameter(t);
     rec.normal = shuffle(vec3(0, 2 * normal - 1, 0), type);
+    rec.primitive = (hittable *)this;
     return true;
 }
 
