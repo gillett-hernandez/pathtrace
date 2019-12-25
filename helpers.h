@@ -72,15 +72,26 @@ float schlick(float cosine, float ref_idx)
     return r0 + (1 - r0) * pow((1 - cosine), 5);
 }
 
+inline bool is_nan(const float x)
+{
+    return !(x == x);
+}
+
 inline vec3 de_nan(const vec3 &c)
 {
     vec3 temp = c;
-    if (!(temp[0] == temp[0]))
+    if (is_nan(temp[0]))
+    {
         temp[0] = 0;
-    if (!(temp[1] == temp[1]))
+    }
+    if (is_nan(temp[0]))
+    {
         temp[1] = 0;
-    if (!(temp[2] == temp[2]))
+    }
+    if (is_nan(temp[0]))
+    {
         temp[2] = 0;
+    }
     return temp;
 }
 

@@ -14,8 +14,7 @@ public:
     //     std::cout << "material should not be instantiated\n";
     // }
     virtual bool scatter(
-        const ray &r_in, const hit_record &rec, vec3 &attenuation,
-        ray &scattered) const
+        const ray &r_in, const hit_record &rec, vec3 &attenuation) const
     {
         return false;
     }
@@ -41,7 +40,7 @@ public:
     {
         albedo = new constant_texture(v);
     }
-    bool scatter(const ray &r_in, const hit_record &rec, vec3 &alb, ray &scattered) const
+    bool scatter(const ray &r_in, const hit_record &rec, vec3 &alb) const
     // bool scatter(const ray &r_in, const hit_record &rec, vec3 &alb) const
     {
 
@@ -49,8 +48,8 @@ public:
         // uvw.build_from_w(rec.normal);
         // vec3 direction = uvw.local(random_cosine_direction());
         // scattered = ray(rec.p, unit_vector(direction), r_in.time());
-        cosine_pdf pdf = cosine_pdf(rec.normal);
-        scattered = ray(rec.p, pdf.generate(), r_in.time());
+        // cosine_pdf pdf = cosine_pdf(rec.normal);
+        // scattered = ray(rec.p, pdf.generate(), r_in.time());
         alb = albedo->value(rec.u, rec.v, rec.p) / M_PI;
         return true;
     }
@@ -92,12 +91,13 @@ public:
         }
     }
     virtual bool scatter(const ray &r_in, const hit_record &rec,
-                         vec3 &attenuation, ray &scattered) const
+                         vec3 &attenuation) const
     {
-        vec3 reflected = reflect(unit_vector(r_in.direction()), rec.normal);
-        scattered = ray(rec.p, reflected + fuzz * random_in_unit_sphere());
+        // vec3 reflected = reflect(unit_vector(r_in.direction()), rec.normal);
+        // scattered = ray(rec.p, reflected + fuzz * random_in_unit_sphere());
         attenuation = albedo;
-        return (dot(scattered.direction(), rec.normal) > 0);
+        // return (dot(scattered.direction(), rec.normal) > 0);
+        return true;
     }
     vec3 generate(const ray &r_in, const hit_record &rec)
     {
@@ -119,47 +119,47 @@ class dielectric : public material
 public:
     dielectric(float ri, std::string name = "dielectric") : ref_idx(ri), name(name) {}
     virtual bool scatter(const ray &r_in, const hit_record &rec,
-                         vec3 &attenuation, ray &scattered) const
+                         vec3 &attenuation) const
     {
-        vec3 outward_normal;
-        vec3 reflected = reflect(r_in.direction(), rec.normal);
-        float ni_over_nt;
-        attenuation = vec3(1.0, 1.0, 1.0);
-        vec3 refracted;
+        // vec3 outward_normal;
+        // vec3 reflected = reflect(r_in.direction(), rec.normal);
+        // float ni_over_nt;
+        // attenuation = vec3(1.0, 1.0, 1.0);
+        // vec3 refracted;
 
-        float reflect_prob;
-        float cosine;
+        // float reflect_prob;
+        // float cosine;
 
-        if (dot(r_in.direction(), rec.normal) > 0)
-        {
-            outward_normal = -rec.normal;
-            ni_over_nt = ref_idx;
-            cosine = ref_idx * dot(r_in.direction(), rec.normal) / r_in.direction().length();
-        }
-        else
-        {
-            outward_normal = rec.normal;
-            ni_over_nt = 1.0 / ref_idx;
-            cosine = -dot(r_in.direction(), rec.normal) / r_in.direction().length();
-        }
+        // if (dot(r_in.direction(), rec.normal) > 0)
+        // {
+        //     outward_normal = -rec.normal;
+        //     ni_over_nt = ref_idx;
+        //     cosine = ref_idx * dot(r_in.direction(), rec.normal) / r_in.direction().length();
+        // }
+        // else
+        // {
+        //     outward_normal = rec.normal;
+        //     ni_over_nt = 1.0 / ref_idx;
+        //     cosine = -dot(r_in.direction(), rec.normal) / r_in.direction().length();
+        // }
 
-        if (refract(r_in.direction(), outward_normal, ni_over_nt, refracted))
-        {
-            reflect_prob = schlick(cosine, ref_idx);
-        }
-        else
-        {
-            reflect_prob = 1.0;
-        }
+        // if (refract(r_in.direction(), outward_normal, ni_over_nt, refracted))
+        // {
+        //     reflect_prob = schlick(cosine, ref_idx);
+        // }
+        // else
+        // {
+        //     reflect_prob = 1.0;
+        // }
 
-        if (random_double() < reflect_prob)
-        {
-            scattered = ray(rec.p, reflected);
-        }
-        else
-        {
-            scattered = ray(rec.p, refracted);
-        }
+        // if (random_double() < reflect_prob)
+        // {
+        //     scattered = ray(rec.p, reflected);
+        // }
+        // else
+        // {
+        //     scattered = ray(rec.p, refracted);
+        // }
 
         return true;
     }
@@ -185,7 +185,7 @@ public:
         emit = new constant_texture(a);
     }
     virtual bool scatter(const ray &r_in, const hit_record &rec,
-                         vec3 &attenuation, ray &scattered) const { return false; }
+                         vec3 &attenuation) const { return false; }
     virtual vec3 emitted(float u, float v, const vec3 &p) const
     {
         return emit->value(u, v, p);
@@ -209,11 +209,10 @@ public:
     virtual bool scatter(
         const ray &r_in,
         const hit_record &rec,
-        vec3 &attenuation,
-        ray &scattered) const
+        vec3 &attenuation) const
     {
 
-        scattered = ray(rec.p, random_in_unit_sphere());
+        // scattered = ray(rec.p, random_in_unit_sphere());
         attenuation = albedo->value(rec.u, rec.v, rec.p);
         return true;
     }

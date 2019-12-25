@@ -32,19 +32,22 @@ vec3 color(const ray &r, world *world, int depth, int max_bounces, long *bounce_
     hit_record rec;
     // assert non-nan time
     assert(r.time() == r.time());
-    if (world->hit(r, 0.001, MAXFLOAT, rec))
+    if (world->hit(r, 0.001f, MAXFLOAT, rec))
     {
         if (_path != nullptr)
         {
             _path->push_back(rec.p);
         }
-        ray dummy_scattered;
         vec3 attenuation;
         vec3 emitted = rec.mat_ptr->emitted(rec.u, rec.v, rec.p);
-        if (depth < max_bounces && rec.mat_ptr->scatter(r, rec, attenuation, dummy_scattered))
+        if (depth < max_bounces && rec.mat_ptr->scatter(r, rec, attenuation))
         {
+            // if (rec.mat_ptr->name == "diffuse_light")
+            // {
+            //     return vec3(0, 0, 0);
+            // }
             // assert non-nan time
-            assert(r.time() == r.time());
+            assert(!is_nan(r.time()));
             (*bounce_count)++;
             hittable *random_light = world->get_random_light();
             hittable_pdf l_pdf(random_light, rec.p);
@@ -57,68 +60,56 @@ vec3 color(const ray &r, world *world, int depth, int max_bounces, long *bounce_
             // mixture_pdf p(&p0, rec.mat_ptr->pdf);
             ray light_ray = ray(rec.p, l_pdf.generate(), r.time());
             ray scattered = ray(rec.p, rec.mat_ptr->generate(r, rec), r.time());
-
-            // assert non-nan time
-            assert(light_ray.time() == light_ray.time());
-            // assert non-nan time
-            assert(scattered.time() == scattered.time());
             // float weight;
-            vec3 _color = emitted;
-            // pdf of light ray having gone directly towards light from hit point
+            // vec3 _color = emitted;
+            vec3 _color = vec3(0.0f, 0.0f, 0.0f);
+            // pdf of light ray having gone directly towards light
             float light_pdf_l = l_pdf.value(light_ray.direction());
-            // pdf of light ray having gone directly towards light from hit point
+            // pdf of scatter having gone directly towards light
             float scatter_pdf_l = rec.mat_ptr->value(r, rec, light_ray.direction());
 
-            // pdf of scatter ray going towards light
+            // pdf of light ray having been generated from scatter
             float light_pdf_s = l_pdf.value(scattered.direction());
-            // chance of scatter ray going in
+            // pdf of scattered ray having been generated from scatter
             float scatter_pdf_s = rec.mat_ptr->value(r, rec, scattered.direction());
 
-            float mix_l = (scatter_pdf_l + light_pdf_l) / 2.0;
-            float mix_s = (scatter_pdf_s + light_pdf_s) / 2.0;
+            float mix_l = (scatter_pdf_l + light_pdf_l) / 2.0f;
+            float mix_s = (scatter_pdf_s + light_pdf_s) / 2.0f;
 
-            float weight_l = power_heuristic(1, light_pdf_l, 1, scatter_pdf_l);
-            float inv_weight_l = 1 - weight_l;
+            float weight_l = power_heuristic(1.0f, light_pdf_l, 1.0f, scatter_pdf_l);
+            float inv_weight_l = 1.0f - weight_l;
             float cos_l = fabs(dot(light_ray.direction(), rec.normal));
 
-            float weight_s = power_heuristic(1, light_pdf_s, 1, scatter_pdf_s);
-            float inv_weight_s = 1 - weight_s;
+            float weight_s = power_heuristic(1.0f, light_pdf_s, 1.0f, scatter_pdf_s);
+            float inv_weight_s = 1.0f - weight_s;
             float cos_s = fabs(dot(scattered.direction(), rec.normal));
 
             // add contribution from next event estimation
-            _color += 1.0 * attenuation * weight_l / light_pdf_l * color(light_ray, world, depth + 1, 0, bounce_count, nullptr);
-            // add contribution from next and future bounces
-            _color += 1.0 * attenuation * (inv_weight_s / scatter_pdf_s) * color(scattered, world, depth + 1, max_bounces, bounce_count, _path);
+            _color += 1.0f * attenuation * weight_l / light_pdf_l * color(light_ray, world, depth + 1, 0, bounce_count, nullptr);
 
-            // _color += beta * attenuation * mix_l * color(light_ray, cos_l * beta / light_pdf_l, world, depth + 1, 0, bounce_count, nullptr);
-            // _color += beta * attenuation * mix_s * color(scattered,cos_s * beta / scatter_pdf_s, world, depth + 1, max_bounces, bounce_count, _path);
+            // flat out skip bounces that would hit the light directly
+            if (light_pdf_s > 0)
+            {
+                return vec3(0, 0, 0);
+            }
+            if (!world->config.value("only_direct_illumination", false))
+            {
+                // add contribution from next and future bounces
+                _color += 1.0f * attenuation * inv_weight_s / scatter_pdf_s * color(scattered, world, depth + 1, max_bounces, bounce_count, _path);
+            }
 
-            // {
-            //     weight = 1;
-            //     if (light_pdf > 0)
-            //     {
-            //         weight = power_heuristic(1, light_pdf, 1, scatter_pdf);
-
-            //         _color += beta * attenuation * weight * color(light_ray, cos_l * beta / light_pdf, world, depth + 1, 0, bounce_count, nullptr) / light_pdf;
-            //     }
-            // }
-
-            // {
-            //     if (scatter_pdf > 0)
-            //     {
-            //         // if ()
-            //         weight = power_heuristic(1, scatter_pdf, 1, light_pdf);
-            //         // beta *= dot(r.direction(), rec.normal);
-            //         _color += beta * attenuation * weight * color(scattered,cos_s * beta / scatter_pdf, world, depth + 1, max_bounces, bounce_count, _path) / scatter_pdf;
-            //     }
-            // }
-            // _color += attenuation * color(scattered, world, depth + 1, max_bounces, bounce_count, _path);
-            // return emitted + _color;
             return _color;
         }
         else
         {
+            // if (max_bounces == 0)
+            // {
             return emitted;
+            // }
+            // else
+            // {
+            // return vec3(0, 0, 0);
+            // }
         }
     }
     else
@@ -135,8 +126,8 @@ vec3 color(const ray &r, world *world, int depth, int max_bounces, long *bounce_
         // generate world u v and then sample world texture?
         // return vec3(0, 0, 0);
         vec3 unit_direction = unit_vector(r.direction());
-        float u = unit_direction.x();
-        float v = unit_direction.y();
+        float u = atan(unit_direction.z() / unit_direction.x());
+        float v = acos(unit_direction.y());
         // TODO: replace u and v with angle l->r and angle d->u;
         return world->value(u, v, unit_direction);
     }

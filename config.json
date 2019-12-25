@@ -9,11 +9,11 @@
     "scene": "scenes/cornell_box_small_lights.json",
     "should_trace_paths": true,
     "avg_number_of_paths": 1000,
-    "progressive_render_proportion": 0.0,
-    "mis_weight": 0.0,
+    "progressive_render_proportion": 1.0,
+    "only_direct_illumination": false,
     "traced_paths_output": "out.txt",
     "traced_paths_2d_output": "out2d.txt",
-    "max_bounces": 5,
-    "samples": 32,
-    "threads": 22
+    "max_bounces": 2,
+    "samples": 12,
+    "threads": 12
 }
