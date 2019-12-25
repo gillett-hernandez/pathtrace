@@ -6,13 +6,13 @@
         "gamma": 1.0
     },
     "output_path": "render.ppm",
-    "scene": "scenes/light_test.json",
+    "scene": "scenes/cornell_box_with_volume2.json",
     "should_trace_paths": true,
     "avg_number_of_paths": 1000,
     "progressive_render_proportion": 0.0,
-    "traced_paths_output": "light_test.txt",
-    "traced_paths_2d_output": "light_test_2d.txt",
-    "max_bounces": 2,
-    "samples": 55,
-    "threads": 11
+    "traced_paths_output": "out.txt",
+    "traced_paths_2d_output": "out_2d.txt",
+    "max_bounces": 4,
+    "samples": 44,
+    "threads": 22
 }

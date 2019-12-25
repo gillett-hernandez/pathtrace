@@ -2,6 +2,7 @@
 #ifndef AABBH
 #define AABBH
 #include <stdlib.h>
+#include "ray.h"
 #include "transform3.h"
 
 inline float ffmin(float a, float b) { return a < b ? a : b; }

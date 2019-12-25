@@ -8,4 +8,4 @@ if __name__ == "__main__":
         os.system(
             "python3 " + os.path.abspath("./convert_ppm_in_curdir.py") + " --no-delete"
         )
-        time.sleep(1)
+        time.sleep(0.5)

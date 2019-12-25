@@ -63,6 +63,25 @@ bool sphere::bounding_box(float t0, float t1, aabb &box) const
     return true;
 }
 
+inline vec3 shuffle(vec3 v, plane_enum style)
+{
+    switch (style)
+    {
+    case XY:
+    {
+        return vec3(v.x(), v.z(), v.y());
+    }
+    case YZ:
+    {
+        return vec3(v.y(), v.x(), v.z());
+    }
+    default:
+    {
+        return v;
+    }
+    }
+}
+
 class rect : public hittable
 {
 public:
@@ -89,28 +108,10 @@ public:
     {
         assert(x0 < x1);
         assert(z0 < z1);
+        vec3 a = vec3(x0, y - 0.001, z0);
+        vec3 b = vec3(x1, y + 0.001, z1);
         // switch some variables around for axis alignment
-        switch (type)
-        {
-        case XY:
-        {
-            // std::cout << "set xy aabb" << '\n';
-            box = aabb(vec3(x0, z0, y - 0.001), vec3(x1, z1, y + 0.001));
-            break;
-        }
-        case YZ:
-        {
-            // std::cout << "set yz aabb" << '\n';
-            box = aabb(vec3(y - 0.001, x0, z0), vec3(y + 0.001, x1, z1));
-            break;
-        }
-        default:
-        {
-            // std::cout << "set default aabb" << '\n';
-            box = aabb(vec3(x0, y - 0.001, z0), vec3(x1, y + 0.001, z1));
-            break;
-        }
-        }
+        box = aabb(shuffle(a, type), shuffle(b, type));
         return true;
     }
     material *mp;
@@ -121,48 +122,18 @@ public:
 
 bool rect::hit(const ray &r, float t0, float t1, hit_record &rec) const
 {
-    float rox, roy, roz, rdx, rdy, rdz;
+    // float rox, roy, roz, rdx, rdy, rdz;
     // conversion to simulated/transformed space
-    switch (type)
-    {
-    case XY:
-    {
-        rox = r.origin().x();
-        rdx = r.direction().x();
-        roy = r.origin().z();
-        rdy = r.direction().z();
-        roz = r.origin().y();
-        rdz = r.direction().y();
-        break;
-    }
-    case YZ:
-    {
-        rox = r.origin().y();
-        rdx = r.direction().y();
-        roy = r.origin().x();
-        rdy = r.direction().x();
-        roz = r.origin().z();
-        rdz = r.direction().z();
-        break;
-    }
-    default:
-    {
-        rox = r.origin().x();
-        rdx = r.direction().x();
-        roy = r.origin().y();
-        rdy = r.direction().y();
-        roz = r.origin().z();
-        rdz = r.direction().z();
-        break;
-    }
-    }
-    float t = (y - roy) / rdy;
+    vec3 temp_o = shuffle(r.origin(), type);
+    vec3 temp_d = shuffle(r.direction(), type);
+
+    float t = (y - temp_o.y()) / temp_d.y();
     if (t < t0 || t > t1)
     {
         return false;
     }
-    float xh = rox + t * rdx;
-    float zh = roz + t * rdz;
+    float xh = temp_o.x() + t * temp_d.x();
+    float zh = temp_o.z() + t * temp_d.z();
     if (xh < x0 || xh > x1 || zh < z0 || zh > z1)
     {
         return false;
@@ -173,24 +144,7 @@ bool rect::hit(const ray &r, float t0, float t1, hit_record &rec) const
     rec.mat_ptr = mp;
 
     rec.p = r.point_at_parameter(t);
-    switch (type)
-    {
-    case XY:
-    {
-        rec.normal = vec3(0, 0, 2 * normal - 1);
-        break;
-    }
-    case YZ:
-    {
-        rec.normal = vec3(2 * normal - 1, 0, 0);
-        break;
-    }
-    default:
-    {
-        rec.normal = vec3(0, 2 * normal - 1, 0);
-        break;
-    }
-    }
+    rec.normal = shuffle(vec3(0, 2 * normal - 1, 0), type);
     return true;
 }
 

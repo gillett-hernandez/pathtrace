@@ -1,7 +1,7 @@
 
-#include "ray.h"
-#include "helpers.h"
 #include "aabb.h"
+#include "helpers.h"
+#include "ray.h"
 
 #ifndef HITTABLEH
 #define HITTABLEH

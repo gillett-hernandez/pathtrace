@@ -3,7 +3,7 @@
         "look_from": [
             278.0,
             278.0,
-            -800.0
+            -750.0
         ],
         "look_at": [
             278.0,
@@ -13,6 +13,13 @@
         "fov": 40.0,
         "aperture": 0.0,
         "dist_to_focus": 10.0
+    },
+    "world": {
+        "color": [
+            0.2,
+            0.2,
+            0.2
+        ]
     },
     "assets": [],
     "textures": [],
@@ -62,8 +69,9 @@
             }
         }
     ],
-    "instances": [
+    "primitives": [
         {
+            "id": "white_wall",
             "type": "rect",
             "material": {
                 "id": "white"
@@ -71,9 +79,28 @@
             "size": [
                 555,
                 555
-            ],
+            ]
+        },
+        {
+            "id": "box",
+            "type": "box",
+            "material": {
+                "id": "white"
+            },
+            "size": [
+                165,
+                165,
+                165
+            ]
+        }
+    ],
+    "instances": [
+        {
+            "type": "ref",
+            "primitive": {
+                "id": "white_wall"
+            },
             "transform": {
-                "scale": 1.0,
                 "translate": [
                     277.5,
                     0.0,
@@ -82,14 +109,10 @@
             }
         },
         {
-            "type": "rect",
-            "material": {
-                "id": "white"
+            "type": "ref",
+            "primitive": {
+                "id": "white_wall"
             },
-            "size": [
-                555,
-                555
-            ],
             "transform": {
                 "rotate": [
                     1.0,
@@ -104,19 +127,15 @@
             }
         },
         {
-            "type": "rect",
-            "material": {
-                "id": "white"
+            "type": "ref",
+            "primitive": {
+                "id": "white_wall"
             },
-            "size": [
-                555,
-                555
-            ],
             "transform": {
                 "rotate": [
-                    0.5,
-                    0.0,
-                    0.0
+                    1.5,
+                    0,
+                    0
                 ],
                 "translate": [
                     277.5,
@@ -126,20 +145,20 @@
             }
         },
         {
-            "type": "rect",
-            "material": {
-                "id": "green"
-            },
-            "size": [
-                555,
-                555
-            ],
-            "transform": {
-                "rotate": [
-                    0.0,
-                    0.0,
-                    -0.5
+            "type": "direct",
+            "primitive": {
+                "type": "rect",
+                "material": {
+                    "id": "green"
+                },
+                "size": [
+                    555,
+                    555
                 ],
+                "align": "yz",
+                "flip": true
+            },
+            "transform": {
                 "translate": [
                     555,
                     277.5,
@@ -148,20 +167,19 @@
             }
         },
         {
-            "type": "rect",
-            "material": {
-                "id": "red"
-            },
-            "size": [
-                555,
-                555
-            ],
-            "transform": {
-                "rotate": [
-                    0.0,
-                    0.0,
-                    0.5
+            "type": "direct",
+            "primitive": {
+                "type": "rect",
+                "material": {
+                    "id": "red"
+                },
+                "size": [
+                    555,
+                    555
                 ],
+                "align": "yz"
+            },
+            "transform": {
                 "translate": [
                     0,
                     277.5,
@@ -170,14 +188,61 @@
             }
         },
         {
-            "type": "rect",
-            "material": {
-                "id": "light"
+            "type": "ref",
+            "primitive": {
+                "id": "box"
             },
-            "size": [
-                120,
-                115
-            ],
+            "transform": {
+                "translate": [
+                    212.5,
+                    82.5,
+                    147.5
+                ],
+                "rotate": [
+                    0.0,
+                    -0.1,
+                    0.0
+                ]
+            }
+        },
+        {
+            "type": "direct",
+            "primitive": {
+                "type": "box",
+                "material": {
+                    "id": "white"
+                },
+                "size": [
+                    165,
+                    330,
+                    165
+                ]
+            },
+            "transform": {
+                "translate": [
+                    347.5,
+                    165,
+                    377.5
+                ],
+                "rotate": [
+                    0.0,
+                    0.05,
+                    0.0
+                ]
+            }
+        },
+        {
+            "type": "direct",
+            "primitive": {
+                "type": "rect",
+                "material": {
+                    "id": "light"
+                },
+                "size": [
+                    240,
+                    230
+                ]
+            },
             "transform": {
                 "translate": [
                     273,
@@ -187,9 +252,13 @@
             }
         },
         {
-            "type": "sphere",
-            "material": {
-                "id": "light"
+            "skip": true,
+            "type": "direct",
+            "primitive": {
+                "type": "sphere",
+                "material": {
+                    "id": "light"
+                }
             },
             "transform": {
                 "scale": [

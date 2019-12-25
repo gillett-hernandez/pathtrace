@@ -18,18 +18,22 @@ using json = nlohmann::json;
 #include <chrono>
 #include <fstream>
 #include <iostream>
+#include <iomanip>
 #include <mutex>
 #include <thread>
 
+typedef std::vector<vec3> path;
+typedef std::vector<path *> paths;
+
 // reuse this for branched path tracing
-vec3 recursive_color(const ray &r, world *world, int depth, int max_bounces, long *bounce_count, std::vector<vec3> *path)
+vec3 recursive_color(const ray &r, world *world, int depth, int max_bounces, long *bounce_count, path *_path)
 {
     hit_record rec;
     if (world->hit(r, 0.001, MAXFLOAT, rec))
     {
-        if (path != nullptr)
+        if (_path != nullptr)
         {
-            path->push_back(rec.p);
+            _path->push_back(rec.p);
         }
         ray scattered;
         vec3 attenuation;
@@ -37,7 +41,7 @@ vec3 recursive_color(const ray &r, world *world, int depth, int max_bounces, lon
         if (depth < max_bounces && rec.mat_ptr->scatter(r, rec, attenuation, scattered))
         {
             (*bounce_count)++;
-            return emitted + attenuation * recursive_color(scattered, world, depth + 1, max_bounces, bounce_count, path);
+            return emitted + attenuation * recursive_color(scattered, world, depth + 1, max_bounces, bounce_count, _path);
         }
         else
         {
@@ -46,9 +50,9 @@ vec3 recursive_color(const ray &r, world *world, int depth, int max_bounces, lon
     }
     else
     {
-        if (path != nullptr)
+        if (_path != nullptr)
         {
-            path->push_back(rec.p);
+            _path->push_back(rec.p);
         }
         // world background color here
         // vec3 unit_direction = unit_vector(r.direction());
@@ -66,7 +70,7 @@ vec3 recursive_color(const ray &r, world *world, int depth, int max_bounces, lon
 }
 
 //
-vec3 iterative_color(ray &r, world *world, int depth, int max_bounces, long *bounce_count, std::vector<vec3> *path)
+vec3 iterative_color(ray &r, world *world, int depth, int max_bounces, long *bounce_count, path *_path)
 {
     hit_record rec;
     vec3 _color = vec3(0, 0, 0);
@@ -77,9 +81,9 @@ vec3 iterative_color(ray &r, world *world, int depth, int max_bounces, long *bou
     vec3 beta = vec3(1.0, 1.0, 1.0);
     for (int i = 0; i < max_bounces; i++)
     {
-        if (path != nullptr)
+        if (_path != nullptr)
         {
-            path->push_back(rec.p);
+            _path->push_back(rec.p);
         }
         if (world->hit(r, 0.001, MAXFLOAT, rec))
         {
@@ -168,12 +172,13 @@ void output_to_file(std::ofstream &output, vec3 **buffer, int width, int height,
 
 std::mutex framebuffer_lock;
 
-void compute_rays_single_pass(int thread_id, long *ray_ct, int *completed_samples, vec3 **buffer, int width, int height, int samples, int max_bounces, camera cam, world *world, float trace_probability, std::vector<std::vector<vec3> *> *paths)
+void compute_rays_single_pass(int thread_id, long *ray_ct, int *completed_samples, vec3 **buffer, int width, int height, int samples, int max_bounces, camera cam, world *world, float trace_probability, paths *array_of_paths)
 {
     if (samples == 0)
     {
         return;
     }
+    int traces = 0;
     for (int j = height - 1; j >= 0; j--)
     {
         // std::cout << "computing row " << j << std::endl;
@@ -188,18 +193,34 @@ void compute_rays_single_pass(int thread_id, long *ray_ct, int *completed_sample
                 float u = float(i + random_double()) / float(width);
                 float v = float(j + random_double()) / float(height);
                 ray r = cam.get_ray(u, v);
-                std::vector<vec3> *path = nullptr;
+                std::vector<vec3> *_path = nullptr;
                 if (random_double() < trace_probability)
                 {
                     // std::cout << "creating path to trace" << std::endl;
-                    path = new std::vector<vec3>();
+                    // path = new std::vector<vec3>();
+                    if (traces < array_of_paths[thread_id].size())
+                    {
+                        _path = array_of_paths[thread_id][traces];
+                        assert(_path->size() == 0);
+                    }
+                    else
+                    {
+                        _path = new path();
+                    }
+                    traces++;
                 }
-                col += de_nan(iterative_color(r, world, 0, max_bounces, count, path));
-                // col += de_nan(recursive_color(r, world, 0, max_bounces, count, path));
-                if (path != nullptr)
+                else
                 {
-                    // std::cout << "traced path, size is " << path->size() << std::endl;
-                    paths[thread_id].push_back(path);
+                    _path = nullptr;
+                }
+                col += de_nan(iterative_color(r, world, 0, max_bounces, count, _path));
+                if (_path != nullptr)
+                {
+                    // std::cout << "traced _path, size is " << _path->size() << std::endl;
+                    if (traces > array_of_paths[thread_id].size())
+                    {
+                        array_of_paths[thread_id].push_back(_path);
+                    }
                 }
             }
 
@@ -213,12 +234,13 @@ void compute_rays_single_pass(int thread_id, long *ray_ct, int *completed_sample
     // std::cout << "total length of traced paths : " << paths[thread_id].size() << std::endl;
 }
 
-void compute_rays_progressive(int thread_id, long *ray_ct, int *completed_samples, vec3 **buffer, int width, int height, int samples, int max_bounces, camera cam, world *world, float trace_probability, std::vector<std::vector<vec3> *> *paths)
+void compute_rays_progressive(int thread_id, long *ray_ct, int *completed_samples, vec3 **buffer, int width, int height, int samples, int max_bounces, camera cam, world *world, float trace_probability, paths *array_of_paths)
 {
     if (samples == 0)
     {
         return;
     }
+    int traces = 0;
     for (int s = 0; s < samples; s++)
     {
         for (int j = height - 1; j >= 0; j--)
@@ -233,18 +255,33 @@ void compute_rays_progressive(int thread_id, long *ray_ct, int *completed_sample
                 float u = float(i + random_double()) / float(width);
                 float v = float(j + random_double()) / float(height);
                 ray r = cam.get_ray(u, v);
-                std::vector<vec3> *path = nullptr;
+                std::vector<vec3> *_path = nullptr;
                 if (random_double() < trace_probability)
                 {
                     // std::cout << "creating path to trace" << std::endl;
-                    path = new std::vector<vec3>();
+                    // path = new std::vector<vec3>();
+                    if (traces < array_of_paths[thread_id].size())
+                    {
+                        _path = array_of_paths[thread_id][traces];
+                    }
+                    else
+                    {
+                        _path = new path();
+                    }
+                    traces++;
                 }
-                col += de_nan(iterative_color(r, world, 0, max_bounces, count, path));
-                // col += de_nan(recursive_color(r, world, 0, max_bounces, count, path));
-                if (path != nullptr)
+                else
                 {
-                    // std::cout << "traced path, size is " << path->size() << std::endl;
-                    paths[thread_id].push_back(path);
+                    _path = nullptr;
+                }
+                col += de_nan(iterative_color(r, world, 0, max_bounces, count, _path));
+                if (_path != nullptr)
+                {
+                    // std::cout << "traced _path, size is " << _path->size() << std::endl;
+                    if (traces > array_of_paths[thread_id].size())
+                    {
+                        array_of_paths[thread_id].push_back(_path);
+                    }
                 }
 
                 framebuffer_lock.lock();
@@ -256,6 +293,19 @@ void compute_rays_progressive(int thread_id, long *ray_ct, int *completed_sample
         }
     }
     // std::cout << "total length of traced paths : " << paths[thread_id].size() << std::endl;
+}
+
+void print_out_progress(long num_samples_done, long num_samples_left, std::chrono::high_resolution_clock::time_point start_time)
+{
+    auto intermediate = std::chrono::high_resolution_clock::now();
+    // rate was in rays per nanosecond
+    // first multiply by 1 billion to get rays per second
+    float rate = 1000000000 * num_samples_done / (intermediate - start_time).count();
+
+    std::cout << "samples left" << std::setw(20) << num_samples_left
+              << " rate " << std::setw(10) << rate
+              << " time left " << std::setw(5) << num_samples_left / rate
+              << "                                           " << '\r' << std::flush;
 }
 
 int main(int argc, char *argv[])
@@ -324,6 +374,7 @@ int main(int argc, char *argv[])
     auto t1 = std::chrono::high_resolution_clock::now();
     // hittable *world = cornell_box();
     world *world = build_scene(scene);
+    world->config = config;
     auto t2 = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsed_seconds = t2 - t1;
     std::cout << "time taken to build bvh " << elapsed_seconds.count() << std::endl;
@@ -339,19 +390,34 @@ int main(int argc, char *argv[])
     std::ofstream output(config.value("output_path", "out.ppm"));
 
     // start thread setup
-    std::thread threads[N_THREADS];
+    std::thread *threads = new std::thread[N_THREADS];
     int min_samples = n_samples / N_THREADS;
     int remaining_samples = n_samples % N_THREADS;
 
     std::cout << "samples per thread " << min_samples << std::endl;
     std::cout << "leftover samples to be allocated " << remaining_samples << std::endl;
-    long bounce_counts[N_THREADS];
+    long *bounce_counts = new long[N_THREADS];
     int *samples_done = new int[N_THREADS];
     // create N_THREADS buckets to dump paths into.
 
-    typedef std::vector<vec3> path;
-    typedef std::vector<path *> paths;
     paths *array_of_paths = new paths[N_THREADS];
+    if (trace_probability > 0.0)
+    {
+        int avg_number_of_paths = config.value("avg_number_of_paths", 100);
+        for (int t = 0; t < N_THREADS; t++)
+        {
+            array_of_paths[t] = paths();
+            array_of_paths[t].reserve(avg_number_of_paths / N_THREADS);
+            for (int i = 0; i < avg_number_of_paths / N_THREADS; i++)
+            {
+                array_of_paths[t].push_back(new path());
+                // for (int j = 0; j < MAX_BOUNCES/2; j++) {
+                //     array_of_paths[t].back()->push_back(vec3(0, 0, 0));
+                // }
+                array_of_paths[t].back()->reserve(MAX_BOUNCES / 2);
+            }
+        }
+    }
 
     std::cout << "spawning threads";
     for (int t = 0; t < N_THREADS; t++)
@@ -374,7 +440,7 @@ int main(int argc, char *argv[])
     auto t3 = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsed_seconds2 = t3 - t2;
     std::cout << "time taken to setup the rest and spawn threads " << elapsed_seconds2.count() << std::endl;
-    std::cout << "joining threads";
+    std::cout << "joining threads\n";
 
     float total_bounces = 0;
 
@@ -390,18 +456,12 @@ int main(int argc, char *argv[])
             num_samples_done += samples_done[t];
         }
         num_samples_left = min_camera_rays - num_samples_done;
-        auto intermediate = std::chrono::high_resolution_clock::now();
-        // rate was in rays per nanosecond
-        // first multiply by 1 billion to get rays per second
-        float rate = 1000000000 * num_samples_done / (intermediate - t3).count();
-
-        std::cout << "samples left " << num_samples_left << '\t'
-                  << "rate " << rate << "\t"
-                  << "time left " << num_samples_left / rate << '\n';
+        print_out_progress(num_samples_done, num_samples_left, t3);
         output_to_file(output, framebuffer, width, height, num_samples_done / (width * height), 10.0, exposure, gamma);
         std::this_thread::sleep_for(0.5s);
     }
 
+    std::cout << '\n';
     for (int t = 0; t < N_THREADS; t++)
     {
         threads[t].join();
@@ -427,10 +487,15 @@ int main(int argc, char *argv[])
         {
             auto paths = array_of_paths[t];
 
-            added_paths += paths.size();
+            // added_paths += paths.size();
 
             for (auto &path : paths)
             {
+                if (path->size() == 0)
+                {
+                    continue;
+                }
+                added_paths++;
                 for (auto &point : *path)
                 {
                     traced_paths_output << point.x() << ',' << point.y() << ',' << point.z() << '\n';
