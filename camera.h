@@ -16,24 +16,24 @@ public:
         float theta = vfov * M_PI / 180;
         float half_height = tan(theta / 2);
         float half_width = aspect * half_height;
-        assert(t0 == t0);
-        assert(t1 == t1);
+        assert(!is_nan(t0));
+        assert(!is_nan(t1));
         time0 = t0;
         time1 = t1;
         origin = lookfrom;
         w = unit_vector(lookfrom - lookat);
-        std::cout << "w " << w << std::endl;
+        // std::cout << "w " << w << std::endl;
         u = unit_vector(cross(vup, w));
-        std::cout << "u " << u << std::endl;
+        // std::cout << "u " << u << std::endl;
         v = cross(w, u);
-        std::cout << "v " << v << std::endl;
+        // std::cout << "v " << v << std::endl;
         lower_left_corner = origin - half_width * focus_dist * u - half_height * focus_dist * v - focus_dist * w;
-        std::cout << lower_left_corner << std::endl;
+        // std::cout << lower_left_corner << std::endl;
 
         horizontal = 2 * half_width * focus_dist * u;
-        std::cout << horizontal << std::endl;
+        // std::cout << horizontal << std::endl;
         vertical = 2 * half_height * focus_dist * v;
-        std::cout << vertical << std::endl;
+        // std::cout << vertical << std::endl;
     }
 
     ray get_ray(float s, float t)

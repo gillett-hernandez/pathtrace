@@ -1,20 +1,19 @@
+#pragma once
 
 #include "aabb.h"
 #include "helpers.h"
 #include "ray.h"
 
-#ifndef HITTABLEH
-#define HITTABLEH
 
 class material;
-class hittable;
+// class hittable;
 
 struct hit_record
 {
     float t;
     vec3 p;
     vec3 normal;
-    hittable *primitive;
+    // hittable *primitive;
     float u;
     float v;
     material *mat_ptr;
@@ -29,4 +28,3 @@ public:
     virtual float pdf_value(const vec3 &o, const vec3 &v) const { return 0.0; }
     virtual vec3 random(const vec3 &o) const { return vec3(1, 0, 0); }
 };
-#endif

@@ -427,7 +427,7 @@ world *build_scene(json scene)
             }
             transform = transform3(scale, rotate, translate);
         }
-        std::cout << "finished constructing transform for instance, now getting prim and creating instance for json\n";
+        // std::cout << "finished constructing transform for instance, now getting prim and creating instance for json\n";
 
         assert(element.contains("type") && element["type"].get<std::string>() == "ref");
 

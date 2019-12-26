@@ -23,9 +23,8 @@ using json = nlohmann::json;
 #include <mutex>
 #include <thread>
 
-
-#include "recursive.h"
-#include "iterative.h"
+#include "integrator/recursive.h"
+#include "integrator/iterative.h"
 
 camera setup_camera(json camera_json, float aspect_ratio, vec3 vup = vec3(0, 1, 0))
 {
@@ -119,8 +118,8 @@ void compute_rays_single_pass(int thread_id, long *ray_ct, int *completed_sample
                 {
                     _path = nullptr;
                 }
-                col += de_nan(recursive_color(r, world, 0, max_bounces, count, _path));
-                // col += de_nan(iterative_color(r, world, 0, max_bounces, count, _path));
+                // col += de_nan(recursive_color(r, world, 0, max_bounces, count, _path));
+                col += de_nan(iterative_color(r, world, 0, max_bounces, count, _path));
                 if (_path != nullptr)
                 {
                     // std::cout << "traced _path, size is " << _path->size() << std::endl;
@@ -210,7 +209,7 @@ void print_out_progress(long num_samples_done, long num_samples_left, std::chron
     // first multiply by 1 billion to get rays per second
     float rate = 1000000000 * num_samples_done / (intermediate - start_time).count();
 
-    std::cout << "samples left" << std::setw(20) << num_samples_left
+    std::cout << "samples left" << std::setw(10) << num_samples_left
               << " rate " << std::setw(10) << rate
               << " time left " << std::setw(5) << num_samples_left / rate
               << "                                           " << '\r' << std::flush;
@@ -374,10 +373,10 @@ int main(int argc, char *argv[])
     {
         threads[t].join();
         total_bounces += (float)bounce_counts[t];
-        std::cout << ' ' << t << ':' << bounce_counts[t] << "bounces, ";
+        std::cout << ' ' << t << ':' << bounce_counts[t] << ", ";
     }
 
-    std::cout << " done\n";
+    std::cout << "done\n";
     auto t4 = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsed_seconds3 = t4 - t3;
     std::cout << "time taken to compute " << elapsed_seconds3.count() << std::endl;

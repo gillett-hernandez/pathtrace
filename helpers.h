@@ -91,6 +91,11 @@ inline bool is_nan(const float x)
     return !(x == x);
 }
 
+inline bool is_nan(const vec3 v)
+{
+    return is_nan(v.x()) || is_nan(v.y()) || is_nan(v.z());
+}
+
 inline vec3 de_nan(const vec3 &c)
 {
     vec3 temp = c;
