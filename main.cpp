@@ -12,6 +12,7 @@
 #include "thirdparty/json.hpp"
 #include "tonemap.h"
 #include "world.h"
+#include "scheduler.h"
 
 using json = nlohmann::json;
 
@@ -419,7 +420,7 @@ int main(int argc, char *argv[])
         }
     }
 
-    manager* progressive_renderer = new progressive();
+    manager *progressive_renderer = new progressive();
     auto t3 = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsed_seconds2 = t3 - t2;
     std::cout << "time taken to setup the rest and spawn threads " << elapsed_seconds2.count() << std::endl;

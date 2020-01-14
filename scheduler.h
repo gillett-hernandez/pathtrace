@@ -1,7 +1,12 @@
+#pragma once
+
 #include "camera.h"
+#include "world.h"
 #include "ray.h"
 #include "thirdparty/json.hpp"
 #include "vec3.h"
+#include <thread>
+#include <mutex>
 
 using json = nlohmann::json;
 
@@ -17,6 +22,16 @@ public:
     // report_progress should return a true when done.
     virtual void start() = 0;
     virtual bool report_progress() = 0;
+    virtual ray get_ray(int i, int j)
+    {
+        float u = float(i + random_double()) / float(width);
+        float v = float(j + random_double()) / float(height);
+        ray r = cam->get_ray(u, v);
+        return r;
+    }
+    world *world;
+    camera *cam;
+    int width, height;
     json config;
     vec3 **framebuffer;
 };
@@ -24,18 +39,11 @@ public:
 class progressive : public manager
 {
 public:
-    progressive(camera *cam, vec3 **framebuffer, json config, float width, float height, int samples) : cam(cam), framebuffer(framebuffer), config(config), width(width), height(height), samples(samples)
+    progressive(world *world, camera *cam, vec3 **framebuffer, json config, int width, int height, int samples) : world(world), cam(cam), framebuffer(framebuffer), config(config), width(width), height(height), samples(samples)
     {
         // j = height - 1;
         // i = 0;
         // s = samples;
-    }
-    ray get_ray()
-    {
-        float u = float(i + random_double()) / float(width);
-        float v = float(j + random_double()) / float(height);
-        ray r = cam->get_ray(u, v);
-        return r;
     }
 
     void start()
@@ -44,53 +52,69 @@ public:
         for (int t = 0; t < N_THREADS; t++)
         {
             bounce_counts[t] = 0;
-            int samples = min_samples + (int)(t < remaining_samples);
+            // int samples = min_samples + (int)(t < remaining_samples);
             bounce_counts[t] = 0;
             samples_done[t] = 0;
             std::cout << ' ' << samples;
-            if (random_double() < progressive_proportion)
-            {
-                threads[t] = std::thread(this->execute, t, &bounce_counts[t], samples_done, std::ref(framebuffer), width, height, samples, MAX_BOUNCES, cam, world, trace_probability, array_of_paths);
-            }
-            else
-            {
-                threads[t] = std::thread(compute_rays_single_pass, t, &bounce_counts[t], samples_done, std::ref(framebuffer), width, height, samples, MAX_BOUNCES, cam, world, trace_probability, array_of_paths);
-            }
+            threads[t] = std::thread(this->execute, t, &bounce_counts[t], samples_done, std::ref(framebuffer), width, height, MAX_BOUNCES, cam, world, trace_probability, array_of_paths);
         }
         std::cout << " done.\n";
     }
     bool report_progress()
     {
-        // advance horizontally
-        i++;
-        if (i >= width)
-        {
-            // if reached end, reset i to beginning, and go down a line
-            i = 0;
-            j--;
-        }
-        if (j < 0)
-        {
-            // if reached bottom, reset j to top and decrease remaning samples
-            j = height - 1;
-            s--;
-        }
-        if (s < 0)
-        {
-            // if samples remaining is 0, quit
-            return true;
-        }
-        return false;
     }
-    void start(vec3 color)
+    void execute(int thread_id, long *ray_ct, int *completed_samples, vec3 **buffer, int max_bounces, world *world, float trace_probability, paths *array_of_paths)
     {
-        if (s > 0)
+        if (samples == 0)
         {
-            color_buffer += color;
+            return;
         }
-        else
+        int traces = 0;
+        for (int j = height - 1; j >= 0; j--)
         {
-            framebuffer[j][i] += color_buffer;
+            // std::cout << "computing row " << j << std::endl;
+            for (int i = 0; i < width; i++)
+            {
+                // std::cout << "computing column " << i << std::endl;
+                vec3 col = vec3(0, 0, 0);
+                long *count = new long(0);
+
+                ray r = this->get_ray(i, j);
+                std::vector<vec3> *_path = nullptr;
+                if (random_double() < trace_probability)
+                {
+                    // std::cout << "creating path to trace" << std::endl;
+                    // path = new std::vector<vec3>();
+                    if (traces < array_of_paths[thread_id].size())
+                    {
+                        _path = array_of_paths[thread_id][traces];
+                    }
+                    else
+                    {
+                        _path = new path();
+                    }
+                    traces++;
+                }
+                else
+                {
+                    _path = nullptr;
+                }
+                col += de_nan(iterative_color(r, world, 0, max_bounces, count, _path));
+                if (_path != nullptr)
+                {
+                    // std::cout << "traced _path, size is " << _path->size() << std::endl;
+                    if (traces > array_of_paths[thread_id].size())
+                    {
+                        array_of_paths[thread_id].push_back(_path);
+                    }
+                }
+
+                framebuffer_lock.lock();
+                buffer[j][i] += col;
+                *ray_ct += *count;
+                completed_samples[thread_id] += 1;
+                framebuffer_lock.unlock();
+            }
         }
     }
     camera *cam;
@@ -99,9 +123,6 @@ public:
 private:
     // the framebuffer for the screen
     vec3 **framebuffer;
-    // the color buffer, a single pixel's value is stored here before being inserted into the framebuffer
-    vec3 color_buffer;
-    int i, j, s;
 };
 
 class naive : public manager
@@ -109,39 +130,9 @@ class naive : public manager
 public:
     naive(camera *cam, vec3 **framebuffer, float width, float height, int samples) : cam(cam), framebuffer(framebuffer), width(width), height(height), samples(samples)
     {
-        j = height - 1;
-        i = 0;
-        s = samples;
-    }
-    ray get_ray()
-    {
-        float u = float(i + random_double()) / float(width);
-        float v = float(j + random_double()) / float(height);
-        ray r = cam->get_ray(u, v);
-        return r;
     }
     bool advance()
     {
-        if (s <= 0)
-        {
-            // if no more remaining samples for this pixel, reset samples counter and increase width
-            s = samples;
-            i++;
-        }
-        // decrease remaining samples for pixel
-        s--;
-        if (i >= width)
-        {
-            // if width reached, reset and go a line down
-            i = 0;
-            j--;
-        }
-        if (j < 0)
-        {
-            // if bottom reached, done
-            return true;
-        }
-        return false;
     }
     void record(vec3 color)
     {
@@ -160,9 +151,6 @@ public:
 private:
     // the framebuffer for the screen
     vec3 **framebuffer;
-    // the color buffer, a single pixel's value is stored here before being inserted into the framebuffer
-    vec3 color_buffer;
-    int i, j, s;
 };
 
 class tiled : public manager
@@ -170,54 +158,12 @@ class tiled : public manager
 public:
     tiled(camera *cam, vec3 **framebuffer, float width, float height, int samples) : cam(cam), framebuffer(framebuffer), width(width), height(height), samples(samples)
     {
-        j = height - 1;
-        i = 0;
-        s = samples;
     }
-    ray get_ray()
-    {
-        float u = float(i + random_double()) / float(width);
-        float v = float(j + random_double()) / float(height);
-        ray r = cam->get_ray(u, v);
-        return r;
-    }
-    bool advance()
-    {
 
-        s--;
-        if (s < 0)
-        {
-            s = samples;
-            i++;
-        }
-        if (i >= width)
-        {
-            i = 0;
-            j--;
-        }
-        if (j < 0)
-        {
-            j = height - 1;
-        }
-    }
-    void record(vec3 color)
-    {
-        if (s > 0)
-        {
-            color_buffer += color;
-        }
-        else
-        {
-            framebuffer[j][i] += color_buffer;
-        }
-    }
     camera *cam;
     int width, height, samples;
 
 private:
     // the framebuffer for the screen
     vec3 **framebuffer;
-    // the color buffer, a single pixel's value is stored here before being inserted into the framebuffer
-    vec3 color_buffer;
-    int i, j, s;
 };

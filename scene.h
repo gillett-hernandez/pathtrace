@@ -1,5 +1,4 @@
-#ifndef SCENEH
-#define SCENEH
+#pragma once
 #include "bvh.h"
 #include "enums.h"
 #include "hittable.h"
@@ -484,4 +483,3 @@ world *build_scene(json scene)
     return new world(new bvh_node(list.data(), list.size(), 0.0f, 0.0f), background, lights);
 }
 
-#endif
