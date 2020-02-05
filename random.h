@@ -4,6 +4,8 @@
 #include <random>
 #include "vec3.h"
 
+#define TAU 2 * M_PI
+
 inline double random_double()
 {
   static std::uniform_real_distribution<double> distribution(0.0, 1.0);

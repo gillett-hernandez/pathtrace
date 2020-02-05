@@ -3,9 +3,8 @@
 #include "vec3.h"
 #include <math.h>
 
-#define PI 3.14159265358979323
-#define TAU 2 * PI
-
+// #define PI 3.14159265358979323
+// #define TAU 2 * M_PI
 
 vec3 reflect(const vec3 &v, const vec3 &n)
 {
@@ -112,4 +111,3 @@ inline float power_heuristic(int nf, float fPdf, int ng, float gPdf, float pow =
     float fpow = powf(f, pow);
     return fpow / (fpow + powf(g, pow));
 }
-

@@ -12,7 +12,6 @@
 #include "thirdparty/json.hpp"
 #include "tonemap.h"
 #include "world.h"
-#include "scheduler.h"
 
 using json = nlohmann::json;
 
@@ -301,7 +300,10 @@ void print_out_progress(long num_samples_done, long num_samples_left, std::chron
     auto intermediate = std::chrono::high_resolution_clock::now();
     // rate was in rays per nanosecond
     // first multiply by 1 billion to get rays per second
+    assert(num_samples_left >= 0);
+    assert(num_samples_done >= 0);
     float rate = 1000000000 * num_samples_done / (intermediate - start_time).count();
+    assert(rate > 0);
 
     std::cout << "samples left" << std::setw(20) << num_samples_left
               << " rate " << std::setw(10) << rate
@@ -388,7 +390,7 @@ int main(int argc, char *argv[])
     // end camera setup
 
     // before we compute everything, open the file
-    std::ofstream output(config.value("output_path", "out.ppm"));
+    std::ofstream output(config.value("ppm_output_path", "out.ppm"));
 
     // start thread setup
     std::thread *threads = new std::thread[N_THREADS];
@@ -420,7 +422,25 @@ int main(int argc, char *argv[])
         }
     }
 
-    manager *progressive_renderer = new progressive();
+    std::cout << "spawning threads";
+    for (int t = 0; t < N_THREADS; t++)
+    {
+        bounce_counts[t] = 0;
+        int samples = min_samples + (int)(t < remaining_samples);
+        bounce_counts[t] = 0;
+        samples_done[t] = 0;
+        std::cout << ' ' << samples;
+        if (random_double() < progressive_proportion)
+        {
+            threads[t] = std::thread(compute_rays_progressive, t, &bounce_counts[t], samples_done, std::ref(framebuffer), width, height, samples, MAX_BOUNCES, cam, world, trace_probability, array_of_paths);
+        }
+        else
+        {
+            threads[t] = std::thread(compute_rays_single_pass, t, &bounce_counts[t], samples_done, std::ref(framebuffer), width, height, samples, MAX_BOUNCES, cam, world, trace_probability, array_of_paths);
+        }
+    }
+    std::cout << " done.\n";
+
     auto t3 = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsed_seconds2 = t3 - t2;
     std::cout << "time taken to setup the rest and spawn threads " << elapsed_seconds2.count() << std::endl;
@@ -437,6 +457,7 @@ int main(int argc, char *argv[])
         num_samples_left = 0;
         for (int t = 0; t < N_THREADS; t++)
         {
+            assert(samples_done[t] >= 0);
             num_samples_done += samples_done[t];
         }
         num_samples_left = min_camera_rays - num_samples_done;

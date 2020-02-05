@@ -16,17 +16,16 @@ check:
 strict:
 	g++ $(opts) -Wall -Wpedantic main.cpp -o main.exe -I.
 
-run:
+run: main.exe
 	./main.exe
-	(python3 convert_ppm_in_curdir.py &)
 
 run_w_pillow: main.exe
 	./main.exe
 	python3 -m pip install Pillow
-	(python3 convert_ppm_in_curdir.py &)
+	(python3 convert_ppm.py &)
 
 
-run_and_send: run
+run_and_send: run_w_pillow
 	python3 -m pip install sendgrid
 	python3 send_result.py
 
