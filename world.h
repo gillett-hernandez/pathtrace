@@ -1,5 +1,4 @@
-#ifndef WORLDH
-#define WORLDH
+#pragma once
 
 #include "hittable.h"
 #include "texture.h"
@@ -40,5 +39,3 @@ public:
     std::vector<hittable *> lights;
     texture *background;
 };
-
-#endif
