@@ -6,7 +6,7 @@
         "gamma": 1.0
     },
     "output_path": "render.ppm",
-    "scene": "scenes/cornell_box_with_volume2.json",
+    "scene": "scenes/three_orbs.json",
     "should_trace_paths": true,
     "avg_number_of_paths": 1000,
     "progressive_render_proportion": 0.0,
