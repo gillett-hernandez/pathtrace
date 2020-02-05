@@ -1,5 +1,4 @@
-#ifndef MATERIALH
-#define MATERIALH
+#pragma once
 #include "hittable.h"
 #include "texture.h"
 #include "vec3.h"
@@ -130,5 +129,3 @@ public:
     }
     texture *emit;
 };
-
-#endif

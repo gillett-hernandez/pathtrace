@@ -1,6 +1,4 @@
-#ifndef RAYH
-#define RAYH
-
+#pragma once
 #include "vec3.h"
 #include "transform3.h"
 
@@ -29,4 +27,3 @@ public:
     float _time;
 };
 
-#endif

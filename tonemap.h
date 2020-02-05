@@ -1,6 +1,4 @@
-#ifndef TONEMAPH
-#define TONEMAPH
-
+#pragma once
 #include "vec3.h"
 
 float A = 0.15;
@@ -50,5 +48,3 @@ vec3 tonemap_2(vec3 color)
     // put gamma and exposure here
     return color;
 }
-
-#endif

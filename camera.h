@@ -1,6 +1,4 @@
-#ifndef CAMERAH
-#define CAMERAH
-
+#pragma once
 #include "ray.h"
 #include "helpers.h"
 
@@ -113,4 +111,3 @@ public:
     float lens_radius;
     float time0, time1;
 };
-#endif

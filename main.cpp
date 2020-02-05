@@ -9,16 +9,17 @@
 #include "random.h"
 #include "scene.h"
 #include "texture.h"
-#include "world.h"
-#include "tonemap.h"
 #include "thirdparty/json.hpp"
+#include "tonemap.h"
+#include "world.h"
+#include "scheduler.h"
 
 using json = nlohmann::json;
 
 #include <chrono>
 #include <fstream>
-#include <iostream>
 #include <iomanip>
+#include <iostream>
 #include <mutex>
 #include <thread>
 
@@ -419,24 +420,7 @@ int main(int argc, char *argv[])
         }
     }
 
-    std::cout << "spawning threads";
-    for (int t = 0; t < N_THREADS; t++)
-    {
-        bounce_counts[t] = 0;
-        int samples = min_samples + (int)(t < remaining_samples);
-        bounce_counts[t] = 0;
-        samples_done[t] = 0;
-        std::cout << ' ' << samples;
-        if (random_double() < progressive_proportion)
-        {
-            threads[t] = std::thread(compute_rays_progressive, t, &bounce_counts[t], samples_done, std::ref(framebuffer), width, height, samples, MAX_BOUNCES, cam, world, trace_probability, array_of_paths);
-        }
-        else
-        {
-            threads[t] = std::thread(compute_rays_single_pass, t, &bounce_counts[t], samples_done, std::ref(framebuffer), width, height, samples, MAX_BOUNCES, cam, world, trace_probability, array_of_paths);
-        }
-    }
-    std::cout << " done.\n";
+    manager *progressive_renderer = new progressive();
     auto t3 = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsed_seconds2 = t3 - t2;
     std::cout << "time taken to setup the rest and spawn threads " << elapsed_seconds2.count() << std::endl;

@@ -1,6 +1,4 @@
-#ifndef ENUMSH
-#define ENUMSH
-
+#pragma once
 #include <map>
 
 enum material_type
@@ -89,4 +87,3 @@ plane_enum plane_enum_mapping(std::string alignment)
     return mapping[alignment];
 }
 
-#endif

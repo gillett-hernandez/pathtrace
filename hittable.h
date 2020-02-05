@@ -1,10 +1,8 @@
+#pragma once
 
 #include "aabb.h"
 #include "helpers.h"
 #include "ray.h"
-
-#ifndef HITTABLEH
-#define HITTABLEH
 
 class material;
 
@@ -25,4 +23,3 @@ public:
     virtual bool bounding_box(float t0, float t1, aabb &box) const = 0;
     // virtual bool bounding_box(float t0, float t1, aabb& box) const = 0;
 };
-#endif

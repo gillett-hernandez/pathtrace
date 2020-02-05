@@ -1,6 +1,5 @@
 
-#ifndef AABBH
-#define AABBH
+#pragma once
 #include <stdlib.h>
 #include "ray.h"
 #include "transform3.h"
@@ -59,5 +58,3 @@ aabb surrounding_box(aabb box0, aabb box1)
              ffmax(box0.max().z(), box1.max().z()));
     return aabb(small, big);
 }
-
-#endif

@@ -1,5 +1,4 @@
-#ifndef PRIMITIVEH
-#define PRIMITIVEH
+#pragma once
 #include "bvh.h"
 #include "enums.h"
 #include "hittable.h"
@@ -245,5 +244,3 @@ public:
     bool hasbbox;
     hittable *ptr;
 };
-
-#endif
