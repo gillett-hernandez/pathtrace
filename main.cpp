@@ -423,20 +423,22 @@ int main(int argc, char *argv[])
     }
 
     std::cout << "spawning threads";
-    for (int t = 0; t < N_THREADS; t++)
+    for (int thread_id = 0; thread_id < N_THREADS; thread_id++)
     {
-        bounce_counts[t] = 0;
-        int samples = min_samples + (int)(t < remaining_samples);
-        bounce_counts[t] = 0;
-        samples_done[t] = 0;
+        bounce_counts[thread_id] = 0;
+        int samples = min_samples + (int)(thread_id < remaining_samples);
+        bounce_counts[thread_id] = 0;
+        samples_done[thread_id] = 0;
         std::cout << ' ' << samples;
+        // pass the address of bounce_counts[t] so that it can be modified. this should be thread safe though, and thus shouldn't require a lock
+        // wrap framebuffer in a std::ref since it needs to be modified
         if (random_double() < progressive_proportion)
         {
-            threads[t] = std::thread(compute_rays_progressive, t, &bounce_counts[t], samples_done, std::ref(framebuffer), width, height, samples, MAX_BOUNCES, cam, world, trace_probability, array_of_paths);
+            threads[thread_id] = std::thread(compute_rays_progressive, thread_id, &bounce_counts[thread_id], samples_done, std::ref(framebuffer), width, height, samples, MAX_BOUNCES, cam, world, trace_probability, array_of_paths);
         }
         else
         {
-            threads[t] = std::thread(compute_rays_single_pass, t, &bounce_counts[t], samples_done, std::ref(framebuffer), width, height, samples, MAX_BOUNCES, cam, world, trace_probability, array_of_paths);
+            threads[thread_id] = std::thread(compute_rays_single_pass, thread_id, &bounce_counts[thread_id], samples_done, std::ref(framebuffer), width, height, samples, MAX_BOUNCES, cam, world, trace_probability, array_of_paths);
         }
     }
     std::cout << " done.\n";
@@ -451,27 +453,31 @@ int main(int argc, char *argv[])
     long num_samples_done;
     long num_samples_left = 1;
     using namespace std::chrono_literals;
+    float avg_luminance, max_luminance, total_luminance;
+    calculate_luminance(framebuffer, width, height, num_samples_done / (width * height), width * height, max_luminance, total_luminance, avg_luminance);
+
     while (num_samples_left > 0)
     {
         num_samples_done = 0;
         num_samples_left = 0;
-        for (int t = 0; t < N_THREADS; t++)
+        for (int thread_id = 0; thread_id < N_THREADS; thread_id++)
         {
-            assert(samples_done[t] >= 0);
-            num_samples_done += samples_done[t];
+            assert(samples_done[thread_id] >= 0);
+            num_samples_done += samples_done[thread_id];
         }
         num_samples_left = min_camera_rays - num_samples_done;
         print_out_progress(num_samples_done, num_samples_left, t3);
+        calculate_luminance(framebuffer, width, height, num_samples_done / (width * height), width * height, max_luminance, total_luminance, avg_luminance);
         output_to_file(output, framebuffer, width, height, num_samples_done / (width * height), 10.0, exposure, gamma);
         std::this_thread::sleep_for(0.5s);
     }
 
     std::cout << '\n';
-    for (int t = 0; t < N_THREADS; t++)
+    for (int thread_id = 0; thread_id < N_THREADS; thread_id++)
     {
-        threads[t].join();
-        total_bounces += (float)bounce_counts[t];
-        std::cout << ' ' << t << ':' << bounce_counts[t] << "bounces, ";
+        threads[thread_id].join();
+        total_bounces += (float)bounce_counts[thread_id];
+        std::cout << ' ' << thread_id << ':' << bounce_counts[thread_id] << "bounces, ";
     }
 
     std::cout << " done\n";
@@ -488,9 +494,9 @@ int main(int argc, char *argv[])
     {
         std::ofstream traced_paths_output(config.value("traced_paths_output", "paths.txt"));
         std::ofstream traced_paths_output2d(config.value("traced_paths_2d_output", "paths2d.txt"));
-        for (int t = 0; t < N_THREADS; t++)
+        for (int thread_id = 0; thread_id < N_THREADS; thread_id++)
         {
-            auto paths = array_of_paths[t];
+            auto paths = array_of_paths[thread_id];
 
             // added_paths += paths.size();
 
@@ -527,24 +533,7 @@ int main(int argc, char *argv[])
     assert(added_paths > 0 || !should_trace_paths);
     std::cout << "added " << added_paths << " paths" << std::endl;
 
-    float max_luminance = -FLT_MAX;
-    float total_luminance = 0.0;
-    for (int j = height - 1; j >= 0; j--)
-    {
-        for (int i = 0; i < width; i++)
-        {
-            vec3 col = framebuffer[j][i];
-            col /= float(n_samples);
-            float f = abs(col.length());
-            total_luminance += f;
-            if (f > max_luminance)
-            {
-                max_luminance = f;
-            }
-        }
-    }
-    float avg_luminance = total_luminance / ((float)total_pixels * (float)n_samples);
-
+    calculate_luminance(framebuffer, width, height, num_samples_done / (width * height), width * height, max_luminance, total_luminance, avg_luminance);
     std::cout << "avg lum " << avg_luminance << std::endl;
     std::cout << "max lum " << max_luminance << std::endl;
 

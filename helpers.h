@@ -2,6 +2,7 @@
 #include "random.h"
 #include "vec3.h"
 #include <math.h>
+#include <float.h>
 
 // #define PI 3.14159265358979323
 // #define TAU 2 * M_PI
@@ -110,4 +111,25 @@ inline float power_heuristic(int nf, float fPdf, int ng, float gPdf, float pow =
     // return (f * f) / (f * f + g * g);
     float fpow = powf(f, pow);
     return fpow / (fpow + powf(g, pow));
+}
+
+void calculate_luminance(vec3 **framebuffer, int width, int height, int n_samples, long total_pixels, float &max_luminance, float &total_luminance, float &avg_luminance)
+{
+    max_luminance = -FLT_MAX;
+    total_luminance = 0.0;
+    for (int j = height - 1; j >= 0; j--)
+    {
+        for (int i = 0; i < width; i++)
+        {
+            vec3 col = framebuffer[j][i];
+            col /= float(n_samples);
+            float f = abs(col.length());
+            total_luminance += f;
+            if (f > max_luminance)
+            {
+                max_luminance = f;
+            }
+        }
+    }
+    avg_luminance = total_luminance / ((float)total_pixels * (float)n_samples);
 }

@@ -1,7 +1,7 @@
 {
     "film": {
-        "width": 800,
-        "height": 800,
+        "width": 2000,
+        "height": 2000,
         "exposure": -10.0,
         "gamma": 1.0
     },
@@ -13,7 +13,7 @@
     "should_trace_paths": true,
     "avg_number_of_paths": 1000,
     "progressive_render_proportion": 0.0,
-    "max_bounces": 4,
-    "samples": 44,
-    "threads": 22
+    "max_bounces": 12,
+    "samples": 100,
+    "threads": 20
 }

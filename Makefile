@@ -18,6 +18,7 @@ strict:
 
 run: main.exe
 	./main.exe
+	(python3 convert_ppm.py &)
 
 run_w_pillow: main.exe
 	./main.exe
