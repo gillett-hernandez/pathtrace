@@ -6,10 +6,10 @@
 
 using json = nlohmann::json;
 
-class world : public hittable
+class World : public hittable
 {
 public:
-    world(bvh_node *ptr, texture *background, std::vector<hittable *> lights) : ptr(ptr), background(background), lights(lights)
+    World(bvh_node *ptr, texture *background, std::vector<hittable *> lights) : ptr(ptr), background(background), lights(lights)
     {
         // search through bvh and find lights
         // ptr->find_lights(&lights);
