@@ -15,7 +15,7 @@ class Renderer
 public:
     virtual void preprocess() = 0;
     virtual void start_render() = 0;
-    virtual std::vector<std::string> progress() = 0;
+    virtual std::vector<std::string> progress() = 0dw;
     virtual void next_pixel_and_ray(int thread_id, ray &ray, int x, int y) = 0;
     virtual bool maybe_end_render() = 0;
     virtual void compute(int thread_id, long *ray_ct, int *completed_samples, vec3 **buffer, int samples, int max_bounces, float trace_probability, paths *array_of_paths) = 0;

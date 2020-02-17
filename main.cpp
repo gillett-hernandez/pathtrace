@@ -237,12 +237,7 @@ int main(int argc, char *argv[])
     }
 
     std::cout << '\n';
-    for (int thread_id = 0; thread_id < N_THREADS; thread_id++)
-    {
-        threads[thread_id].join();
-        total_bounces += (float)bounce_counts[thread_id];
-        std::cout << ' ' << thread_id << ':' << bounce_counts[thread_id] << "bounces, ";
-    }
+
 
     std::cout << " done\n";
     auto t4 = std::chrono::high_resolution_clock::now();
