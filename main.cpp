@@ -15,6 +15,7 @@
 #include "types.h"
 #include "integrator.h"
 #include "renderer.h"
+#include "config.h"
 
 using json = nlohmann::json;
 
@@ -43,6 +44,55 @@ camera setup_camera(json camera_json, float aspect_ratio, vec3 vup = vec3(0, 1, 
 
     return camera(lookfrom, lookat, vup, vfov, aspect_ratio,
                   aperture, dist_to_focus, 0.0, 1.0);
+}
+
+config parse_config(json jconfig)
+{
+
+    // film setup
+
+    s_film film = {
+        jconfig["film"].value("width", 400),
+        jconfig["film"].value("height", 300),
+        0,
+        jconfig["film"].value("gamma", 2.2),
+        jconfig["film"].value("exposure", 0.0)};
+
+    config config = {
+        film,
+        jconfig["ppm_output_path"],
+        jconfig["png_output_path"],
+        jconfig["traced_paths_output_path"],
+        jconfig["traced_paths_2d_output_path"],
+        jconfig["scene_path"],
+        jconfig.get<bool>("should_trace_paths", false),
+        jconfig.get<float>("avg_number_of_paths", 0.0f),
+        0.0,
+        get_render_type_for(jconfig["render_type"]),
+        jconfig["max_bounces"],
+        jconfig["samples"],
+        jconfig["threads"]};
+
+    std::string scene_path = jconfig.value("scene", "scenes/scene.json");
+    int n_samples = jconfig.value("samples", 20);
+    int N_THREADS = jconfig.value("threads", 4);
+    int MAX_BOUNCES = jconfig.value("max_bounces", 10);
+    float progressive_proportion = jconfig.value("progressive_render_proportion", 0.5);
+    bool should_trace_paths = jconfig.value("should_trace_paths", false);
+    float trace_probability;
+
+    long total_pixels = width * height;
+    long min_camera_rays = n_samples * total_pixels;
+
+    if (should_trace_paths)
+    {
+        config.trace_probability = jconfig.value("avg_number_of_paths", 100.0) / min_camera_rays;
+    }
+    else
+    {
+        config.trace_probability = 0.0;
+    }
+    return config;
 }
 
 void output_to_file(std::ofstream &output, vec3 **buffer, int width, int height, int samples, float max_luminance, float exposure, float gamma)
@@ -95,57 +145,23 @@ void print_out_progress(long num_samples_done, long num_samples_left, std::chron
 int main(int argc, char *argv[])
 {
     std::ifstream config_file("config.json");
-    json config;
-    config_file >> config;
+    json jconfig;
+    config_file >> jconfig;
 
-    // film setup
-
-    int width = config["film"].value("width", 400);
-    int height = config["film"].value("height", 300);
-    float gamma = config["film"].value("gamma", 2.2);
-    float exposure = config["film"].value("exposure", 0.0);
+    config config = parse_config(jconfig);
+    s_film film = config.film;
 
     // end film setup
 
     int pixels = 0;
-    long total_pixels = width * height;
 
     // other config
-    std::string scene_path = config.value("scene", "scenes/scene.json");
-    int n_samples = config.value("samples", 20);
-    int N_THREADS = config.value("threads", 4);
-    int MAX_BOUNCES = config.value("max_bounces", 10);
-    float progressive_proportion = config.value("progressive_render_proportion", 0.5);
-    bool should_trace_paths = config.value("should_trace_paths", false);
-    float trace_probability;
-    long min_camera_rays = n_samples * total_pixels;
-
-    if (should_trace_paths)
-    {
-        trace_probability = config.value("avg_number_of_paths", 100.0) / min_camera_rays;
-    }
-    else
-    {
-        trace_probability = 0.0;
-    }
-    std::cout << "trace probability is " << trace_probability << std::endl;
+    std::cout << "trace probability is " << config.trace_probability << std::endl;
 
     std::cout << std::endl;
-    std::cout << "config read complete, rendering image at " << width << "x" << height << "==" << total_pixels << "px^2" << std::endl;
-    std::cout << "with " << n_samples << " samples per pixel, that sets a minimum number of camera rays at " << min_camera_rays << "\n\n";
-    std::cout << "using " << N_THREADS << " threads\n";
-
-    // create framebuffer
-    vec3 **framebuffer = new vec3 *[height];
-    for (int j = height - 1; j >= 0; j--)
-    {
-        // std::cout << "computed row " << j << std::endl;
-        framebuffer[j] = new vec3[width];
-        for (int i = 0; i < width; i++)
-        {
-            framebuffer[j][i] = vec3(0, 0, 0);
-        }
-    }
+    std::cout << "config read complete, rendering image at " << film.width << "x" << film.height << "==" << film.total_pixels << "px^2" << std::endl;
+    std::cout << "with " << config.n_samples << " samples per pixel, that sets a minimum number of camera rays at " << min_camera_rays << "\n\n";
+    std::cout << "using " << config.threads << " threads\n";
 
     // x,y,z
     // y is up.
@@ -237,7 +253,6 @@ int main(int argc, char *argv[])
     }
 
     std::cout << '\n';
-
 
     std::cout << " done\n";
     auto t4 = std::chrono::high_resolution_clock::now();

@@ -5,6 +5,7 @@
 #include "vec3.h"
 #include "types.h"
 #include "integrator.h"
+#include "config.h"
 #include <thread>
 #include <mutex>
 
@@ -13,11 +14,25 @@ using json = nlohmann::json;
 class Renderer
 {
 public:
+    Renderer(s_film film, camera cam) : film(film), cam(cam)
+    {
+        // create framebuffer
+        framebuffer = new vec3 *[film.height];
+        for (int j = film.height - 1; j >= 0; j--)
+        {
+            // std::cout << "computed row " << j << std::endl;
+            framebuffer[j] = new vec3[film.width];
+            for (int i = 0; i < film.width; i++)
+            {
+                framebuffer[j][i] = vec3(0, 0, 0);
+            }
+        }
+    };
     virtual void preprocess() = 0;
     virtual void start_render() = 0;
-    virtual std::vector<std::string> progress() = 0dw;
+    virtual std::vector<std::string> progress() = 0;
     virtual void next_pixel_and_ray(int thread_id, ray &ray, int x, int y) = 0;
-    virtual bool maybe_end_render() = 0;
+    virtual bool is_done() = 0;
     virtual void compute(int thread_id, long *ray_ct, int *completed_samples, vec3 **buffer, int samples, int max_bounces, float trace_probability, paths *array_of_paths) = 0;
     int N_THREADS;
     std::thread *threads;
@@ -25,8 +40,7 @@ public:
     json config;
     std::mutex framebuffer_lock;
     Integrator *integrator;
-    int width;
-    int height;
+    s_film film;
     camera cam;
     World *world;
 };
@@ -34,11 +48,11 @@ public:
 class progressive : public Renderer
 {
 public:
-    progressive(vec3 **framebuffer, std::mutex framebuffer_lock, Integrator *integrator, camera cam, World *world, int N_THREADS, long *bounce_counts, int *samples_done, int min_samples, int remaining_samples, float trace_probability, paths *array_of_paths) : framebuffer(framebuffer), framebuffer_lock(framebuffer_lock), integrator(integrator), cam(cam), world(world), width(width), height(height), N_THREADS(N_THREADS){
+    progressive(Integrator *integrator, camera cam, World *world, int N_THREADS, long *bounce_counts, int *samples_done, int min_samples, int remaining_samples, float trace_probability, paths *array_of_paths) : framebuffer(framebuffer), framebuffer_lock(framebuffer_lock), integrator(integrator), cam(cam), world(world), width(width), height(height), N_THREADS(N_THREADS){
 
-                                                                                                                                                                                                                                                                                                                                                                                                                };
+                                                                                                                                                                                                                                                                                                                                                               };
     void preprocess(){};
-    void start_render(long n_samples, float trace_probability, int MAX_BOUNCES)
+    void start_render(long n_samples, float trace_probability, int *bounce_counts, int MAX_BOUNCES)
     {
         threads = new std::thread[N_THREADS];
         int min_samples = n_samples / N_THREADS;
@@ -69,10 +83,10 @@ public:
         int traces = 0;
         for (int s = 0; s < samples; s++)
         {
-            for (int j = height - 1; j >= 0; j--)
+            for (int j = film.height - 1; j >= 0; j--)
             {
                 // std::cout << "computing row " << j << std::endl;
-                for (int i = 0; i < width; i++)
+                for (int i = 0; i < film.width; i++)
                 {
                     // std::cout << "computing column " << i << std::endl;
                     vec3 col = vec3(0, 0, 0);
@@ -122,72 +136,72 @@ public:
     }
 };
 
-class naive : public Renderer
-{
-    void preprocess(){};
-    void start_render(){};
-    void next_pixel_and_ray(int thread_id, ray &ray, int x, int y){};
-    void compute(int thread_id, long *ray_ct, int *completed_samples, vec3 **buffer, int samples, int max_bounces, float trace_probability, paths *array_of_paths)
-    {
-        if (samples == 0)
-        {
-            return;
-        }
-        int traces = 0;
-        for (int j = height - 1; j >= 0; j--)
-        {
-            // std::cout << "computing row " << j << std::endl;
-            for (int i = 0; i < width; i++)
-            {
-                // std::cout << "computing column " << i << std::endl;
-                vec3 col = vec3(0, 0, 0);
-                long *count = new long(0);
+// class naive : public Renderer
+// {
+//     void preprocess(){};
+//     void start_render(){};
+//     void next_pixel_and_ray(int thread_id, ray &ray, int x, int y){};
+//     void compute(int thread_id, long *ray_ct, int *completed_samples, vec3 **buffer, int samples, int max_bounces, float trace_probability, paths *array_of_paths)
+//     {
+//         if (samples == 0)
+//         {
+//             return;
+//         }
+//         int traces = 0;
+//         for (int j = height - 1; j >= 0; j--)
+//         {
+//             // std::cout << "computing row " << j << std::endl;
+//             for (int i = 0; i < width; i++)
+//             {
+//                 // std::cout << "computing column " << i << std::endl;
+//                 vec3 col = vec3(0, 0, 0);
+//                 long *count = new long(0);
 
-                for (int s = 0; s < samples; s++)
-                {
-                    float u = float(i + random_double()) / float(width);
-                    float v = float(j + random_double()) / float(height);
-                    ray r = cam.get_ray(u, v);
-                    std::vector<vec3> *_path = nullptr;
-                    if (random_double() < trace_probability)
-                    {
-                        // std::cout << "creating path to trace" << std::endl;
-                        // path = new std::vector<vec3>();
-                        if (traces < array_of_paths[thread_id].size())
-                        {
-                            _path = array_of_paths[thread_id][traces];
-                            assert(_path->size() == 0);
-                        }
-                        else
-                        {
-                            _path = new path();
-                        }
-                        traces++;
-                    }
-                    else
-                    {
-                        _path = nullptr;
-                    }
-                    col += de_nan(integrator->color(r, world, 0, max_bounces, count, _path));
-                    if (_path != nullptr)
-                    {
-                        // std::cout << "traced _path, size is " << _path->size() << std::endl;
-                        if (traces > array_of_paths[thread_id].size())
-                        {
-                            array_of_paths[thread_id].push_back(_path);
-                        }
-                    }
-                }
+//                 for (int s = 0; s < samples; s++)
+//                 {
+//                     float u = float(i + random_double()) / float(width);
+//                     float v = float(j + random_double()) / float(height);
+//                     ray r = cam.get_ray(u, v);
+//                     std::vector<vec3> *_path = nullptr;
+//                     if (random_double() < trace_probability)
+//                     {
+//                         // std::cout << "creating path to trace" << std::endl;
+//                         // path = new std::vector<vec3>();
+//                         if (traces < array_of_paths[thread_id].size())
+//                         {
+//                             _path = array_of_paths[thread_id][traces];
+//                             assert(_path->size() == 0);
+//                         }
+//                         else
+//                         {
+//                             _path = new path();
+//                         }
+//                         traces++;
+//                     }
+//                     else
+//                     {
+//                         _path = nullptr;
+//                     }
+//                     col += de_nan(integrator->color(r, world, 0, max_bounces, count, _path));
+//                     if (_path != nullptr)
+//                     {
+//                         // std::cout << "traced _path, size is " << _path->size() << std::endl;
+//                         if (traces > array_of_paths[thread_id].size())
+//                         {
+//                             array_of_paths[thread_id].push_back(_path);
+//                         }
+//                     }
+//                 }
 
-                framebuffer_lock.lock();
-                buffer[j][i] += col;
-                *ray_ct += *count;
-                completed_samples[thread_id] += samples;
-                framebuffer_lock.unlock();
-            }
-        }
-    }
-};
+//                 framebuffer_lock.lock();
+//                 buffer[j][i] += col;
+//                 *ray_ct += *count;
+//                 completed_samples[thread_id] += samples;
+//                 framebuffer_lock.unlock();
+//             }
+//         }
+//     }
+// };
 
 // class tiled : public renderer
 // {
