@@ -8,6 +8,7 @@
 
 class Integrator
 {
+public:
     virtual vec3 color(const ray &r, World *world, int depth, int max_bounces, long *bounce_count, path *_path) = 0;
 };
 
@@ -15,7 +16,7 @@ class RecursivePT : public Integrator
 {
 public:
     // reuse this for branched path tracing
-    vec3 color(const ray &r, World *world, int depth, int max_bounces, long *bounce_count, path *_path)
+    virtual vec3 color(const ray &r, World *world, int depth, int max_bounces, long *bounce_count, path *_path)
     {
         hit_record rec;
         if (world->hit(r, 0.001, MAXFLOAT, rec))

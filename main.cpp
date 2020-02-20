@@ -189,67 +189,13 @@ int main(int argc, char *argv[])
     // before we compute everything, open the file
     std::ofstream output(config.value("ppm_output_path", "out.ppm"));
 
-    long *bounce_counts = new long[N_THREADS];
-    int *samples_done = new int[N_THREADS];
-
-    for (int thread_id = 0; thread_id < N_THREADS; thread_id++)
-    {
-        bounce_counts[thread_id] = 0;
-        samples_done[thread_id] = 0;
-    }
-
-    // create N_THREADS buckets to dump paths into.
-
-    paths *array_of_paths = new paths[N_THREADS];
-    if (trace_probability > 0.0)
-    {
-        int avg_number_of_paths = config.value("avg_number_of_paths", 100);
-        for (int t = 0; t < N_THREADS; t++)
-        {
-            array_of_paths[t] = paths();
-            array_of_paths[t].reserve(avg_number_of_paths / N_THREADS);
-            for (int i = 0; i < avg_number_of_paths / N_THREADS; i++)
-            {
-                array_of_paths[t].push_back(new path());
-                // for (int j = 0; j < MAX_BOUNCES/2; j++) {
-                //     array_of_paths[t].back()->push_back(vec3(0, 0, 0));
-                // }
-                array_of_paths[t].back()->reserve(MAX_BOUNCES / 2);
-            }
-        }
-    }
-
     Integrator *integrator = new RecursivePT(MAX_BOUNCES);
     Renderer *renderer = new Progressive(framebuffer, framebuffer_lock, integrator, N_THREADS, bounce_counts, samples_done, remaining_samples, MAX_BOUNCES, trace_probability, array_of_paths);
-    renderer->start_render();
+    renderer->start_render(t2);
 
-    auto t3 = std::chrono::high_resolution_clock::now();
-    std::chrono::duration<double> elapsed_seconds2 = t3 - t2;
-    std::cout << "time taken to setup the rest and spawn threads " << elapsed_seconds2.count() << std::endl;
-    std::cout << "joining threads\n";
-
-    float total_bounces = 0;
-
-    long num_samples_done;
-    long num_samples_left = 1;
-    using namespace std::chrono_literals;
-    float avg_luminance, max_luminance, total_luminance;
-    calculate_luminance(framebuffer, width, height, num_samples_done / (width * height), width * height, max_luminance, total_luminance, avg_luminance);
-
-    while (num_samples_left > 0)
+    while (!renderer->is_done())
     {
-        num_samples_done = 0;
-        num_samples_left = 0;
-        for (int thread_id = 0; thread_id < N_THREADS; thread_id++)
-        {
-            assert(samples_done[thread_id] >= 0);
-            num_samples_done += samples_done[thread_id];
-        }
-        num_samples_left = min_camera_rays - num_samples_done;
-        print_out_progress(num_samples_done, num_samples_left, t3);
-        calculate_luminance(framebuffer, width, height, num_samples_done / (width * height), width * height, max_luminance, total_luminance, avg_luminance);
-        output_to_file(output, framebuffer, width, height, num_samples_done / (width * height), 10.0, exposure, gamma);
-        std::this_thread::sleep_for(0.5s);
+        renderer->sync_progress();
     }
 
     std::cout << '\n';

@@ -14,8 +14,14 @@ using json = nlohmann::json;
 class Renderer
 {
 public:
-    Renderer(s_film film, camera cam) : film(film), cam(cam)
+    // Renderer() {};
+    void initialize(Integrator *integrator, s_film film, camera cam, World *world)
     {
+        film = film;
+        cam = cam;
+        integrator = integrator;
+        world = world;
+
         // create framebuffer
         framebuffer = new vec3 *[film.height];
         for (int j = film.height - 1; j >= 0; j--)
@@ -32,15 +38,14 @@ public:
     virtual void start_render() = 0;
     virtual std::vector<std::string> progress() = 0;
     virtual void next_pixel_and_ray(int thread_id, ray &ray, int x, int y) = 0;
+    virtual void sync_progress() = 0;
     virtual bool is_done() = 0;
     virtual void compute(int thread_id, long *ray_ct, int *completed_samples, vec3 **buffer, int samples, int max_bounces, float trace_probability, paths *array_of_paths) = 0;
     virtual void finalize() = 0;
-    int N_THREADS;
-    std::thread *threads;
     vec3 **framebuffer;
-    json config;
     std::mutex framebuffer_lock;
     Integrator *integrator;
+    std::chrono::high_resolution_clock::time_point render_start_time;
     s_film film;
     camera cam;
     World *world;
@@ -49,11 +54,11 @@ public:
 class Progressive : public Renderer
 {
 public:
-    Progressive(Integrator *integrator, camera cam, World *world, int N_THREADS, long *bounce_counts, int *samples_done, int min_samples, int remaining_samples, float trace_probability, paths *array_of_paths) : framebuffer(framebuffer), framebuffer_lock(framebuffer_lock), integrator(integrator), cam(cam), world(world), width(width), height(height), N_THREADS(N_THREADS){
+    Progressive(Integrator *integrator, camera cam, World *world){
 
-                                                                                                                                                                                                                                                                                                                                                               };
+    };
     void preprocess(){};
-    void start_render(long n_samples, float trace_probability, int *bounce_counts, int MAX_BOUNCES)
+    void start_render(long n_samples, float trace_probability, int *bounce_counts, int MAX_BOUNCES, std::chrono::high_resolution_clock::time_point program_start_time)
     {
         threads = new std::thread[N_THREADS];
         int min_samples = n_samples / N_THREADS;
@@ -61,6 +66,35 @@ public:
 
         std::cout << "samples per thread " << min_samples << std::endl;
         std::cout << "leftover samples to be allocated " << remaining_samples << std::endl;
+        long *bounce_counts = new long[N_THREADS];
+        int *samples_done = new int[N_THREADS];
+
+        for (int thread_id = 0; thread_id < N_THREADS; thread_id++)
+        {
+            bounce_counts[thread_id] = 0;
+            samples_done[thread_id] = 0;
+        }
+
+        // create N_THREADS buckets to dump paths into.
+
+        paths *array_of_paths = new paths[N_THREADS];
+        if (trace_probability > 0.0)
+        {
+            int avg_number_of_paths = config.value("avg_number_of_paths", 100);
+            for (int t = 0; t < N_THREADS; t++)
+            {
+                array_of_paths[t] = paths();
+                array_of_paths[t].reserve(avg_number_of_paths / N_THREADS);
+                for (int i = 0; i < avg_number_of_paths / N_THREADS; i++)
+                {
+                    array_of_paths[t].push_back(new path());
+                    // for (int j = 0; j < MAX_BOUNCES/2; j++) {
+                    //     array_of_paths[t].back()->push_back(vec3(0, 0, 0));
+                    // }
+                    array_of_paths[t].back()->reserve(MAX_BOUNCES / 2);
+                }
+            }
+        }
 
         std::cout << "spawning threads";
         for (int thread_id = 0; thread_id < N_THREADS; thread_id++)
@@ -73,8 +107,39 @@ public:
             threads[thread_id] = std::thread(this->compute, thread_id, &bounce_counts[thread_id], samples_done, std::ref(framebuffer), samples, trace_probability, array_of_paths);
         }
         std::cout << " done.\n";
+        render_start_time = std::chrono::high_resolution_clock::now();
+        std::chrono::duration<double> elapsed_seconds2 = render_start_time - program_start_time;
+        std::cout << "time taken to setup the rest and spawn threads " << elapsed_seconds2.count() << std::endl;
+        std::cout << "joining threads\n";
     };
     void next_pixel_and_ray(int thread_id, ray &ray, int x, int y){};
+    void sync_progress() override
+    {
+
+        float total_bounces = 0;
+
+        long num_samples_done;
+        long num_samples_left = 1;
+        using namespace std::chrono_literals;
+        float avg_luminance, max_luminance, total_luminance;
+        calculate_luminance(framebuffer, film.width, film.height, num_samples_done / (width * height), width * height, max_luminance, total_luminance, avg_luminance);
+
+        while (num_samples_left > 0)
+        {
+            num_samples_done = 0;
+            num_samples_left = 0;
+            for (int thread_id = 0; thread_id < N_THREADS; thread_id++)
+            {
+                assert(samples_done[thread_id] >= 0);
+                num_samples_done += samples_done[thread_id];
+            }
+            num_samples_left = min_camera_rays - num_samples_done;
+            print_out_progress(num_samples_done, num_samples_left, t3);
+            calculate_luminance(framebuffer, width, height, num_samples_done / (width * height), width * height, max_luminance, total_luminance, avg_luminance);
+            output_to_file(output, framebuffer, width, height, num_samples_done / (width * height), 10.0, exposure, gamma);
+            std::this_thread::sleep_for(0.5s);
+        }
+    };
     void compute(int thread_id, long *ray_ct, int *completed_samples, int samples, int max_bounces, float trace_probability, paths *array_of_paths)
     {
         if (samples == 0)
@@ -135,6 +200,11 @@ public:
         }
         // std::cout << "total length of traced paths : " << paths[thread_id].size() << std::endl;
     }
+
+    int N_THREADS;
+    std::thread *threads;
+    json config;
+    Integrator *integrator;
 };
 
 // class naive : public Renderer
