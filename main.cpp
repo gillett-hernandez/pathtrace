@@ -220,7 +220,7 @@ int main(int argc, char *argv[])
     }
 
     Integrator *integrator = new RecursivePT(MAX_BOUNCES);
-    Renderer *renderer = new progressive(framebuffer, framebuffer_lock, integrator, N_THREADS, bounce_counts, samples_done, remaining_samples, MAX_BOUNCES, trace_probability, array_of_paths);
+    Renderer *renderer = new Progressive(framebuffer, framebuffer_lock, integrator, N_THREADS, bounce_counts, samples_done, remaining_samples, MAX_BOUNCES, trace_probability, array_of_paths);
     renderer->start_render();
 
     auto t3 = std::chrono::high_resolution_clock::now();

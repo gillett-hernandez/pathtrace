@@ -34,6 +34,7 @@ public:
     virtual void next_pixel_and_ray(int thread_id, ray &ray, int x, int y) = 0;
     virtual bool is_done() = 0;
     virtual void compute(int thread_id, long *ray_ct, int *completed_samples, vec3 **buffer, int samples, int max_bounces, float trace_probability, paths *array_of_paths) = 0;
+    virtual void finalize() = 0;
     int N_THREADS;
     std::thread *threads;
     vec3 **framebuffer;
@@ -45,10 +46,10 @@ public:
     World *world;
 };
 
-class progressive : public Renderer
+class Progressive : public Renderer
 {
 public:
-    progressive(Integrator *integrator, camera cam, World *world, int N_THREADS, long *bounce_counts, int *samples_done, int min_samples, int remaining_samples, float trace_probability, paths *array_of_paths) : framebuffer(framebuffer), framebuffer_lock(framebuffer_lock), integrator(integrator), cam(cam), world(world), width(width), height(height), N_THREADS(N_THREADS){
+    Progressive(Integrator *integrator, camera cam, World *world, int N_THREADS, long *bounce_counts, int *samples_done, int min_samples, int remaining_samples, float trace_probability, paths *array_of_paths) : framebuffer(framebuffer), framebuffer_lock(framebuffer_lock), integrator(integrator), cam(cam), world(world), width(width), height(height), N_THREADS(N_THREADS){
 
                                                                                                                                                                                                                                                                                                                                                                };
     void preprocess(){};
@@ -92,8 +93,8 @@ public:
                     vec3 col = vec3(0, 0, 0);
                     long *count = new long(0);
 
-                    float u = float(i + random_double()) / float(width);
-                    float v = float(j + random_double()) / float(height);
+                    float u = float(i + random_double()) / float(film.width);
+                    float v = float(j + random_double()) / float(film.height);
                     ray r = cam.get_ray(u, v);
                     std::vector<vec3> *_path = nullptr;
                     if (random_double() < trace_probability)
@@ -125,7 +126,7 @@ public:
                     }
 
                     framebuffer_lock.lock();
-                    buffer[j][i] += col;
+                    framebuffer[j][i] += col;
                     *ray_ct += *count;
                     completed_samples[thread_id] += 1;
                     framebuffer_lock.unlock();
