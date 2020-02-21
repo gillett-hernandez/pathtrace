@@ -15,12 +15,14 @@ class Renderer
 {
 public:
     // Renderer() {};
-    void initialize(Integrator *integrator, s_film film, camera cam, World *world)
+    void initialize(Integrator *integrator, camera cam, World *world, std::ofstream &output)
     {
-        film = film;
-        cam = cam;
-        integrator = integrator;
-        world = world;
+        this->config = world->config;
+        this->film = this->config.film;
+        this->cam = cam;
+        this->integrator = integrator;
+        this->world = world;
+        this->output = output;
 
         // create framebuffer
         framebuffer = new vec3 *[film.height];
@@ -46,28 +48,31 @@ public:
     std::mutex framebuffer_lock;
     Integrator *integrator;
     std::chrono::high_resolution_clock::time_point render_start_time;
+    Config config;
     s_film film;
     camera cam;
     World *world;
+    std::ofstream &output;
 };
 
 class Progressive : public Renderer
 {
 public:
-    Progressive(Integrator *integrator, camera cam, World *world){
-
+    Progressive(Integrator *integrator, camera cam, World *world)
+    {
+        this->initialize(integrator, cam, world);
     };
     void preprocess(){};
-    void start_render(long n_samples, float trace_probability, int *bounce_counts, int MAX_BOUNCES, std::chrono::high_resolution_clock::time_point program_start_time)
+    void start_render(float trace_probability, std::chrono::high_resolution_clock::time_point program_start_time)
     {
         threads = new std::thread[N_THREADS];
-        int min_samples = n_samples / N_THREADS;
-        int remaining_samples = n_samples % N_THREADS;
+        int min_samples = config.samples / N_THREADS;
+        int remaining_samples = config.samples % N_THREADS;
 
         std::cout << "samples per thread " << min_samples << std::endl;
         std::cout << "leftover samples to be allocated " << remaining_samples << std::endl;
-        long *bounce_counts = new long[N_THREADS];
-        int *samples_done = new int[N_THREADS];
+        bounce_counts = new long[N_THREADS];
+        samples_done = new int[N_THREADS];
 
         for (int thread_id = 0; thread_id < N_THREADS; thread_id++)
         {
@@ -115,31 +120,23 @@ public:
     void next_pixel_and_ray(int thread_id, ray &ray, int x, int y){};
     void sync_progress() override
     {
-
-        float total_bounces = 0;
-
-        long num_samples_done;
-        long num_samples_left = 1;
-        using namespace std::chrono_literals;
-        float avg_luminance, max_luminance, total_luminance;
-        calculate_luminance(framebuffer, film.width, film.height, num_samples_done / (width * height), width * height, max_luminance, total_luminance, avg_luminance);
-
-        while (num_samples_left > 0)
+        long num_samples_done = 0;
+        for (int thread_id = 0; thread_id < N_THREADS; thread_id++)
         {
-            num_samples_done = 0;
-            num_samples_left = 0;
-            for (int thread_id = 0; thread_id < N_THREADS; thread_id++)
-            {
-                assert(samples_done[thread_id] >= 0);
-                num_samples_done += samples_done[thread_id];
-            }
-            num_samples_left = min_camera_rays - num_samples_done;
-            print_out_progress(num_samples_done, num_samples_left, t3);
-            calculate_luminance(framebuffer, width, height, num_samples_done / (width * height), width * height, max_luminance, total_luminance, avg_luminance);
-            output_to_file(output, framebuffer, width, height, num_samples_done / (width * height), 10.0, exposure, gamma);
-            std::this_thread::sleep_for(0.5s);
+            assert(samples_done[thread_id] >= 0);
+            num_samples_done += samples_done[thread_id];
         }
+        long num_samples_left = min_camera_rays - num_samples_done;
+        print_out_progress(num_samples_done, num_samples_left, t3);
+        float avg_luminance, max_luminance, total_luminance;
+        calculate_luminance(framebuffer, film.width, film.height, num_samples_done / (film.width * film.height), film.width * film.height, max_luminance, total_luminance, avg_luminance);
+        output_to_file(output, framebuffer, film.width, film.height, num_samples_done / (film.width * film.height), max_luminance, film.exposure, film.gamma);
     };
+
+    bool is_done()
+    {
+        return this->completed;
+    }
     void compute(int thread_id, long *ray_ct, int *completed_samples, int samples, int max_bounces, float trace_probability, paths *array_of_paths)
     {
         if (samples == 0)
@@ -201,10 +198,72 @@ public:
         // std::cout << "total length of traced paths : " << paths[thread_id].size() << std::endl;
     }
 
+    void finalize()
+    {
+
+        auto t4 = std::chrono::high_resolution_clock::now();
+        std::chrono::duration<double> elapsed_seconds3 = t4 - t3;
+        std::cout << "time taken to compute " << elapsed_seconds3.count() << std::endl;
+        float rate1 = total_pixels * n_samples / elapsed_seconds3.count();
+        float rate2 = total_bounces / elapsed_seconds3.count();
+        std::cout << "computed " << total_pixels * n_samples << " camera rays in " << elapsed_seconds3.count() << "s, at " << rate1 << " rays per second, or " << rate1 / N_THREADS << "per thread" << std::endl;
+        std::cout << "computed " << total_bounces << " rays, at " << rate2 << " rays per second, or " << rate2 / N_THREADS << " per thread" << std::endl;
+
+        int added_paths = 0;
+        if (should_trace_paths)
+        {
+            std::ofstream traced_paths_output(config.value("traced_paths_output", "paths.txt"));
+            std::ofstream traced_paths_output2d(config.value("traced_paths_2d_output", "paths2d.txt"));
+            for (int thread_id = 0; thread_id < N_THREADS; thread_id++)
+            {
+                auto paths = array_of_paths[thread_id];
+
+                // added_paths += paths.size();
+
+                for (auto &path : paths)
+                {
+                    if (path->size() == 0)
+                    {
+                        continue;
+                    }
+                    added_paths++;
+                    for (auto &point : *path)
+                    {
+                        traced_paths_output << point.x() << ',' << point.y() << ',' << point.z() << '\n';
+
+                        float x = 0;
+                        float y = 0;
+                        bool hit_scene = cam.project(point, x, y);
+                        if (0.0 < x && 0.0 < y && x <= 1.0 && y <= 1.0 && hit_scene)
+                        {
+                            traced_paths_output2d << x << ',' << y << std::endl;
+                        }
+                        if (!hit_scene)
+                        {
+                            traced_paths_output2d << x << ',' << y << '!' << std::endl;
+                        }
+                    }
+                    traced_paths_output << std::endl;
+                    traced_paths_output2d << std::endl;
+                }
+            }
+            traced_paths_output.close();
+            traced_paths_output2d.close();
+        }
+        assert(added_paths > 0 || !should_trace_paths);
+        std::cout << "added " << added_paths << " paths" << std::endl;
+
+        calculate_luminance(framebuffer, width, height, num_samples_done / (width * height), width * height, max_luminance, total_luminance, avg_luminance);
+        std::cout << "avg lum " << avg_luminance << std::endl;
+        std::cout << "max lum " << max_luminance << std::endl;
+
+        output_to_file(output, framebuffer, width, height, n_samples, max_luminance, exposure, gamma);
+    }
+
     int N_THREADS;
     std::thread *threads;
-    json config;
-    Integrator *integrator;
+    long *bounce_counts;
+    int *samples_done;
 };
 
 // class naive : public Renderer

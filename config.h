@@ -28,7 +28,7 @@ RenderType get_render_type_for(std::string type)
     return mapping[type];
 }
 
-struct config
+struct Config
 {
     s_film film;
     std::string ppm_output_path;

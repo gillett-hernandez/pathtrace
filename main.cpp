@@ -60,7 +60,7 @@ config parse_config(json jconfig)
 
     config config = {
         film,
-        jconfig["ppm_output_path"],
+        jconfig.value("ppm_output_path", "out.ppm"),
         jconfig["png_output_path"],
         jconfig["traced_paths_output_path"],
         jconfig["traced_paths_2d_output_path"],
@@ -187,75 +187,22 @@ int main(int argc, char *argv[])
     // end camera setup
 
     // before we compute everything, open the file
-    std::ofstream output(config.value("ppm_output_path", "out.ppm"));
+    std::ofstream output(config.ppm_output_path);
 
-    Integrator *integrator = new RecursivePT(MAX_BOUNCES);
-    Renderer *renderer = new Progressive(framebuffer, framebuffer_lock, integrator, N_THREADS, bounce_counts, samples_done, remaining_samples, MAX_BOUNCES, trace_probability, array_of_paths);
+    Integrator *integrator = new RecursivePT();
+    Renderer *renderer = new Progressive(integrator, cam, world, output);
     renderer->start_render(t2);
 
     while (!renderer->is_done())
     {
         renderer->sync_progress();
+        using namespace std::chrono_literals;
+        std::this_thread::sleep_for(0.5s);
     }
 
     std::cout << '\n';
 
     std::cout << " done\n";
-    auto t4 = std::chrono::high_resolution_clock::now();
-    std::chrono::duration<double> elapsed_seconds3 = t4 - t3;
-    std::cout << "time taken to compute " << elapsed_seconds3.count() << std::endl;
-    float rate1 = total_pixels * n_samples / elapsed_seconds3.count();
-    float rate2 = total_bounces / elapsed_seconds3.count();
-    std::cout << "computed " << total_pixels * n_samples << " camera rays in " << elapsed_seconds3.count() << "s, at " << rate1 << " rays per second, or " << rate1 / N_THREADS << "per thread" << std::endl;
-    std::cout << "computed " << total_bounces << " rays, at " << rate2 << " rays per second, or " << rate2 / N_THREADS << " per thread" << std::endl;
 
-    int added_paths = 0;
-    if (should_trace_paths)
-    {
-        std::ofstream traced_paths_output(config.value("traced_paths_output", "paths.txt"));
-        std::ofstream traced_paths_output2d(config.value("traced_paths_2d_output", "paths2d.txt"));
-        for (int thread_id = 0; thread_id < N_THREADS; thread_id++)
-        {
-            auto paths = array_of_paths[thread_id];
-
-            // added_paths += paths.size();
-
-            for (auto &path : paths)
-            {
-                if (path->size() == 0)
-                {
-                    continue;
-                }
-                added_paths++;
-                for (auto &point : *path)
-                {
-                    traced_paths_output << point.x() << ',' << point.y() << ',' << point.z() << '\n';
-
-                    float x = 0;
-                    float y = 0;
-                    bool hit_scene = cam.project(point, x, y);
-                    if (0.0 < x && 0.0 < y && x <= 1.0 && y <= 1.0 && hit_scene)
-                    {
-                        traced_paths_output2d << x << ',' << y << std::endl;
-                    }
-                    if (!hit_scene)
-                    {
-                        traced_paths_output2d << x << ',' << y << '!' << std::endl;
-                    }
-                }
-                traced_paths_output << std::endl;
-                traced_paths_output2d << std::endl;
-            }
-        }
-        traced_paths_output.close();
-        traced_paths_output2d.close();
-    }
-    assert(added_paths > 0 || !should_trace_paths);
-    std::cout << "added " << added_paths << " paths" << std::endl;
-
-    calculate_luminance(framebuffer, width, height, num_samples_done / (width * height), width * height, max_luminance, total_luminance, avg_luminance);
-    std::cout << "avg lum " << avg_luminance << std::endl;
-    std::cout << "max lum " << max_luminance << std::endl;
-
-    output_to_file(output, framebuffer, width, height, n_samples, max_luminance, exposure, gamma);
+    renderer->finalize();
 }

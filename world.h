@@ -1,5 +1,5 @@
 #pragma once
-
+#include "config.h"
 #include "hittable.h"
 #include "texture.h"
 #include "thirdparty/json.hpp"
@@ -34,7 +34,7 @@ public:
         return lights[idx];
     }
 
-    json config;
+    Config config;
     bvh_node *ptr;
     std::vector<hittable *> lights;
     texture *background;
