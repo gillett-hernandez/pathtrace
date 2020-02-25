@@ -54,9 +54,10 @@ public:
             // generate world u v and then sample world texture?
             // return vec3(0, 0, 0);
             vec3 unit_direction = unit_vector(r.direction());
-            float u = unit_direction.x();
-            float v = unit_direction.y();
-            // TODO: replace u and v with angle l->r and angle d->u;
+            // get phi and theta values for that direction, then convert to UV values for an environment map.
+            float u = (M_PI + atan2(unit_direction.y(), unit_direction.x())) / TAU;
+            float v = acos(unit_direction.z()) / M_PI;
+
             return world->value(u, v, unit_direction);
         }
     }

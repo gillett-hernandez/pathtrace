@@ -15,5 +15,5 @@
     "progressive_render_proportion": 0.0,
     "max_bounces": 12,
     "samples": 10,
-    "threads": 1
+    "threads": 10
 }

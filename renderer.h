@@ -33,7 +33,8 @@ void output_to_file(std::shared_ptr<std::ofstream> output, vec3 **buffer, int wi
             // color space interpolation here
             // first color mapping
 
-            col = to_srgb(tonemap_uncharted(col, max_luminance));
+            // col = to_srgb(tonemap_uncharted(col, max_luminance));
+            col = to_srgb(tonemap_2(col));
             // put gamma and exposure here
 
             char ir = int(255.99 * powf(col[0], gamma));
@@ -194,6 +195,7 @@ public:
     }
     void compute(int thread_id, int samples)
     {
+        // start of multithreaded code.
         if (samples == 0)
         {
             return;
@@ -241,7 +243,7 @@ public:
                             array_of_paths[thread_id].push_back(_path);
                         }
                     }
-
+                    // framebuffer accesses need to be guarded with a lock so that multiple threads don't write to the same pixel at the same time.
                     framebuffer_lock.lock();
                     framebuffer[j][i] += col;
                     bounce_counts[thread_id] += *count;

@@ -59,8 +59,6 @@ int main(int argc, char *argv[])
 
     // end film setup
 
-    int pixels = 0;
-
     // other config
     long min_camera_rays = config.samples * film.total_pixels;
     std::cout << "trace probability is " << config.trace_probability << std::endl;

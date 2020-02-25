@@ -9,16 +9,16 @@ using json = nlohmann::json;
 
 struct s_film
 {
-    size_t width;
-    size_t height;
-    size_t total_pixels;
+    int width;
+    int height;
+    long total_pixels;
     float exposure;
     float gamma;
     s_film(){};
     s_film(json film)
     {
-        width = (size_t)film.value("width", 400);
-        height = (size_t)film.value("height", 300);
+        width = film.value("width", 400);
+        height = film.value("height", 300);
 
         exposure = (float)film.value("gamma", 2.2);
         gamma = (float)film.value("exposure", 0.0);
@@ -54,8 +54,8 @@ struct Config
     float avg_number_of_paths;
     float trace_probability;
     RenderType render_type;
-    size_t max_bounces;
-    size_t samples;
+    int max_bounces;
+    int samples;
     uint16_t threads;
     Config(){};
 
@@ -72,8 +72,8 @@ struct Config
         avg_number_of_paths = jconfig.value("avg_number_of_paths", 100.0f);
 
         render_type = get_render_type_for(jconfig.value("render_type", "progressive"));
-        max_bounces = (size_t)jconfig.value("max_bounces", 10);
-        samples = (size_t)jconfig.value("samples", 20);
+        max_bounces = jconfig.value("max_bounces", 10);
+        samples = jconfig.value("samples", 20);
         threads = (uint16_t)jconfig.value("threads", 1);
 
         long min_camera_rays = samples * film.total_pixels;
