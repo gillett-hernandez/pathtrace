@@ -34,16 +34,18 @@ def main(args):
                         tmp_file_png = filepng.replace(".png", ".tmp.png")
                         im = Image.open(filepath)
                         im.save(tmp_file_png)
-                        print("doing stuff0")
-                        try:
-                            os.remove(filepng)
-                        except FileNotFoundError:
-                            pass
+                        # print("doing stuff0")
+                        # try:
+                        #     # delete png
+                        #     os.remove(filepng)
+                        # except FileNotFoundError:
+                        #     pass
                         print("doing stuff1")
-                        os.rename(tmp_file_png, filepng)
+                        os.replace(tmp_file_png, filepng)
                         print("doing stuff2")
                         if not args.no_delete:
-                            # print("deleting")
+                            # delete ppm
+                            time.sleep(2)
                             os.remove(filepath)
                     except Exception as e:
                         print(e)

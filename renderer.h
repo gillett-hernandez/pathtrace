@@ -33,13 +33,16 @@ void output_to_file(std::shared_ptr<std::ofstream> output, vec3 **buffer, int wi
             // color space interpolation here
             // first color mapping
 
-            // col = to_srgb(tonemap_uncharted(col, max_luminance));
-            col = to_srgb(tonemap_2(col));
+            // tonemap crushes the color into the 0 to 1 range
+            col = 255 * to_srgb(tonemap_uncharted(col, max_luminance));
             // put gamma and exposure here
 
-            char ir = int(255.99 * powf(col[0], gamma));
-            char ig = int(255.99 * powf(col[1], gamma));
-            char ib = int(255.99 * powf(col[2], gamma));
+            // unsigned char ir = clamp<float>(255 * powf(col[0], gamma), 0, 255);
+            unsigned char ir = int(col[0]);
+            // unsigned char ig = clamp<float>(255 * powf(col[1], gamma), 0, 255);
+            unsigned char ig = int(col[1]);
+            // unsigned char ib = clamp<float>(255 * powf(col[2], gamma), 0, 255);
+            unsigned char ib = int(col[2]);
             (*output) << ir << ig << ib;
         }
     }
