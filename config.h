@@ -52,6 +52,8 @@ struct Config
     std::string scene_path;
     bool should_trace_paths;
     float avg_number_of_paths;
+    int block_width;
+    int block_height;
     float trace_probability;
     RenderType render_type;
     int max_bounces;
@@ -70,6 +72,8 @@ struct Config
         scene_path = jconfig.value("scene", "scenes/scene.json");
         should_trace_paths = jconfig.value("should_trace_paths", false);
         avg_number_of_paths = jconfig.value("avg_number_of_paths", 100.0f);
+        block_width = jconfig.value("block_width", 64);
+        block_height = jconfig.value("block_height", 64);
 
         render_type = get_render_type_for(jconfig.value("render_type", "progressive"));
         max_bounces = jconfig.value("max_bounces", 10);

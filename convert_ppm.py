@@ -18,7 +18,7 @@ def main(args):
     for a, b, c in os.walk(args.path):
         if "thirdparty" in a or "Eigen" in a:
             continue
-        print(a, b, c)
+        # print(a, b, c)
         for file in c:
             if file.endswith(".ppm"):
                 filepath = os.path.join(a, file)
