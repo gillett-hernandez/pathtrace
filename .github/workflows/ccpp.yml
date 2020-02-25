@@ -21,6 +21,13 @@ jobs:
         SENDGRID_API_KEY: ${{ secrets.SENDGRID_API_KEY }}
       run: make run_and_send
 
+    - name: Upload render artifact
+      uses: actions/upload-artifact@v1
+      with:
+        name: render.png
+        path: output/render.png
+
+
 
 
 
