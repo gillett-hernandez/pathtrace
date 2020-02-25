@@ -49,10 +49,10 @@ void output_to_file(std::shared_ptr<std::ofstream> output, vec3 **buffer, int wi
     output->flush();
 }
 
-void handle_traced_paths(json config, camera cam, int &added_paths, int N_THREADS, paths *array_of_paths)
+void handle_traced_paths(std::string output_path, std::string output_2d_path, camera cam, int &added_paths, int N_THREADS, paths *array_of_paths)
 {
-    std::ofstream traced_paths_output(config.value("traced_paths_output", "paths.txt"));
-    std::ofstream traced_paths_output2d(config.value("traced_paths_2d_output", "paths2d.txt"));
+    std::ofstream traced_paths_output(output_path);
+    std::ofstream traced_paths_output2d(output_2d_path);
     for (int thread_id = 0; thread_id < N_THREADS; thread_id++)
     {
         auto paths = array_of_paths[thread_id];
@@ -317,44 +317,9 @@ public:
         int added_paths = 0;
         if (config.should_trace_paths)
         {
-            std::ofstream traced_paths_output(config.traced_paths_output_path);
-            std::ofstream traced_paths_output2d(config.traced_paths_2d_output_path);
-            for (int thread_id = 0; thread_id < N_THREADS; thread_id++)
-            {
-                auto paths = array_of_paths[thread_id];
-
-                // added_paths += paths.size();
-
-                for (auto &path : paths)
-                {
-                    if (path->size() == 0)
-                    {
-                        continue;
-                    }
-                    added_paths++;
-                    for (auto &point : *path)
-                    {
-                        traced_paths_output << point.x() << ',' << point.y() << ',' << point.z() << '\n';
-
-                        float x = 0;
-                        float y = 0;
-                        bool hit_scene = cam.project(point, x, y);
-                        if (0.0 < x && 0.0 < y && x <= 1.0 && y <= 1.0 && hit_scene)
-                        {
-                            traced_paths_output2d << x << ',' << y << std::endl;
-                        }
-                        if (!hit_scene)
-                        {
-                            traced_paths_output2d << x << ',' << y << '!' << std::endl;
-                        }
-                    }
-                    traced_paths_output << std::endl;
-                    traced_paths_output2d << std::endl;
-                }
-            }
-            traced_paths_output.close();
-            traced_paths_output2d.close();
+            handle_traced_paths(config.traced_paths_output_path, config.traced_paths_2d_output_path, cam, added_paths, N_THREADS, array_of_paths);
         }
+
         // assert(added_paths > 0 || !config.should_trace_paths);
         if (added_paths == 0 && config.should_trace_paths)
         {
