@@ -49,6 +49,47 @@ void output_to_file(std::shared_ptr<std::ofstream> output, vec3 **buffer, int wi
     output->flush();
 }
 
+void handle_traced_paths(json config, camera cam, int &added_paths, int N_THREADS, paths *array_of_paths)
+{
+    std::ofstream traced_paths_output(config.value("traced_paths_output", "paths.txt"));
+    std::ofstream traced_paths_output2d(config.value("traced_paths_2d_output", "paths2d.txt"));
+    for (int thread_id = 0; thread_id < N_THREADS; thread_id++)
+    {
+        auto paths = array_of_paths[thread_id];
+
+        // added_paths += paths.size();
+
+        for (auto &path : paths)
+        {
+            if (path->size() == 0)
+            {
+                continue;
+            }
+            added_paths++;
+            for (auto &point : *path)
+            {
+                traced_paths_output << point.x() << ',' << point.y() << ',' << point.z() << '\n';
+
+                float x = 0;
+                float y = 0;
+                bool hit_scene = cam.project(point, x, y);
+                if (0.0 < x && 0.0 < y && x <= 1.0 && y <= 1.0 && hit_scene)
+                {
+                    traced_paths_output2d << x << ',' << y << std::endl;
+                }
+                if (!hit_scene)
+                {
+                    traced_paths_output2d << x << ',' << y << '!' << std::endl;
+                }
+            }
+            traced_paths_output << std::endl;
+            traced_paths_output2d << std::endl;
+        }
+    }
+    traced_paths_output.close();
+    traced_paths_output2d.close();
+}
+
 void print_out_progress(long num_samples_done, long num_samples_left, std::chrono::high_resolution_clock::time_point start_time)
 {
     auto intermediate = std::chrono::high_resolution_clock::now();
