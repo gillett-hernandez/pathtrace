@@ -16,8 +16,10 @@ parser.add_argument("-p", "--path", type=str, default=".", help="path to convert
 def main(args):
     # print(args)
     for a, b, c in os.walk(args.path):
+        if "thirdparty" in a or "Eigen" in a:
+            continue
+        print(a, b, c)
         for file in c:
-            print(file)
             if file.endswith(".ppm"):
                 filepath = os.path.join(a, file)
                 ppmstat = os.stat(filepath)
@@ -29,7 +31,6 @@ def main(args):
                     # print(ppmstat.st_mtime - pngstat.st_mtime)
                     if ppmstat.st_mtime <= pngstat.st_mtime:
                         should_replace = False
-                # print(file, filepng)
                 if should_replace:
                     try:
                         tmp_file_png = filepng.replace(".png", ".tmp.png")
