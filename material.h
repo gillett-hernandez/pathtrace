@@ -1,5 +1,4 @@
 #pragma once
-#include "helpers.h"
 #include "hittable.h"
 #include "texture.h"
 #include "vec3.h"
@@ -201,6 +200,7 @@ public:
     texture *emit;
     std::string name;
 };
+
 class isotropic : public material
 {
 public:

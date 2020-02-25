@@ -12,10 +12,22 @@ jobs:
     - uses: actions/checkout@v1
 
 
-    - name: make run_and_send
-      env:
-        SENDGRID_API_KEY: ${{ secrets.SENDGRID_API_KEY }}
-      run: make run_and_send
+    # - name: install setuptools
+    #   run: sudo apt install python-setuptools
+
+
+    - name: make run_w_pillow
+      # env:
+      #   SENDGRID_API_KEY: ${{ secrets.SENDGRID_API_KEY }}
+      run: make run_w_pillow
+
+    # comment
+    - name: Upload render artifact
+      uses: actions/upload-artifact@v1
+      with:
+        name: render.png
+        path: output/render.png
+
 
 
 

@@ -4,7 +4,6 @@
 #include "helpers.h"
 #include "ray.h"
 
-
 class material;
 // class hittable;
 

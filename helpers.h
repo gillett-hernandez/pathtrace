@@ -3,62 +3,10 @@
 #include "vec3.h"
 #include <math.h>
 #include <vector>
-
-#define PI 3.14159265358979323
-#define TAU 2 * PI
+#include <float.h>
 
 typedef std::vector<vec3> path;
 typedef std::vector<path *> paths;
-
-inline vec3 random_in_unit_sphere()
-{
-    // vec3 p;
-    // do
-    // {
-    //     p = 2.0 * vec3(random_double(), random_double(), random_double()) - vec3(1, 1, 1);
-    // } while (p.squared_length() >= 1.0);
-    float u, v, w;
-    u = random_double() * TAU;
-    v = acos(2 * random_double() - 1);
-    w = powf(random_double(), 1.0 / 3.0);
-    return vec3(cos(u) * sin(v) * w, cos(v) * w, sin(u) * sin(v) * w);
-}
-
-inline vec3 random_in_unit_disk()
-{
-    // vec3 p;
-    // do
-    // {
-    //     p = 2.0 * vec3(random_double(), random_double(), 0) - vec3(1, 1, 0);
-    // } while (dot(p, p) >= 1.0);
-    float u, v;
-    u = random_double() * TAU;
-    v = powf(random_double(), 1.0 / 2.0);
-    vec3 p = vec3(cos(u) * v, sin(u) * v, 0);
-    return p;
-}
-
-inline vec3 random_cosine_direction()
-{
-    float r1 = random_double();
-    float r2 = random_double();
-    float z = sqrt(1 - r2);
-    float phi = 2 * M_PI * r1;
-    float x = cos(phi) * sqrt(r2);
-    float y = sin(phi) * sqrt(r2);
-    return vec3(x, y, z);
-}
-
-inline vec3 random_to_sphere(float radius, float distance_squared)
-{
-    float r1 = random_double();
-    float r2 = random_double();
-    float z = 1 + r2 * (sqrt(1 - radius * radius / distance_squared) - 1);
-    float phi = 2 * M_PI * r1;
-    float x = cos(phi) * sqrt(1 - z * z);
-    float y = sin(phi) * sqrt(1 - z * z);
-    return vec3(x, y, z);
-}
 
 vec3 reflect(const vec3 &v, const vec3 &n)
 {
@@ -180,4 +128,25 @@ inline float power_heuristic(int nf, float fPdf, int ng, float gPdf, float pow =
     // return (f * f) / (f * f + g * g);
     float fpow = powf(f, pow);
     return fpow / (fpow + powf(g, pow));
+}
+
+void calculate_luminance(vec3 **framebuffer, int width, int height, int n_samples, long total_pixels, float &max_luminance, float &total_luminance, float &avg_luminance)
+{
+    max_luminance = -FLT_MAX;
+    total_luminance = 0.0;
+    for (int j = height - 1; j >= 0; j--)
+    {
+        for (int i = 0; i < width; i++)
+        {
+            vec3 col = framebuffer[j][i];
+            col /= float(n_samples);
+            float f = abs(col.length());
+            total_luminance += f;
+            if (f > max_luminance)
+            {
+                max_luminance = f;
+            }
+        }
+    }
+    avg_luminance = total_luminance / ((float)total_pixels * (float)n_samples);
 }

@@ -1,6 +1,4 @@
-#ifndef TEXTUREH
-#define TEXTUREH
-
+#pragma once
 #include "vec3.h"
 
 class texture
@@ -48,5 +46,3 @@ public:
     texture *even;
     float scale;
 };
-
-#endif

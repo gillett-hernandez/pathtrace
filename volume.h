@@ -1,5 +1,4 @@
-#ifndef VOLUMEH
-#define VOLUMEH
+#pragma once
 
 #include "hittable.h"
 #include "material.h"
@@ -81,5 +80,3 @@ bool constant_medium::hit(const ray &r, float t_min, float t_max, hit_record &re
     }
     return false;
 }
-
-#endif

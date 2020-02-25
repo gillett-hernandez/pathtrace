@@ -15,19 +15,21 @@ debug: main.cpp $(HPP)
 check: main.cpp $(HPP)
 	g++ $(opts) main.cpp -o main.exe -I.
 
-check_strict: main.cpp $(HPP)
+strict: main.cpp $(HPP)
 	g++ $(opts) -Wall -Wpedantic main.cpp -o main.exe -I.
 
-safe_run: main.exe
+run: main.exe
+	python3 pre_render.py
+	./main.exe
+	python3 convert_ppm.py
+
+run_w_pillow: main.exe
+	python3 pre_render.py
 	./main.exe
 	python3 -m pip install Pillow
-	(python3 convert_ppm_in_curdir.py &)
+	python3 convert_ppm.py
 
-run: main.exe
-	./main.exe
-	python3 convert_ppm_in_curdir.py
-
-run_and_send: run
+run_and_send: run_w_pillow
 	python3 -m pip install sendgrid
 	python3 send_result.py
 
@@ -36,4 +38,4 @@ clean:
 	rm *.gch || echo
 	rm main.exe || echo
 
-.PHONY: run safe_run debug clean run_and_send check check_strict
+.PHONY: run run_w_pillow clean run_and_send strict

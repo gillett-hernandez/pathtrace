@@ -1,19 +1,26 @@
 {
+    "film_backup": {
+        "width": 2000,
+        "height": 2000,
+        "exposure": -10.0,
+        "gamma": 1.0
+    },
     "film": {
         "width": 800,
         "height": 800,
-        "exposure": -5.0,
-        "gamma": 1.0
+        "exposure": -10.0,
+        "gamma": 2.2
     },
-    "output_path": "render.ppm",
-    "scene": "scenes/cornell_box_small_lights.json",
+    "ppm_output_path": "output/render.ppm",
+    "png_output_path": "output/render.png",
+    "traced_paths_output_path": "output/out.txt",
+    "traced_paths_2d_output_path": "output/out_2d.txt",
+    "scene": "scenes/cornell_box.json",
     "should_trace_paths": true,
     "avg_number_of_paths": 1000,
     "progressive_render_proportion": 0.0,
     "only_direct_illumination": true,
-    "traced_paths_output": "out.txt",
-    "traced_paths_2d_output": "out2d.txt",
-    "max_bounces": 10,
-    "samples": 1,
-    "threads": 1
+    "max_bounces": 12,
+    "samples": 20,
+    "threads": 20
 }

@@ -1,6 +1,4 @@
-
-#ifndef BVHH
-#define BVHH
+#pragma once
 #include "aabb.h"
 #include "hittable.h"
 #include <stdlib.h>
@@ -175,5 +173,3 @@ bvh_node::bvh_node(hittable **l, int n, float time0, float time1)
 
     box = surrounding_box(box_left, box_right);
 }
-
-#endif
