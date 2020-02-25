@@ -17,6 +17,7 @@ def main(args):
     # print(args)
     for a, b, c in os.walk(args.path):
         for file in c:
+            print(file)
             if file.endswith(".ppm"):
                 filepath = os.path.join(a, file)
                 ppmstat = os.stat(filepath)
@@ -34,12 +35,6 @@ def main(args):
                         tmp_file_png = filepng.replace(".png", ".tmp.png")
                         im = Image.open(filepath)
                         im.save(tmp_file_png)
-                        # print("doing stuff0")
-                        # try:
-                        #     # delete png
-                        #     os.remove(filepng)
-                        # except FileNotFoundError:
-                        #     pass
                         print("doing stuff1")
                         os.replace(tmp_file_png, filepng)
                         print("doing stuff2")
