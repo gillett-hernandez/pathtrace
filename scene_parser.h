@@ -212,7 +212,7 @@ parse_prim_or_instance(std::map<std::string, wrapped_hittable> primitives, std::
     return primitive;
 }
 
-world *build_scene(json scene)
+World *build_scene(json scene)
 {
     std::vector<hittable *> list;
     std::vector<hittable *> lights;
@@ -453,16 +453,20 @@ world *build_scene(json scene)
     {
         if (scene["world"].contains("texture"))
         {
-            background = textures[scene["world"]["texture"].get<std::string>()];
+            std::string texture_id = scene["world"]["texture"].get<std::string>();
+            background = textures[texture_id];
+            std::cout << "using referenced texture" << std::endl;
         }
         else if (scene["world"].contains("color"))
         {
             background = new constant_texture(json_to_vec3(scene["world"]["color"]));
+            std::cout << "using constant texture" << std::endl;
         }
     }
     else
     {
         background = new constant_texture(vec3(0.3, 0.3, 0.3));
+        std::cout << "using backup texture" << std::endl;
     }
 
     // list.push_back(
@@ -480,6 +484,5 @@ world *build_scene(json scene)
     // iterate through objects which are collections of instances
 
     std::cout << "found " << lights.size() << " lights\n";
-    return new world(new bvh_node(list.data(), list.size(), 0.0f, 0.0f), background, lights);
+    return new World(new bvh_node(list.data(), list.size(), 0.0f, 0.0f), background, lights);
 }
-

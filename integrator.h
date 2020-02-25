@@ -9,14 +9,16 @@
 class Integrator
 {
 public:
-    virtual vec3 color(const ray &r, World *world, int depth, int max_bounces, long *bounce_count, path *_path) = 0;
+    virtual vec3 color(const ray &r, World *world, int depth, long *bounce_count, path *_path) = 0;
+    int max_bounces;
 };
 
 class RecursivePT : public Integrator
 {
 public:
+    RecursivePT(int max_bounces) : max_bounces(max_bounces){};
     // reuse this for branched path tracing
-    virtual vec3 color(const ray &r, World *world, int depth, int max_bounces, long *bounce_count, path *_path)
+    vec3 color(const ray &r, World *world, int depth, long *bounce_count, path *_path)
     {
         hit_record rec;
         if (world->hit(r, 0.001, MAXFLOAT, rec))
@@ -31,7 +33,7 @@ public:
             if (depth < max_bounces && rec.mat_ptr->scatter(r, rec, attenuation, scattered))
             {
                 (*bounce_count)++;
-                return emitted + attenuation * this->color(scattered, world, depth + 1, max_bounces, bounce_count, _path);
+                return emitted + attenuation * this->color(scattered, world, depth + 1, bounce_count, _path);
             }
             else
             {
@@ -58,62 +60,63 @@ public:
             return world->value(u, v, unit_direction);
         }
     }
+    int max_bounces;
 };
 
-class IterativePT : public Integrator
-{
-public:
-    vec3 color(ray &r, World *world, int depth, int max_bounces, long *bounce_count, path *_path)
-    {
-        hit_record rec;
-        vec3 _color = vec3(0, 0, 0);
-        ray scattered;
-        vec3 attenuation = vec3(0, 0, 0);
-        vec3 emitted = vec3(0, 0, 0);
+// class IterativePT : public Integrator
+// {
+// public:
+//     vec3 color(ray &r, World *world, int depth, long *bounce_count, path *_path)
+//     {
+//         hit_record rec;
+//         vec3 _color = vec3(0, 0, 0);
+//         ray scattered;
+//         vec3 attenuation = vec3(0, 0, 0);
+//         vec3 emitted = vec3(0, 0, 0);
 
-        vec3 beta = vec3(1.0, 1.0, 1.0);
-        for (int i = 0; i < max_bounces; i++)
-        {
-            if (_path != nullptr)
-            {
-                _path->push_back(rec.p);
-            }
-            if (world->hit(r, 0.001, MAXFLOAT, rec))
-            {
-                emitted = rec.mat_ptr->emitted(rec.u, rec.v, rec.p);
-                if (rec.mat_ptr->scatter(r, rec, attenuation, scattered))
-                {
-                    (*bounce_count)++;
-                    _color += beta * emitted;
-                    beta *= attenuation;
-                    r = scattered;
-                }
-                else
-                {
-                    _color += beta * emitted;
-                    break;
-                }
-            }
-            else
-            {
-                // world background color here
-                // vec3 unit_direction = unit_vector(r.direction());
-                // float t = 0.5 * (unit_direction.y() + 1.0);
-                // return (1.0 - t) * vec3(1.0, 1.0, 1.0) + t * vec3(0.2, 0.1, 0.7);
+//         vec3 beta = vec3(1.0, 1.0, 1.0);
+//         for (int i = 0; i < max_bounces; i++)
+//         {
+//             if (_path != nullptr)
+//             {
+//                 _path->push_back(rec.p);
+//             }
+//             if (world->hit(r, 0.001, MAXFLOAT, rec))
+//             {
+//                 emitted = rec.mat_ptr->emitted(rec.u, rec.v, rec.p);
+//                 if (rec.mat_ptr->scatter(r, rec, attenuation, scattered))
+//                 {
+//                     (*bounce_count)++;
+//                     _color += beta * emitted;
+//                     beta *= attenuation;
+//                     r = scattered;
+//                 }
+//                 else
+//                 {
+//                     _color += beta * emitted;
+//                     break;
+//                 }
+//             }
+//             else
+//             {
+//                 // world background color here
+//                 // vec3 unit_direction = unit_vector(r.direction());
+//                 // float t = 0.5 * (unit_direction.y() + 1.0);
+//                 // return (1.0 - t) * vec3(1.0, 1.0, 1.0) + t * vec3(0.2, 0.1, 0.7);
 
-                // generate world u v and then sample world texture?
-                // return vec3(0, 0, 0);
-                vec3 unit_direction = unit_vector(r.direction());
-                float u = unit_direction.x();
-                float v = unit_direction.y();
-                // TODO: replace u and v with angle l->r and angle d->u;
-                _color += beta * world->value(u, v, unit_direction);
-                break;
-            }
-        }
-        return _color;
-    }
-};
+//                 // generate world u v and then sample world texture?
+//                 // return vec3(0, 0, 0);
+//                 vec3 unit_direction = unit_vector(r.direction());
+//                 float u = unit_direction.x();
+//                 float v = unit_direction.y();
+//                 // TODO: replace u and v with angle l->r and angle d->u;
+//                 _color += beta * world->value(u, v, unit_direction);
+//                 break;
+//             }
+//         }
+//         return _color;
+//     }
+// };
 
 // class BPT : public Integrator {
 

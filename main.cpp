@@ -46,101 +46,7 @@ camera setup_camera(json camera_json, float aspect_ratio, vec3 vup = vec3(0, 1, 
                   aperture, dist_to_focus, 0.0, 1.0);
 }
 
-config parse_config(json jconfig)
-{
-
-    // film setup
-
-    s_film film = {
-        jconfig["film"].value("width", 400),
-        jconfig["film"].value("height", 300),
-        0,
-        jconfig["film"].value("gamma", 2.2),
-        jconfig["film"].value("exposure", 0.0)};
-
-    config config = {
-        film,
-        jconfig.value("ppm_output_path", "out.ppm"),
-        jconfig["png_output_path"],
-        jconfig["traced_paths_output_path"],
-        jconfig["traced_paths_2d_output_path"],
-        jconfig["scene_path"],
-        jconfig.get<bool>("should_trace_paths", false),
-        jconfig.get<float>("avg_number_of_paths", 0.0f),
-        0.0,
-        get_render_type_for(jconfig["render_type"]),
-        jconfig["max_bounces"],
-        jconfig["samples"],
-        jconfig["threads"]};
-
-    std::string scene_path = jconfig.value("scene", "scenes/scene.json");
-    int n_samples = jconfig.value("samples", 20);
-    int N_THREADS = jconfig.value("threads", 4);
-    int MAX_BOUNCES = jconfig.value("max_bounces", 10);
-    float progressive_proportion = jconfig.value("progressive_render_proportion", 0.5);
-    bool should_trace_paths = jconfig.value("should_trace_paths", false);
-    float trace_probability;
-
-    long total_pixels = width * height;
-    long min_camera_rays = n_samples * total_pixels;
-
-    if (should_trace_paths)
-    {
-        config.trace_probability = jconfig.value("avg_number_of_paths", 100.0) / min_camera_rays;
-    }
-    else
-    {
-        config.trace_probability = 0.0;
-    }
-    return config;
-}
-
-void output_to_file(std::ofstream &output, vec3 **buffer, int width, int height, int samples, float max_luminance, float exposure, float gamma)
-{
-    output.seekp(0);
-    // output file
-    output << "P6\n"
-           << width << " " << height << "\n255\n";
-    for (int j = height - 1; j >= 0; j--)
-    {
-        for (int i = 0; i < width; i++)
-        {
-            vec3 col = buffer[j][i];
-            col /= float(samples);
-
-            col *= 16 + exposure;
-            // color space interpolation here
-            // first color mapping
-
-            col = to_srgb(tonemap_uncharted(col, max_luminance));
-            // put gamma and exposure here
-
-            char ir = int(255.99 * powf(col[0], gamma));
-            char ig = int(255.99 * powf(col[1], gamma));
-            char ib = int(255.99 * powf(col[2], gamma));
-            output << ir << ig << ib;
-        }
-    }
-    output.flush();
-}
-
 std::mutex framebuffer_lock;
-
-void print_out_progress(long num_samples_done, long num_samples_left, std::chrono::high_resolution_clock::time_point start_time)
-{
-    auto intermediate = std::chrono::high_resolution_clock::now();
-    // rate was in rays per nanosecond
-    // first multiply by 1 billion to get rays per second
-    assert(num_samples_left >= 0);
-    assert(num_samples_done >= 0);
-    float rate = 1000000000 * num_samples_done / (intermediate - start_time).count();
-    assert(rate > 0);
-
-    std::cout << "samples left" << std::setw(20) << num_samples_left
-              << " rate " << std::setw(10) << rate
-              << " time left " << std::setw(5) << num_samples_left / rate
-              << "                                           " << '\r' << std::flush;
-}
 
 int main(int argc, char *argv[])
 {
@@ -148,7 +54,7 @@ int main(int argc, char *argv[])
     json jconfig;
     config_file >> jconfig;
 
-    config config = parse_config(jconfig);
+    Config config = Config(jconfig);
     s_film film = config.film;
 
     // end film setup
@@ -156,11 +62,12 @@ int main(int argc, char *argv[])
     int pixels = 0;
 
     // other config
+    long min_camera_rays = config.samples * film.total_pixels;
     std::cout << "trace probability is " << config.trace_probability << std::endl;
 
     std::cout << std::endl;
     std::cout << "config read complete, rendering image at " << film.width << "x" << film.height << "==" << film.total_pixels << "px^2" << std::endl;
-    std::cout << "with " << config.n_samples << " samples per pixel, that sets a minimum number of camera rays at " << min_camera_rays << "\n\n";
+    std::cout << "with " << config.samples << " samples per pixel, that sets a minimum number of camera rays at " << min_camera_rays << "\n\n";
     std::cout << "using " << config.threads << " threads\n";
 
     // x,y,z
@@ -168,7 +75,7 @@ int main(int argc, char *argv[])
     std::cout << "reading scene data" << std::endl;
 
     json scene;
-    std::ifstream scene_file(scene_path);
+    std::ifstream scene_file(config.scene_path);
     scene_file >> scene;
 
     auto t1 = std::chrono::high_resolution_clock::now();
@@ -182,15 +89,14 @@ int main(int argc, char *argv[])
     // camera setup
 
     json camera_json = scene["camera"];
-    camera cam = setup_camera(camera_json, float(width) / float(height));
+    camera cam = setup_camera(camera_json, float(film.width) / float(film.height));
 
     // end camera setup
 
     // before we compute everything, open the file
-    std::ofstream output(config.ppm_output_path);
 
-    Integrator *integrator = new RecursivePT();
-    Renderer *renderer = new Progressive(integrator, cam, world, output);
+    Integrator *integrator = new RecursivePT(config.max_bounces);
+    Renderer *renderer = new Progressive(integrator, cam, world);
     renderer->start_render(t2);
 
     while (!renderer->is_done())
