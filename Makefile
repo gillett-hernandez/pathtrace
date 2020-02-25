@@ -19,13 +19,14 @@ strict: main.cpp $(HPP)
 	g++ $(opts) -Wall -Wpedantic main.cpp -o main.exe -I.
 
 run: main.exe
+	python3 pre_render.py
 	./main.exe
-	(python3 convert_ppm.py &)
+	python3 convert_ppm.py
 
 run_w_pillow: main.exe
 	./main.exe
 	python3 -m pip install Pillow
-	(python3 convert_ppm.py &)
+	python3 convert_ppm.py
 
 
 run_and_send: run_w_pillow
