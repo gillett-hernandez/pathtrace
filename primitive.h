@@ -1,12 +1,28 @@
 #pragma once
 #include "bvh.h"
-#include "enums.h"
+#include "scene.h"
 #include "hittable.h"
 #include "hittable_list.h"
 #include "ray.h"
 #include "transform3.h"
 #include "vec3.h"
 #include <float.h>
+
+enum plane_enum
+{
+    XY,
+    XZ,
+    YZ
+};
+
+plane_enum plane_enum_mapping(std::string alignment)
+{
+    static std::map<std::string, plane_enum> mapping = {
+        {"xy", XY},
+        {"xz", XZ},
+        {"yz", YZ}};
+    return mapping[alignment];
+}
 
 class sphere : public hittable
 {
@@ -80,6 +96,8 @@ inline vec3 shuffle(vec3 v, plane_enum style)
     }
     }
 }
+
+
 
 class rect : public hittable
 {

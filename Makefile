@@ -4,26 +4,30 @@ else
 	opts=-pthread --std=c++14
 endif
 
-main.exe: ray.h vec3.h main.cpp hittable.h hittable_list.h helpers.h camera.h random.h primitive.h texture.h scene.h material.h
+HPP = $(wildcard *.h) $(wildcard **/*.h)
+
+main.exe: main.cpp $(HPP)
 	g++ $(opts) -O3 main.cpp -o main.exe -I.
 
-debug:
+debug: main.cpp $(HPP)
 	g++ $(opts) -g  main.cpp  -o main.exe -I.
 
-check:
+check: main.cpp $(HPP)
 	g++ $(opts) main.cpp -o main.exe -I.
 
-strict:
+strict: main.cpp $(HPP)
 	g++ $(opts) -Wall -Wpedantic main.cpp -o main.exe -I.
 
 run: main.exe
+	python3 pre_render.py
 	./main.exe
-	(python3 convert_ppm.py &)
+	python3 convert_ppm.py
 
 run_w_pillow: main.exe
+	python3 pre_render.py
 	./main.exe
 	python3 -m pip install Pillow
-	(python3 convert_ppm.py &)
+	python3 convert_ppm.py
 
 
 run_and_send: run_w_pillow
