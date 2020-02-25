@@ -7,11 +7,6 @@
 class material
 {
 public:
-    // material()
-    // {
-    //     assert(false);
-    //     std::cout << "material should not be instantiated\n";
-    // }
     virtual bool scatter(
         const ray &r_in, const hit_record &rec, vec3 &attenuation) const
     {
@@ -19,11 +14,7 @@ public:
     }
     virtual vec3 generate(const ray &r, const hit_record &rec) = 0;
     virtual float value(const ray &r, const hit_record &rec, const vec3 &direction) = 0;
-    // virtual float scattering_pdf(const ray &r_in, const hit_record &rec,
-    //                              const ray &scattered) const
-    // {
-    //     return 0;
-    // }
+
     virtual vec3 emitted(float u, float v, const vec3 &p) const
     {
         return vec3(0, 0, 0);
@@ -40,28 +31,12 @@ public:
         albedo = new constant_texture(v);
     }
     bool scatter(const ray &r_in, const hit_record &rec, vec3 &alb) const
-    // bool scatter(const ray &r_in, const hit_record &rec, vec3 &alb) const
     {
 
-        // onb uvw;
-        // uvw.build_from_w(rec.normal);
-        // vec3 direction = uvw.local(random_cosine_direction());
-        // scattered = ray(rec.p, unit_vector(direction), r_in.time());
-        // cosine_pdf pdf = cosine_pdf(rec.normal);
-        // scattered = ray(rec.p, pdf.generate(), r_in.time());
         alb = albedo->value(rec.u, rec.v, rec.p) / M_PI;
         return true;
     }
-    // float scattering_pdf(const ray &r_in,
-    //                      const hit_record &rec, const ray &scattered) const
-    // {
-    //     float cosine = dot(rec.normal, unit_vector(scattered.direction()));
-    //     if (cosine < 0)
-    //     {
-    //         return 0;
-    //     }
-    //     return cosine / M_PI;
-    // }
+
     vec3 generate(const ray &r_in, const hit_record &rec)
     {
         return cosine_pdf(rec.normal).generate();
