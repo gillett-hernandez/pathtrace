@@ -20,6 +20,8 @@
     "avg_number_of_paths": 1000,
     "only_direct_illumination": false,
     "max_bounces": 4,
+    "block_width": 64,
+    "block_height": 64,
     "samples": 20,
     "threads": 20
 }
