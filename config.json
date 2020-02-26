@@ -1,11 +1,11 @@
 {
-    "film_backup": {
+    "film": {
         "width": 2000,
         "height": 2000,
         "exposure": -10.0,
         "gamma": 1.0
     },
-    "film": {
+    "filmb": {
         "width": 800,
         "height": 800,
         "exposure": -10.0,
@@ -20,7 +20,6 @@
     "avg_number_of_paths": 1000,
     "block_width": 64,
     "block_height": 64,
-    "progressive_render_proportion": 0.0,
     "max_bounces": 12,
     "samples": 20,
     "threads": 20
