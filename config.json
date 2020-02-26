@@ -1,11 +1,11 @@
 {
-    "film": {
+    "filmb": {
         "width": 2000,
         "height": 2000,
         "exposure": -10.0,
         "gamma": 1.0
     },
-    "filmb": {
+    "film": {
         "width": 800,
         "height": 800,
         "exposure": -10.0,
@@ -16,6 +16,8 @@
     "traced_paths_output_path": "output/out.txt",
     "traced_paths_2d_output_path": "output/out_2d.txt",
     "scene": "scenes/cornell_box.json",
+    "render_type": "progressive",
+    "integrator_type": "recursive path tracing",
     "should_trace_paths": true,
     "avg_number_of_paths": 1000,
     "block_width": 64,

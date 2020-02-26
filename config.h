@@ -1,5 +1,6 @@
 #pragma once
 #include "vec3.h"
+#include "camera.h"
 #include "thirdparty/json.hpp"
 
 using json = nlohmann::json;
@@ -42,6 +43,34 @@ RenderType get_render_type_for(std::string type)
     return mapping[type];
 }
 
+enum IntegratorType
+{
+    RPT,
+    IPT,
+    BPT,
+    RNEEPT,
+    INEEPT,
+    BDPT,
+    SPPM,
+    VCM,
+    MLT
+};
+
+IntegratorType get_integrator_type_for(std::string type)
+{
+    static std::map<std::string, IntegratorType> mapping = {
+        {"recursive path tracing", RPT},
+        {"iterative path tracing", IPT},
+        {"branched path tracing", BPT},
+        {"recursive nee path tracing", RNEEPT},
+        {"iterative nee path tracing", INEEPT},
+        {"bidirectional path tracing", BDPT},
+        {"stochastic progressive photon mapping", SPPM},
+        {"metropolis light transport", MLT},
+        {"vertex connection merging", VCM}};
+    return mapping[type];
+}
+
 struct Config
 {
     s_film film;
@@ -56,6 +85,7 @@ struct Config
     int block_height;
     float trace_probability;
     RenderType render_type;
+    IntegratorType integrator_type;
     int max_bounces;
     int samples;
     uint16_t threads;
@@ -76,6 +106,7 @@ struct Config
         block_height = jconfig.value("block_height", 64);
 
         render_type = get_render_type_for(jconfig.value("render_type", "progressive"));
+        integrator_type = get_integrator_type_for(jconfig.value("integrator_type", "recursive path tracing"));
         max_bounces = jconfig.value("max_bounces", 10);
         samples = jconfig.value("samples", 20);
         threads = (uint16_t)jconfig.value("threads", 1);
@@ -92,9 +123,3 @@ struct Config
         }
     };
 };
-
-// Config parse_config(json jconfig)
-// {
-//     // film setup
-
-// }

@@ -26,6 +26,48 @@ using json = nlohmann::json;
 #include <mutex>
 #include <thread>
 
+Integrator *integrator_from_config(Config config)
+{
+    switch (config.integrator_type)
+    {
+    case RPT:
+    {
+        std::cout << "selected and constructed RecursivePT integrator" << std::endl;
+        return new RecursivePT(config.max_bounces);
+    }
+
+    default:
+    {
+        std::cout << "WARNING! due to lack of option selected, constructed RecursivePT integrator" << std::endl;
+        return new RecursivePT(config.max_bounces);
+    };
+    };
+}
+
+Renderer *renderer_from_config(World *world, camera cam, Config config)
+{
+    Integrator *integrator = integrator_from_config(config);
+    switch (config.render_type)
+    {
+    case PROGRESSIVE:
+    {
+        std::cout << "selected and constructed Progressive renderer" << std::endl;
+        return new Progressive(integrator, cam, world);
+    }
+    case NAIVE:
+    {
+        std::cout << "selected and constructed Naive renderer" << std::endl;
+        return new Naive(integrator, cam, world);
+    }
+
+    default:
+    {
+        std::cout << "WARNING! due to lack of option selected, constructed Progressive renderer" << std::endl;
+        return new Progressive(integrator, cam, world);
+    };
+    };
+}
+
 camera setup_camera(json camera_json, float aspect_ratio, vec3 vup = vec3(0, 1, 0))
 {
     vec3 lookfrom(
@@ -93,8 +135,9 @@ int main(int argc, char *argv[])
 
     // before we compute everything, open the file
 
-    Integrator *integrator = new RecursivePT(config.max_bounces);
-    Renderer *renderer = new Progressive(integrator, cam, world);
+    Renderer *renderer = renderer_from_config(world, cam, config);
+    // Integrator *integrator = new RecursivePT(config.max_bounces);
+    // Renderer *renderer = new Progressive(integrator, cam, world);
     renderer->start_render(t2);
 
     while (!renderer->is_done())
