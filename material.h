@@ -10,7 +10,10 @@ public:
     virtual bool scatter(
         const ray &r_in, const hit_record &rec, vec3 &attenuation) const
     {
-        return false;
+        // mauve
+        std::cout << "WARNING! material::scatter being called" << std::endl;
+        attenuation = vec3(0.8, 0.0, 0.8);
+        return true;
     }
     virtual vec3 generate(const ray &r, const hit_record &rec) = 0;
     virtual float value(const ray &r, const hit_record &rec, const vec3 &direction) = 0;
@@ -19,7 +22,7 @@ public:
     {
         return vec3(0, 0, 0);
     }
-    std::string name;
+    std::string name = "error";
 };
 
 class lambertian : public material
@@ -36,7 +39,6 @@ public:
         alb = albedo->value(rec.u, rec.v, rec.p) / M_PI;
         return true;
     }
-
     vec3 generate(const ray &r_in, const hit_record &rec)
     {
         return cosine_pdf(rec.normal).generate();
@@ -95,51 +97,52 @@ public:
     virtual bool scatter(const ray &r_in, const hit_record &rec,
                          vec3 &attenuation) const
     {
-        // vec3 outward_normal;
-        // vec3 reflected = reflect(r_in.direction(), rec.normal);
-        // float ni_over_nt;
-        // attenuation = vec3(1.0, 1.0, 1.0);
-        // vec3 refracted;
-
-        // float reflect_prob;
-        // float cosine;
-
-        // if (dot(r_in.direction(), rec.normal) > 0)
-        // {
-        //     outward_normal = -rec.normal;
-        //     ni_over_nt = ref_idx;
-        //     cosine = ref_idx * dot(r_in.direction(), rec.normal) / r_in.direction().length();
-        // }
-        // else
-        // {
-        //     outward_normal = rec.normal;
-        //     ni_over_nt = 1.0 / ref_idx;
-        //     cosine = -dot(r_in.direction(), rec.normal) / r_in.direction().length();
-        // }
-
-        // if (refract(r_in.direction(), outward_normal, ni_over_nt, refracted))
-        // {
-        //     reflect_prob = schlick(cosine, ref_idx);
-        // }
-        // else
-        // {
-        //     reflect_prob = 1.0;
-        // }
-
-        // if (random_double() < reflect_prob)
-        // {
-        //     scattered = ray(rec.p, reflected);
-        // }
-        // else
-        // {
-        //     scattered = ray(rec.p, refracted);
-        // }
+        attenuation = vec3(1.0, 1.0, 1.0); // change this to something else to have a tinted glass material
 
         return true;
     }
     vec3 generate(const ray &r_in, const hit_record &rec)
     {
-        return void_pdf().generate();
+        vec3 outward_normal;
+        vec3 reflected = reflect(r_in.direction(), rec.normal);
+        float ni_over_nt;
+        vec3 scattered_direction;
+        vec3 refracted;
+
+        float reflect_prob;
+        float cosine;
+
+        if (dot(r_in.direction(), rec.normal) > 0)
+        {
+            outward_normal = -rec.normal;
+            ni_over_nt = ref_idx;
+            cosine = ref_idx * dot(r_in.direction(), rec.normal) / r_in.direction().length();
+        }
+        else
+        {
+            outward_normal = rec.normal;
+            ni_over_nt = 1.0 / ref_idx;
+            cosine = -dot(r_in.direction(), rec.normal) / r_in.direction().length();
+        }
+
+        if (refract(r_in.direction(), outward_normal, ni_over_nt, refracted))
+        {
+            reflect_prob = schlick(cosine, ref_idx);
+        }
+        else
+        {
+            reflect_prob = 1.0;
+        }
+
+        if (random_double() < reflect_prob)
+        {
+            scattered_direction = reflected;
+        }
+        else
+        {
+            scattered_direction = refracted;
+        }
+        return scattered_direction;
     };
     float value(const ray &r, const hit_record &rec, const vec3 &direction)
     {

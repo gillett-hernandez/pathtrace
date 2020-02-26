@@ -52,7 +52,7 @@ vec3 sample_random_light(const ray &r, World *world, const hit_record &rec, cons
 class Integrator
 {
 public:
-    virtual vec3 color(const ray &r, int depth, long *bounce_count, path *_path) = 0;
+    virtual vec3 color(const ray &r, int depth, long *bounce_count, path *_path, bool skip_light_hit = false) = 0;
     int max_bounces;
     World *world;
 };
@@ -60,9 +60,13 @@ public:
 class RecursivePT : public Integrator
 {
 public:
-    RecursivePT(int max_bounces, World *world) : max_bounces(max_bounces), world(world){};
+    RecursivePT(int max_bounces, World *world) : max_bounces(max_bounces), world(world)
+    {
+        assert(this->max_bounces > 0);
+        std::cout << "complex constructor called for recursivePT" << std::endl;
+    };
     // reuse this for branched path tracing
-    vec3 color(const ray &r, int depth, long *bounce_count, path *_path)
+    vec3 color(const ray &r, int depth, long *bounce_count, path *_path, bool skip_light_hit)
     {
         hit_record rec;
         if (world->hit(r, 0.001, MAXFLOAT, rec))
@@ -78,7 +82,11 @@ public:
             if (depth < max_bounces && rec.mat_ptr->scatter(r, rec, attenuation))
             {
                 (*bounce_count)++;
-                return emitted + attenuation * this->color(scattered, depth + 1, bounce_count, _path);
+                vec3 subcall = this->color(scattered, depth + 1, bounce_count, _path, skip_light_hit);
+                assert(!is_nan(subcall));
+                assert(!is_nan(emitted));
+                assert(!is_nan(attenuation));
+                return emitted + attenuation * subcall;
             }
             else
             {
@@ -91,11 +99,6 @@ public:
             {
                 _path->push_back(rec.p);
             }
-            // world background color here
-            // vec3 unit_direction = unit_vector(r.direction());
-            // float t = 0.5 * (unit_direction.y() + 1.0);
-            // return (1.0 - t) * vec3(1.0, 1.0, 1.0) + t * vec3(0.2, 0.1, 0.7);
-
             // generate world u v and then sample world texture?
             // return vec3(0, 0, 0);
             vec3 unit_direction = unit_vector(r.direction());
@@ -169,7 +172,7 @@ class NEERecursive : public Integrator
 {
 public:
     NEERecursive(int max_bounces, World *world) : max_bounces(max_bounces), world(world){};
-    vec3 color(const ray &r, int depth, long *bounce_count, path *_path)
+    vec3 color(const ray &r, int depth, long *bounce_count, path *_path, bool skip_light_hit = false)
     {
         hit_record rec;
         // assert non-nan time
@@ -185,10 +188,10 @@ public:
             vec3 emitted = rec.mat_ptr->emitted(rec.u, rec.v, rec.p);
             if (depth < max_bounces && rec.mat_ptr->scatter(r, rec, attenuation))
             {
-                // if (rec.mat_ptr->name == "diffuse_light")
-                // {
-                //     return vec3(0, 0, 0);
-                // }
+                if (rec.mat_ptr->name == "diffuse_light" && skip_light_hit)
+                {
+                    return vec3(0, 0, 0);
+                }
                 // assert non-nan time
                 assert(!is_nan(r.time()));
                 (*bounce_count)++;
@@ -206,6 +209,8 @@ public:
                 // float weight;
                 vec3 _color = emitted;
                 // vec3 _color = vec3(0.0f, 0.0f, 0.0f);
+                // cosine of incoming ray
+                float cos_r = fabs(dot(r.direction(), rec.normal));
                 // pdf of light ray having gone directly towards light
                 float light_pdf_l = l_pdf.value(light_ray.direction());
                 // pdf of scatter having gone directly towards light
@@ -216,8 +221,8 @@ public:
                 // pdf of scattered ray having been generated from scatter
                 float scatter_pdf_s = rec.mat_ptr->value(r, rec, scattered.direction());
 
-                float mix_l = (scatter_pdf_l + light_pdf_l) / 2.0f;
-                float mix_s = (scatter_pdf_s + light_pdf_s) / 2.0f;
+                // float mix_l = (scatter_pdf_l + light_pdf_l) / 2.0f;
+                // float mix_s = (scatter_pdf_s + light_pdf_s) / 2.0f;
 
                 float weight_l = power_heuristic(1.0f, light_pdf_l, 1.0f, scatter_pdf_l);
                 float inv_weight_l = 1.0f - weight_l;
@@ -225,49 +230,37 @@ public:
 
                 float weight_s = power_heuristic(1.0f, light_pdf_s, 1.0f, scatter_pdf_s);
                 float inv_weight_s = 1.0f - weight_s;
+                // cosine direction
                 float cos_s = fabs(dot(scattered.direction(), rec.normal));
 
+                // MIS weighted contribtuion of
                 // add contribution from next event estimation
-                _color += 1.0f * attenuation * weight_l / light_pdf_l * this->color(light_ray, depth + 1, bounce_count, nullptr);
 
-                // flat out skip bounces that would hit the light directly
-                if (light_pdf_s > 0)
-                {
-                    return _color;
-                }
                 if (!world->config.only_direct_illumination)
                 {
                     // add contribution from next and future bounces
-                    _color += 1.0f * attenuation * inv_weight_s / scatter_pdf_s * color(scattered, depth + 1, bounce_count, _path);
+                    _color += cos_r * attenuation * inv_weight_s / scatter_pdf_s * this->color(scattered, depth + 1, bounce_count, _path, true);
                 }
+
+                vec3 light_hit = this->color(light_ray, depth + 1, bounce_count, nullptr, false);
+                _color += cos_r * attenuation * weight_l / light_pdf_l * light_hit;
 
                 return _color;
             }
             else
             {
-                // if (max_bounces == 0)
-                // {
+                if (skip_light_hit && rec.mat_ptr->name == "diffuse_light")
+                {
+                    return vec3(0, 0, 0);
+                }
                 return emitted;
-                // }
-                // else
-                // {
-                // return vec3(0, 0, 0);
-                // }
             }
         }
         else
         {
-            // world background color here
-            // vec3 unit_direction = unit_vector(r.direction());
-            // float t = 0.5 * (unit_direction.y() + 1.0);
-            // return (1.0 - t) * vec3(1.0, 1.0, 1.0) + t * vec3(0.2, 0.1, 0.7);
-
-            // generate world u v and then sample world texture?
-            // return vec3(0, 0, 0);
             vec3 unit_direction = unit_vector(r.direction());
             float u = atan(unit_direction.z() / unit_direction.x());
             float v = acos(unit_direction.y());
-            // TODO: replace u and v with angle l->r and angle d->u;
             return world->value(u, v, unit_direction);
         }
     }

@@ -11,6 +11,7 @@ main.exe: main.cpp $(HPP)
 
 debug: main.cpp $(HPP)
 	g++ $(opts) -g  main.cpp  -o main.exe -I.
+	gdb main.exe
 
 check: main.cpp $(HPP)
 	g++ $(opts) main.cpp -o main.exe -I.

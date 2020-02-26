@@ -94,7 +94,7 @@ int main(int argc, char *argv[])
 
     // before we compute everything, open the file
 
-    Integrator *integrator = new NEERecursive(config.max_bounces, world);
+    Integrator *integrator = new RecursivePT(config.max_bounces, world);
     Renderer *renderer = new Progressive(integrator, cam, config);
     renderer->start_render(t2);
 

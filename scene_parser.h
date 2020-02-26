@@ -92,7 +92,7 @@ parse_prim_or_instance(std::map<std::string, wrapped_hittable> primitives, std::
     else
     {
         // what do we do in this case? idk. any materials should have been found in the prior stage.
-        std::cout << "found misconfigured material for primitive with json " << element << '\n';
+        std::cout << "WARNING! found misconfigured material for primitive with json " << element << '\n';
         _material = wrapped_error_material();
     }
     // primitive construction
@@ -115,7 +115,7 @@ parse_prim_or_instance(std::map<std::string, wrapped_hittable> primitives, std::
         {
             origin = json_to_vec3(element["origin"]);
         }
-        primitive = wrapped_hittable(new sphere(origin, r, _material._material), _material);
+        primitive = wrapped_hittable(new sphere(origin, r, _material.unwrap()), _material);
         break;
     }
     case RECT:
@@ -230,7 +230,7 @@ World *build_scene(json scene)
             continue;
         }
         std::cout << element << '\n';
-        // currently the only accepted asset type is a .obj
+        // currently the only accepted asset type is a .obj or .png
         assert(element["type"].get<std::string>() == "object");
     }
     // iterate through and load textures

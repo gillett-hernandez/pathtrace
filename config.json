@@ -6,8 +6,8 @@
         "gamma": 1.0
     },
     "film": {
-        "width": 800,
-        "height": 800,
+        "width": 600,
+        "height": 600,
         "exposure": 0.0,
         "gamma": 2.2
     },
@@ -15,10 +15,9 @@
     "png_output_path": "output/render.png",
     "traced_paths_output_path": "output/out.txt",
     "traced_paths_2d_output_path": "output/out_2d.txt",
-    "scene": "scenes/cornell_box_small_lights.json",
+    "scene": "scenes/cornell_box.json",
     "should_trace_paths": true,
     "avg_number_of_paths": 1000,
-    "progressive_render_proportion": 0.0,
     "only_direct_illumination": false,
     "max_bounces": 4,
     "samples": 20,

@@ -226,8 +226,8 @@ public:
         long num_samples_left = min_camera_rays - num_samples_done;
         print_out_progress(num_samples_done, num_samples_left, render_start_time);
         float avg_luminance, max_luminance, total_luminance;
-        calculate_luminance(framebuffer, film.width, film.height, num_samples_done / (film.width * film.height), film.width * film.height, max_luminance, total_luminance, avg_luminance);
-        output_to_file(output, framebuffer, film.width, film.height, num_samples_done / (film.width * film.height), max_luminance, film.exposure, film.gamma);
+        calculate_luminance(framebuffer, film.width, film.height, 1 + (1 + num_samples_done) / (film.width * film.height), film.width * film.height, max_luminance, total_luminance, avg_luminance);
+        output_to_file(output, framebuffer, film.width, film.height, 1 + (1 + num_samples_done) / (film.width * film.height), max_luminance, film.exposure, film.gamma);
         completed = num_samples_left <= 0;
     };
 
@@ -277,6 +277,7 @@ public:
                         _path = nullptr;
                     }
                     col += de_nan(integrator->color(r, 0, count, _path));
+                    assert(!is_nan(col));
                     if (_path != nullptr)
                     {
                         // std::cout << "traced _path, size is " << _path->size() << std::endl;
@@ -328,6 +329,7 @@ public:
         float max_luminance, avg_luminance, total_luminance;
         calculate_luminance(framebuffer, film.width, film.height, config.samples, film.width * film.height, max_luminance, total_luminance, avg_luminance);
         std::cout << "avg lum " << avg_luminance << std::endl;
+        std::cout << "total lum " << total_luminance << std::endl;
         std::cout << "max lum " << max_luminance << std::endl;
 
         output_to_file(output, framebuffer, film.width, film.height, config.samples, max_luminance, film.exposure, film.gamma);

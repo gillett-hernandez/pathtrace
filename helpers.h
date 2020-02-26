@@ -133,6 +133,7 @@ inline float power_heuristic(int nf, float fPdf, int ng, float gPdf, float pow =
 void calculate_luminance(vec3 **framebuffer, int width, int height, int n_samples, long total_pixels, float &max_luminance, float &total_luminance, float &avg_luminance)
 {
     max_luminance = -FLT_MAX;
+    assert(n_samples > 0);
     total_luminance = 0.0;
     for (int j = height - 1; j >= 0; j--)
     {
@@ -142,6 +143,8 @@ void calculate_luminance(vec3 **framebuffer, int width, int height, int n_sample
             col /= float(n_samples);
             float f = abs(col.length());
             total_luminance += f;
+            assert(!is_nan(col));
+            assert(!is_nan(total_luminance));
             if (f > max_luminance)
             {
                 max_luminance = f;
