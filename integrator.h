@@ -81,6 +81,7 @@ public:
             // if (depth < max_bounces && rec.mat_ptr->scatter(r, rec, attenuation, scattered))
             if (depth < max_bounces && rec.mat_ptr->scatter(r, rec, attenuation))
             {
+                scattered = ray(rec.p, rec.mat_ptr->generate(r, rec));
                 (*bounce_count)++;
                 vec3 subcall = this->color(scattered, depth + 1, bounce_count, _path, skip_light_hit);
                 assert(!is_nan(subcall));
