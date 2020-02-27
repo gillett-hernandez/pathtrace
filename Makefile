@@ -7,16 +7,16 @@ endif
 HPP = $(wildcard *.h) $(wildcard **/*.h)
 
 main.exe: main.cpp $(HPP)
-	g++ $(opts) -O3 main.cpp -o main.exe -I.
+	g++ $(opts) -O3 main.cpp thirdparty/lodepng/lodepng.cpp -o main.exe -I.
 
 debug: main.cpp $(HPP)
-	g++ $(opts) -g  main.cpp  -o main.exe -I.
+	g++ $(opts) -g  main.cpp thirdparty/lodepng/lodepng.cpp  -o main.exe -I.
 
 check: main.cpp $(HPP)
-	g++ $(opts) main.cpp -o main.exe -I.
+	g++ $(opts) main.cpp thirdparty/lodepng/lodepng.cpp  -o main.exe -I.
 
 strict: main.cpp $(HPP)
-	g++ $(opts) -Wall -Wpedantic main.cpp -o main.exe -I.
+	g++ $(opts) -Wall -Wpedantic main.cpp thirdparty/lodepng/lodepng.cpp  -o main.exe -I.
 
 run: main.exe
 	python3 pre_render.py

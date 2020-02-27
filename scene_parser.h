@@ -4,10 +4,11 @@
 #include "hittable_list.h"
 #include "material.h"
 #include "primitive.h"
-#include "thirdparty/json.hpp"
 #include "volume.h"
 #include "world.h"
 #include "scene.h"
+#include "thirdparty/json.hpp"
+#include "thirdparty/lodepng/lodepng.h"
 #include <map>
 #include <string>
 
@@ -212,6 +213,28 @@ parse_prim_or_instance(std::map<std::string, wrapped_hittable> primitives, std::
     return primitive;
 }
 
+texture *decode_into_texture(std::string path)
+{
+    std::vector<unsigned char> image; //the raw pixels
+    unsigned width, height;
+
+    //decode
+    unsigned error = lodepng::decode(image, width, height, path.data);
+
+    //if there's an error, display it
+    if (error)
+    {
+        std::cout << "decoder error " << error << ": " << lodepng_error_text(error) << std::endl;
+    }
+    //the pixels are now in the vector "image", 4 bytes per pixel, ordered RGBARGBA..., use it as texture, draw it, ...
+    
+    for (int y = height-1; y >= 0; y--) {
+        for (int x = 0; x < width; x++) {
+            
+        }
+    }
+}
+
 World *build_scene(json scene)
 {
     std::vector<hittable *> list;
@@ -241,8 +264,10 @@ World *build_scene(json scene)
             continue;
         }
         std::cout << element << '\n';
-        // currently the only accepted asset type is a .obj
-        // assert(element["type"].get<std::string>() == "object");
+        // currently the only accepted asset type is a .png
+        assert(element["type"].get<std::string>() == "png");
+        std::string path = element["path"].get<std::string>();
+        texture *image = decode_into_texture(path);
     }
     // iterate through and construct materials
     for (auto &element : scene["materials"])
