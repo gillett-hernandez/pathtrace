@@ -352,21 +352,26 @@ public:
 class Naive : public Renderer
 {
 public:
-    Naive(Integrator *integrator, camera cam, Config config) : Renderer{integrator, cam, config}
+    Naive(Integrator *integrator, camera cam, Config config) : Renderer{integrator, cam, config}, queue()
     {
         trace_probability = config.trace_probability;
         N_THREADS = config.threads;
         completed = false;
+        int min_samples = config.samples / N_THREADS;
+        int remaining_samples = config.samples % N_THREADS;
+        std::cout << "samples per thread " << min_samples << std::endl;
+        std::cout << "leftover samples to be allocated " << remaining_samples << std::endl;
+        for (int t = 0; t < config.threads; t++)
+        {
+            int samples = min_samples + (int)(t < remaining_samples);
+            queue.enqueue(samples);
+        }
     };
     void preprocess(){};
     void start_render(std::chrono::high_resolution_clock::time_point program_start_time)
     {
         threads = new std::thread[N_THREADS];
-        int min_samples = config.samples / N_THREADS;
-        int remaining_samples = config.samples % N_THREADS;
 
-        std::cout << "samples per thread " << min_samples << std::endl;
-        std::cout << "leftover samples to be allocated " << remaining_samples << std::endl;
         bounce_counts = new long[N_THREADS];
         samples_done = new int[N_THREADS];
 
@@ -397,11 +402,10 @@ public:
         std::cout << "spawning threads";
         for (int thread_id = 0; thread_id < N_THREADS; thread_id++)
         {
-            int samples = min_samples + (int)(thread_id < remaining_samples);
             std::cout << '.';
             // wrap framebuffer in a std::ref since it needs to be modified
 
-            threads[thread_id] = std::thread([this](int thread_id, int samples) { compute(thread_id, samples); }, thread_id, samples); //, std::ref(framebuffer));
+            threads[thread_id] = std::thread([this](int thread_id) { compute(thread_id); }, thread_id); //, std::ref(framebuffer));
             // threads[thread_id] = std::thread(this->compute, thread_id, std::ref(framebuffer));
         }
         std::cout << " done.\n";
@@ -432,9 +436,11 @@ public:
     {
         return this->completed;
     }
-    void compute(int thread_id, int samples)
+    void compute(int thread_id)
     {
         // start of multithreaded code.
+
+        int samples = queue.dequeue();
         if (samples == 0)
         {
             return;
@@ -534,6 +540,7 @@ public:
     }
 
     int N_THREADS;
+    SafeQueue<int> queue;
     paths *array_of_paths;
     std::thread *threads;
     long *bounce_counts;
