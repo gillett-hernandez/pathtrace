@@ -11,6 +11,7 @@ main.exe: main.cpp $(HPP)
 
 debug: main.cpp $(HPP)
 	g++ $(opts) -g  main.cpp  -o main.exe -I.
+	gdb main.exe
 
 check: main.cpp $(HPP)
 	g++ $(opts) main.cpp -o main.exe -I.
@@ -29,13 +30,13 @@ run_w_pillow: main.exe
 	python3 -m pip install Pillow
 	python3 convert_ppm.py
 
-
 run_and_send: run_w_pillow
 	python3 -m pip install sendgrid
 	python3 send_result.py
 
 clean:
-	rm *.o
-	rm *.gch
+	rm *.o || echo
+	rm *.gch || echo
+	rm main.exe || echo
 
 .PHONY: run run_w_pillow clean run_and_send strict

@@ -2,10 +2,11 @@
 #include "random.h"
 #include "vec3.h"
 #include <math.h>
+#include <vector>
 #include <float.h>
 
-// #define PI 3.14159265358979323
-// #define TAU 2 * M_PI
+typedef std::vector<vec3> path;
+typedef std::vector<path *> paths;
 
 vec3 reflect(const vec3 &v, const vec3 &n)
 {
@@ -33,15 +34,31 @@ float schlick(float cosine, float ref_idx)
     return r0 + (1 - r0) * pow((1 - cosine), 5);
 }
 
+inline bool is_nan(const float x)
+{
+    return !(x == x);
+}
+
+inline bool is_nan(const vec3 v)
+{
+    return is_nan(v.x()) || is_nan(v.y()) || is_nan(v.z());
+}
+
 inline vec3 de_nan(const vec3 &c)
 {
     vec3 temp = c;
-    if (!(temp[0] == temp[0]))
+    if (is_nan(temp[0]))
+    {
         temp[0] = 0;
-    if (!(temp[1] == temp[1]))
+    }
+    if (is_nan(temp[1]))
+    {
         temp[1] = 0;
-    if (!(temp[2] == temp[2]))
+    }
+    if (is_nan(temp[2]))
+    {
         temp[2] = 0;
+    }
     return temp;
 }
 
@@ -116,15 +133,18 @@ inline float power_heuristic(int nf, float fPdf, int ng, float gPdf, float pow =
 void calculate_luminance(vec3 **framebuffer, int width, int height, int n_samples, long total_pixels, float &max_luminance, float &total_luminance, float &avg_luminance)
 {
     max_luminance = -FLT_MAX;
+    assert(n_samples > 0);
     total_luminance = 0.0;
     for (int j = height - 1; j >= 0; j--)
     {
         for (int i = 0; i < width; i++)
         {
-            vec3 col = framebuffer[j][i];
+            vec3 col = de_nan(framebuffer[j][i]);
             col /= float(n_samples);
             float f = abs(col.length());
             total_luminance += f;
+            assert(!is_nan(col));
+            assert(!is_nan(total_luminance));
             if (f > max_luminance)
             {
                 max_luminance = f;

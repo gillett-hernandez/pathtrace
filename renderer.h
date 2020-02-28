@@ -237,8 +237,8 @@ public:
         long num_samples_left = min_camera_rays - num_samples_done;
         print_out_progress(num_samples_done, num_samples_left, render_start_time);
         float avg_luminance, max_luminance, total_luminance;
-        calculate_luminance(framebuffer, film.width, film.height, num_samples_done / (film.width * film.height), film.width * film.height, max_luminance, total_luminance, avg_luminance);
-        output_to_file(output, framebuffer, film.width, film.height, num_samples_done / (film.width * film.height), max_luminance, film.exposure, film.gamma);
+        calculate_luminance(framebuffer, film.width, film.height, 1 + num_samples_done / (film.width * film.height), film.width * film.height, max_luminance, total_luminance, avg_luminance);
+        output_to_file(output, framebuffer, film.width, film.height, 1 + num_samples_done / (film.width * film.height), max_luminance, film.exposure, film.gamma);
         completed = num_samples_left <= 0;
     };
 
@@ -429,8 +429,8 @@ public:
         long num_samples_left = min_camera_rays - num_samples_done;
         print_out_progress(num_samples_done, num_samples_left, render_start_time);
         float avg_luminance, max_luminance, total_luminance;
-        calculate_luminance(framebuffer, film.width, film.height, num_samples_done / (film.width * film.height), film.width * film.height, max_luminance, total_luminance, avg_luminance);
-        output_to_file(output, framebuffer, film.width, film.height, num_samples_done / (film.width * film.height), max_luminance, film.exposure, film.gamma);
+        calculate_luminance(framebuffer, film.width, film.height, 1 + num_samples_done / (film.width * film.height), film.width * film.height, max_luminance, total_luminance, avg_luminance);
+        output_to_file(output, framebuffer, film.width, film.height, 1 + num_samples_done / (film.width * film.height), max_luminance, film.exposure, film.gamma);
         completed = num_samples_left <= 0;
     };
 
@@ -620,8 +620,8 @@ public:
 //         long num_samples_left = min_camera_rays - num_samples_done;
 //         print_out_progress(num_samples_done, num_samples_left, render_start_time);
 //         float avg_luminance, max_luminance, total_luminance;
-//         calculate_luminance(framebuffer, film.width, film.height, num_samples_done / (film.width * film.height), film.width * film.height, max_luminance, total_luminance, avg_luminance);
-//         output_to_file(output, framebuffer, film.width, film.height, num_samples_done / (film.width * film.height), max_luminance, film.exposure, film.gamma);
+//         calculate_luminance(framebuffer, film.width, film.height, 1+num_samples_done / (film.width * film.height), film.width * film.height, max_luminance, total_luminance, avg_luminance);
+//         output_to_file(output, framebuffer, film.width, film.height, 1+num_samples_done / (film.width * film.height), max_luminance, film.exposure, film.gamma);
 //         completed = num_samples_left <= 0;
 //     };
 
