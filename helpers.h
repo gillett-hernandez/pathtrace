@@ -51,11 +51,11 @@ inline vec3 de_nan(const vec3 &c)
     {
         temp[0] = 0;
     }
-    if (is_nan(temp[0]))
+    if (is_nan(temp[1]))
     {
         temp[1] = 0;
     }
-    if (is_nan(temp[0]))
+    if (is_nan(temp[2]))
     {
         temp[2] = 0;
     }
@@ -139,7 +139,7 @@ void calculate_luminance(vec3 **framebuffer, int width, int height, int n_sample
     {
         for (int i = 0; i < width; i++)
         {
-            vec3 col = framebuffer[j][i];
+            vec3 col = de_nan(framebuffer[j][i]);
             col /= float(n_samples);
             float f = abs(col.length());
             total_luminance += f;

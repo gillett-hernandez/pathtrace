@@ -481,7 +481,6 @@ public:
                         _path = nullptr;
                     }
                     col += de_nan(integrator->color(r, 0, count, _path));
-                    assert(!is_nan(col));
                     if (_path != nullptr)
                     {
                         // std::cout << "traced _path, size is " << _path->size() << std::endl;
