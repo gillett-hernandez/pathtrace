@@ -65,15 +65,17 @@ enum texture_type
 {
     CONSTANT,
     CHECKERED,
-    PERLIN
+    PERLIN,
+    PNG
 };
 
 texture_type get_texture_type_for(std::string type)
-{
+{ 
     static std::map<std::string, texture_type> mapping = {
         {"constant", CONSTANT},
         {"checker", CHECKERED},
-        {"perlin", PERLIN}};
+        {"perlin", PERLIN},
+        {"png", PNG}};
     return mapping[type];
 }
 
@@ -89,12 +91,12 @@ world_background_type get_world_background_type_for(std::string type)
     static std::map<std::string, world_background_type> mapping = {
         {"hdri", HDRI},
         {"texture", TEXTURE},
-        {"gradient", GRADIENT}};        
+        {"gradient", GRADIENT}};
     return mapping[type];
 }
 
-
-struct s_camera {
+struct s_camera
+{
     vec3 look_from;
     vec3 look_at;
     float fov;
@@ -102,28 +104,33 @@ struct s_camera {
     float dist_to_focus;
 };
 
-struct s_world {
+struct s_world
+{
     world_background_type type;
     color background_color;
 };
 
-struct s_material {
+struct s_material
+{
     material_type type;
     std::string id;
-    material* p_material;
+    material *p_material;
 };
 
-struct s_primitive {
+struct s_primitive
+{
     primitive_type type;
     std::string id;
-    hittable* p_primitive;
+    hittable *p_primitive;
 };
 
-struct s_instance {
+struct s_instance
+{
     instance_type type;
 };
 
-struct scene {
+struct scene
+{
     s_camera camera;
     s_world world;
     std::vector<s_material> materials;

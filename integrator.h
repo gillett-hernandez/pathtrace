@@ -29,7 +29,7 @@ public:
             }
             ray scattered;
             vec3 attenuation;
-            vec3 emitted = rec.mat_ptr->emitted(rec.u, rec.v, rec.p);
+            vec3 emitted = rec.mat_ptr->emitted(r, rec, rec.u, rec.v, rec.p);
             if (depth < max_bounces && rec.mat_ptr->scatter(r, rec, attenuation, scattered))
             {
                 (*bounce_count)++;
@@ -46,13 +46,9 @@ public:
             {
                 _path->push_back(rec.p);
             }
-            // world background color here
             // vec3 unit_direction = unit_vector(r.direction());
             // float t = 0.5 * (unit_direction.y() + 1.0);
             // return (1.0 - t) * vec3(1.0, 1.0, 1.0) + t * vec3(0.2, 0.1, 0.7);
-
-            // generate world u v and then sample world texture?
-            // return vec3(0, 0, 0);
             vec3 unit_direction = unit_vector(r.direction());
             // get phi and theta values for that direction, then convert to UV values for an environment map.
             float u = (M_PI + atan2(unit_direction.y(), unit_direction.x())) / TAU;

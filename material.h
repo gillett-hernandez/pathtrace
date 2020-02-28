@@ -9,7 +9,7 @@ public:
     virtual bool scatter(
         const ray &r_in, const hit_record &rec, vec3 &attenuation,
         ray &scattered) const = 0;
-    virtual vec3 emitted(float u, float v, const vec3 &p) const
+    virtual vec3 emitted(const ray &r_in, const hit_record &rec, float u, float v, const vec3 &p) const
     {
         return vec3(0, 0, 0);
     }
@@ -116,16 +116,45 @@ public:
 class diffuse_light : public material
 {
 public:
-    diffuse_light(texture *a) : emit(a) {}
-    diffuse_light(vec3 &a)
+    diffuse_light(texture *a, float power = 1.0) : emit(a), power(power) {}
+    diffuse_light(vec3 &a, float power = 1.0) : power(power)
     {
         emit = new constant_texture(a);
     }
     virtual bool scatter(const ray &r_in, const hit_record &rec,
-                         vec3 &attenuation, ray &scattered) const { return false; }
-    virtual vec3 emitted(float u, float v, const vec3 &p) const
+                         vec3 &attenuation, ray &scattered) const
     {
-        return emit->value(u, v, p);
+        float alpha = emit->alpha(rec.u, rec.v, rec.p);
+        if (alpha == 0.0 || random_double() > alpha || dot(rec.normal, r_in.direction()) > 0)
+        {
+            // passthrough ray,
+            // because the random was above the alpha threshold,
+            // we were at 0 alpha,
+            // or the hit occurred from behind the light
+
+            // set ray passthrough to right after the ray intersection point and in original ray direction.
+            scattered = ray(rec.p + r_in.direction() * 0.01, r_in.direction());
+            // set attenuation to 1 (meaning no change)
+            attenuation = vec3(1.0, 1.0, 1.0); //emit->value(rec.u, rec.v, rec.p);
+            return true;
+        }
+        return false;
+    }
+    virtual vec3 emitted(const ray &r_in, const hit_record &rec, float u, float v, const vec3 &p) const
+    {
+        if (dot(rec.normal, r_in.direction()) < 0)
+        {
+            // if normal and r_in.direction are in opposite directions
+            // i.e. if hit on correct side of light
+            return power * emit->value(u, v, p) * emit->alpha(u, v, p);
+        }
+        else
+        {
+            // normal and r_in.direction are aligned, pointing the same way
+            // this means that we hit from the wrong side
+            return vec3(0, 0, 0);
+        }
     }
     texture *emit;
+    float power;
 };

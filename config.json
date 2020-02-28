@@ -1,13 +1,7 @@
 {
-    "filmb": {
-        "width": 2000,
-        "height": 2000,
-        "exposure": -10.0,
-        "gamma": 1.0
-    },
     "film": {
-        "width": 800,
-        "height": 800,
+        "width": 600,
+        "height": 600,
         "exposure": -10.0,
         "gamma": 2.2
     },
@@ -22,7 +16,7 @@
     "avg_number_of_paths": 1000,
     "block_width": 64,
     "block_height": 64,
-    "max_bounces": 12,
-    "samples": 20,
+    "max_bounces": 4,
+    "samples": 200,
     "threads": 20
 }

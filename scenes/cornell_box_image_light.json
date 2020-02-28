@@ -2,7 +2,7 @@
     "camera": {
         "look_from": [
             278.0,
-            278.0,
+            20.0,
             -750.0
         ],
         "look_at": [
@@ -10,15 +10,15 @@
             278.0,
             0.0
         ],
-        "fov": 40.0,
+        "fov": 60.0,
         "aperture": 0.0,
         "dist_to_focus": 10.0
     },
     "world": {
         "color": [
-            0.0,
-            0.0,
-            0.0
+            0.01,
+            0.01,
+            0.01
         ]
     },
     "assets": [],
@@ -26,7 +26,30 @@
         {
             "id": "light_texture",
             "type": "png",
-            "path": "assets/light_texture.png"
+            "data": {
+                "path": "assets/light_texture.png"
+            }
+        },
+        {
+            "id": "light_texture2",
+            "type": "checker",
+            "data": {
+                "scale": 10.0,
+                "odd": {
+                    "color": [
+                        1.0,
+                        0.0,
+                        0.0
+                    ]
+                },
+                "even": {
+                    "color": [
+                        0.0,
+                        0.0,
+                        1.0
+                    ]
+                }
+            }
         }
     ],
     "materials": [
@@ -56,7 +79,8 @@
             "id": "white",
             "type": "lambertian",
             "data": {
-                "color": [
+                "texture": "light_texture",
+                "crap": [
                     0.73,
                     0.73,
                     0.73
@@ -67,7 +91,8 @@
             "id": "light",
             "type": "diffuse_light",
             "data": {
-                "texture": "light_texture"
+                "texture": "light_texture2",
+                "power": 5
             }
         }
     ],
@@ -107,6 +132,11 @@
                     277.5,
                     0.0,
                     277.5
+                ],
+                "rotate": [
+                    0.0,
+                    0.0,
+                    0.0
                 ]
             }
         },
@@ -248,30 +278,38 @@
             "transform": {
                 "translate": [
                     273,
-                    554.0,
+                    520.0,
                     171
+                ],
+                "rotate": [
+                    1.0,
+                    0,
+                    0
                 ]
             }
         },
         {
-            "skip": true,
             "type": "direct",
             "primitive": {
-                "type": "sphere",
+                "type": "rect",
                 "material": {
                     "id": "light"
-                }
+                },
+                "size": [
+                    240,
+                    230
+                ]
             },
             "transform": {
-                "scale": [
-                    100.0,
-                    20.0,
-                    100.0
-                ],
                 "translate": [
                     273,
-                    200,
+                    400.0,
                     171
+                ],
+                "rotate": [
+                    0.0,
+                    0,
+                    0
                 ]
             }
         }
