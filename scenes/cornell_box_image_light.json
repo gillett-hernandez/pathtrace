@@ -15,12 +15,12 @@
         "dist_to_focus": 100.0
     },
     "world": {
-        "color2": [
+        "color": [
             0.001,
             0.001,
             0.001
         ],
-        "texture": "checker_texture"
+        "texture2": "checker_texture"
     },
     "assets": [],
     "textures": [
@@ -91,6 +91,13 @@
                     "texture": "blue"
                 }
             }
+        },
+        {
+            "id": "noise_texture",
+            "type": "perlin",
+            "data": {
+                "scale": 0.1
+            }
         }
     ],
     "materials": [
@@ -126,6 +133,13 @@
             "data": {
                 "texture": "checker_texture",
                 "power": 5
+            }
+        },
+        {
+            "id": "noise",
+            "type": "lambertian",
+            "data": {
+                "texture": "noise_texture"
             }
         },
         {
@@ -178,7 +192,7 @@
             "id": "sphere",
             "type": "sphere",
             "material": {
-                "id": "checker"
+                "id": "noise"
             },
             "radius": 67.5
         },
@@ -273,7 +287,7 @@
             "primitive": {
                 "type": "rect",
                 "material": {
-                    "id": "checker"
+                    "id": "red"
                 },
                 "size": [
                     555,

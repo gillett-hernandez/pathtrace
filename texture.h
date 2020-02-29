@@ -177,6 +177,11 @@ public:
     static int *perm_z;
 };
 
+vec3 *perlin::ranvec = perlin_generate();
+int *perlin::perm_x = perlin_generate_perm();
+int *perlin::perm_y = perlin_generate_perm();
+int *perlin::perm_z = perlin_generate_perm();
+
 class noise_texture : public texture
 {
 public:
@@ -185,7 +190,19 @@ public:
     virtual vec3 value(float u, float v, const vec3 &p) const
     {
         return vec3(1, 1, 1) * noise.noise(scale * p);
-        return vec3(1, 1, 1) * 0.5 * (1 + sin(scale * p.z() + 10 * noise.turb(p)));
+    }
+    perlin noise;
+    float scale;
+};
+
+class turbulence_texture : public texture
+{
+public:
+    turbulence_texture() {}
+    turbulence_texture(float sc) : scale(sc) {}
+    virtual vec3 value(float u, float v, const vec3 &p) const
+    {
+        return vec3(1, 1, 1) * noise.turb(scale * p);
     }
     perlin noise;
     float scale;

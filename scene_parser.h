@@ -311,6 +311,8 @@ World *build_scene(json scene)
         case PERLIN:
         {
             // parse scale, dimension, and start vector
+            float scale = data.value("scale", 1.0);
+            textures.emplace(texture_id, new noise_texture(scale));
             break;
         }
         case PNG:
