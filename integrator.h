@@ -206,9 +206,9 @@ public:
                 // cosine_pdf p = p1;
                 // mixture_pdf p(&p0, rec.mat_ptr->pdf);
                 ray light_ray = ray(rec.p, l_pdf.generate(), r.time());
-                ray scattered = ray(rec.p, rec.mat_ptr->generate(r, rec), r.time());
+                ray scattered = ray(rec.p + 0.0001 * rec.normal, rec.mat_ptr->generate(r, rec), r.time());
                 // float weight;
-                vec3 _color = emitted;
+                vec3 _color = vec3(0, 0, 0);
                 // vec3 _color = vec3(0.0f, 0.0f, 0.0f);
                 // cosine of incoming ray
                 float cos_r = fabs(dot(r.direction(), rec.normal));
@@ -218,9 +218,9 @@ public:
                 float scatter_pdf_l = rec.mat_ptr->value(r, rec, light_ray.direction());
 
                 // pdf of light ray having been generated from scatter
-                float light_pdf_s = l_pdf.value(scattered.direction());
+                // float light_pdf_s = l_pdf.value(scattered.direction());
                 // pdf of scattered ray having been generated from scatter
-                float scatter_pdf_s = rec.mat_ptr->value(r, rec, scattered.direction());
+                // float scatter_pdf_s = rec.mat_ptr->value(r, rec, scattered.direction());
 
                 // float mix_l = (scatter_pdf_l + light_pdf_l) / 2.0f;
                 // float mix_s = (scatter_pdf_s + light_pdf_s) / 2.0f;
@@ -229,8 +229,9 @@ public:
                 float inv_weight_l = 1.0f - weight_l;
                 float cos_l = fabs(dot(light_ray.direction(), rec.normal));
 
-                float weight_s = power_heuristic(1.0f, light_pdf_s, 1.0f, scatter_pdf_s);
-                float inv_weight_s = 1.0f - weight_s;
+                // float weight_s = power_heuristic(1.0f, light_pdf_s, 1.0f, scatter_pdf_s);
+
+                // float inv_weight_s = 1.0f - weight_s;
                 // cosine direction
                 float cos_s = fabs(dot(scattered.direction(), rec.normal));
 
@@ -240,11 +241,11 @@ public:
                 if (!world->config.only_direct_illumination)
                 {
                     // add contribution from next and future bounces
-                    _color += cos_r * attenuation * inv_weight_s / scatter_pdf_s * this->color(scattered, depth + 1, bounce_count, _path, true);
+                    _color += inv_weight_l * attenuation * 1 / scatter_pdf_l * this->color(scattered, depth + 1, bounce_count, _path, true);
                 }
 
                 vec3 light_hit = this->color(light_ray, depth + 1, bounce_count, nullptr, false);
-                _color += cos_r * attenuation * weight_l / light_pdf_l * light_hit;
+                _color += weight_l * attenuation * 1 / light_pdf_l * light_hit;
 
                 return _color;
             }
