@@ -56,7 +56,15 @@ public:
     virtual float alpha(float u, float v, const vec3 &p) const
     {
         // the alpha at the specified uv value
-        return 1.0;
+        float sines = sin(scale * p.x()) * sin(scale * p.y()) * sin(scale * p.z());
+        if (sines < 0)
+        {
+            return odd->alpha(u, v, p);
+        }
+        else
+        {
+            return even->alpha(u, v, p);
+        }
     }
     texture *odd;
     texture *even;

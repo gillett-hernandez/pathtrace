@@ -18,5 +18,5 @@
     "block_height": 64,
     "max_bounces": 4,
     "samples": 200,
-    "threads": 20
+    "threads": 2
 }

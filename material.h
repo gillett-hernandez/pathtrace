@@ -26,9 +26,20 @@ public:
     virtual bool scatter(const ray &r_in, const hit_record &rec,
                          vec3 &attenuation, ray &scattered) const
     {
-        vec3 target = rec.p + rec.normal + random_in_unit_sphere();
+        float alpha = albedo->alpha(rec.u, rec.v, rec.p);
+        vec3 target;
+        if (alpha == 0.0 || random_double() > alpha)
+        {
+            // passthrough
+            target = rec.p + r_in.direction();
+            attenuation = vec3(1.0, 1.0, 1.0);
+        }
+        else
+        {
+            target = rec.p + rec.normal + random_in_unit_sphere();
+            attenuation = albedo->value(rec.u, rec.v, rec.p);
+        }
         scattered = ray(rec.p, target - rec.p);
-        attenuation = albedo->value(rec.u, rec.v, rec.p);
         return true;
     }
     texture *albedo;

@@ -281,7 +281,7 @@ World *build_scene(json scene)
         {
         case CONSTANT:
         {
-            textures.emplace(texture_id, new constant_texture(json_to_vec3(data["color"])));
+            textures.emplace(texture_id, new constant_texture(json_to_vec3(data["color"]), data.value("alpha", 1.0)));
             break;
         }
         case CHECKERED:
@@ -289,17 +289,17 @@ World *build_scene(json scene)
             // parse two colors and scale
             texture *odd;
             texture *even;
-            if (data["odd"].value("type", "") == "ref")
+            if (data["odd"].contains("texture"))
             {
-                odd = textures[data["odd"]["id"].get<std::string>()];
+                odd = textures[data["odd"]["texture"].get<std::string>()];
             }
             else
             {
                 odd = new constant_texture(json_to_vec3(data["odd"]["color"]));
             }
-            if (data["even"].value("type", "") == "ref")
+            if (data["even"].contains("texture"))
             {
-                even = textures[data["even"]["id"].get<std::string>()];
+                even = textures[data["even"]["texture"].get<std::string>()];
             }
             else
             {
