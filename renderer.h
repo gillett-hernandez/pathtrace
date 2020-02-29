@@ -130,15 +130,7 @@ public:
         ;
 
         // create framebuffer
-        framebuffer = new vec3 *[film.height];
-        for (int j = film.height - 1; j >= 0; j--)
-        {
-            framebuffer[j] = new vec3[film.width];
-            for (int i = 0; i < film.width; i++)
-            {
-                framebuffer[j][i] = vec3(0, 0, 0);
-            }
-        }
+        framebuffer = array_2d<vec3>(film.width, film.height);
     };
     virtual void preprocess() = 0;
     virtual void start_render(std::chrono::high_resolution_clock::time_point) = 0;

@@ -4,10 +4,12 @@
 #include "hittable_list.h"
 #include "material.h"
 #include "primitive.h"
-#include "thirdparty/json.hpp"
 #include "volume.h"
 #include "world.h"
 #include "scene.h"
+#include "image.h"
+#include "thirdparty/json.hpp"
+#include "thirdparty/lodepng/lodepng.h"
 #include <map>
 #include <string>
 
@@ -32,6 +34,24 @@ std::string generate_new_id()
 vec3 json_to_vec3(json color)
 {
     return vec3(color.at(0), color.at(1), color.at(2));
+}
+
+texture *decode_into_texture(std::string path)
+{
+    std::vector<unsigned char> image; //the raw pixels
+    unsigned width, height;
+
+    //decode
+    unsigned error = lodepng::decode(image, width, height, path.data());
+
+    //if there's an error, display it
+    if (error)
+    {
+        std::cout << "decoder error " << error << ": " << lodepng_error_text(error) << std::endl;
+    }
+    //the pixels are now in the vector "image", 4 bytes per pixel, ordered RGBARGBA..., use it as texture, draw it, ...
+
+    return from_4byte_vector(image, width, height);
 }
 
 class wrapped_material
@@ -73,6 +93,12 @@ wrapped_material wrapped_error_material()
 {
     static wrapped_material wmat = wrapped_material(error_material(), "lambertian");
     return wmat;
+}
+
+texture *error_texture()
+{
+    static texture *e_texture = new constant_texture(MAUVE);
+    return e_texture;
 }
 
 wrapped_hittable
@@ -241,8 +267,64 @@ World *build_scene(json scene)
             continue;
         }
         std::cout << element << '\n';
-        // currently the only accepted asset type is a .obj
-        // assert(element["type"].get<std::string>() == "object");
+        // currently the only accepted asset type is a .png
+        assert(element.contains("id"));
+        std::string texture_id = element["id"].get<std::string>();
+        if (!element.contains("data"))
+        {
+            textures.emplace(texture_id, error_texture());
+            continue;
+        }
+        json data = element["data"];
+
+        switch (get_texture_type_for(element["type"].get<std::string>()))
+        {
+        case CONSTANT:
+        {
+            textures.emplace(texture_id, new constant_texture(json_to_vec3(data["color"]), data.value("alpha", 1.0)));
+            break;
+        }
+        case CHECKERED:
+        {
+            // parse two colors and scale
+            texture *odd;
+            texture *even;
+            if (data["odd"].contains("texture"))
+            {
+                odd = textures[data["odd"]["texture"].get<std::string>()];
+            }
+            else
+            {
+                odd = new constant_texture(json_to_vec3(data["odd"]["color"]));
+            }
+            if (data["even"].contains("texture"))
+            {
+                even = textures[data["even"]["texture"].get<std::string>()];
+            }
+            else
+            {
+                even = new constant_texture(json_to_vec3(data["even"]["color"]));
+            }
+            textures.emplace(texture_id, new checker_texture(even, odd, data["scale"].get<float>()));
+            break;
+        }
+        case PERLIN:
+        {
+            // parse scale, dimension, and start vector
+            break;
+        }
+        case PNG:
+        {
+            std::string path = data["path"].get<std::string>();
+            textures.emplace(texture_id, decode_into_texture(path));
+            break;
+        }
+        default:
+        {
+            textures.emplace(texture_id, error_texture());
+        }
+        }
+        std::cout << texture_id << std::endl;
     }
     // iterate through and construct materials
     for (auto &element : scene["materials"])
@@ -264,6 +346,7 @@ World *build_scene(json scene)
         switch (get_material_type_for(element["type"].get<std::string>()))
         {
         case LAMBERTIAN:
+        {
             std::cout << "found LAMBERTIAN" << '\n';
 
             if (data.contains("color"))
@@ -282,6 +365,7 @@ World *build_scene(json scene)
                 materials.emplace(mat_id, wrapped_error_material());
             }
             break;
+        }
         case METAL:
         {
             std::cout << "found METAL" << '\n';
@@ -318,16 +402,30 @@ World *build_scene(json scene)
         case DIFFUSE_LIGHT:
         {
             std::cout << "found DIFFUSE_LIGHT" << '\n';
-            if (element["data"].contains("texture"))
+            float power;
+            if (data.contains("power"))
+            {
+                power = data["power"].get<float>();
+            }
+            else
+            {
+                // default to neutral strength.
+                power = 1.0;
+            }
+
+            bool two_sided = data.value("two_sided", true);
+            if (data.contains("texture"))
             {
                 // set tint
-                texture *_texture = textures[element["data"]["texture"]];
-                materials.emplace(mat_id, wrapped_material(new diffuse_light(_texture), "diffuse_light"));
+                std::string texture_id = data["texture"].get<std::string>();
+                // std::cout << "found texture, using texture id " << texture_id;
+                texture *_texture = textures[texture_id];
+                materials.emplace(mat_id, wrapped_material(new diffuse_light(_texture, power, two_sided), "diffuse_light"));
             }
             else
             {
                 vec3 color;
-                if (element["data"].contains("color"))
+                if (data.contains("color"))
                 {
                     color = json_to_vec3(data["color"]);
                 }
@@ -336,7 +434,8 @@ World *build_scene(json scene)
                     // default to no tint == white
                     color = vec3(1.0, 1.0, 1.0);
                 }
-                materials.emplace(mat_id, wrapped_material(new diffuse_light(color), "diffuse_light"));
+
+                materials.emplace(mat_id, wrapped_material(new diffuse_light(color, power, two_sided), "diffuse_light"));
             }
             break;
         }
@@ -462,10 +561,16 @@ World *build_scene(json scene)
             background = new constant_texture(json_to_vec3(scene["world"]["color"]));
             std::cout << "using constant texture" << std::endl;
         }
+        else
+        {
+
+            background = new constant_texture(MAUVE);
+            std::cout << "using backup texture" << std::endl;
+        }
     }
     else
     {
-        background = new constant_texture(vec3(0.3, 0.3, 0.3));
+        background = new constant_texture(MAUVE);
         std::cout << "using backup texture" << std::endl;
     }
 
@@ -482,7 +587,7 @@ World *build_scene(json scene)
     //                                                   147.5))));
 
     // iterate through objects which are collections of instances
-
+    std::cout << "constructing bvh with " << list.size() << " primitives and instances\n";
     std::cout << "found " << lights.size() << " lights\n";
     return new World(new bvh_node(list.data(), list.size(), 0.0f, 0.0f), background, lights);
 }
