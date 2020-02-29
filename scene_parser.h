@@ -305,7 +305,7 @@ World *build_scene(json scene)
             {
                 even = new constant_texture(json_to_vec3(data["even"]["color"]));
             }
-            textures.emplace(texture_id, new checker_texture(odd, even, data["scale"].get<float>()));
+            textures.emplace(texture_id, new checker_texture(even, odd, data["scale"].get<float>()));
             break;
         }
         case PERLIN:
@@ -346,6 +346,7 @@ World *build_scene(json scene)
         switch (get_material_type_for(element["type"].get<std::string>()))
         {
         case LAMBERTIAN:
+        {
             std::cout << "found LAMBERTIAN" << '\n';
 
             if (data.contains("color"))
@@ -364,6 +365,7 @@ World *build_scene(json scene)
                 materials.emplace(mat_id, wrapped_error_material());
             }
             break;
+        }
         case METAL:
         {
             std::cout << "found METAL" << '\n';

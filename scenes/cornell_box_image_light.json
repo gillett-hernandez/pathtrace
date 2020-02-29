@@ -2,7 +2,7 @@
     "camera": {
         "look_from": [
             278.0,
-            20.0,
+            400.0,
             -750.0
         ],
         "look_at": [
@@ -10,16 +10,17 @@
             278.0,
             0.0
         ],
-        "fov": 60.0,
+        "fov": 70.0,
         "aperture": 0.0,
-        "dist_to_focus": 10.0
+        "dist_to_focus": 100.0
     },
     "world": {
-        "color": [
+        "color2": [
             0.001,
             0.001,
             0.001
-        ]
+        ],
+        "texture": "checker_texture"
     },
     "assets": [],
     "textures": [
@@ -75,16 +76,16 @@
                     0.05,
                     1.00
                 ],
-                "alpha": 0.5
+                "alpha": 1.0
             }
         },
         {
             "id": "checker_texture",
             "type": "checker",
             "data": {
-                "scale": 23,
+                "scale": 0.05,
                 "odd": {
-                    "texture": "transparent_red"
+                    "texture": "red"
                 },
                 "even": {
                     "texture": "blue"
@@ -180,6 +181,14 @@
                 "id": "checker"
             },
             "radius": 67.5
+        },
+        {
+            "id": "big_sphere",
+            "type": "sphere",
+            "material": {
+                "id": "checker"
+            },
+            "radius": 10000.0
         }
     ],
     "instances": [
@@ -295,6 +304,19 @@
                     0.0,
                     -0.1,
                     0.0
+                ]
+            }
+        },
+        {
+            "type": "ref",
+            "primitive": {
+                "id": "big_sphere"
+            },
+            "transform": {
+                "translate": [
+                    277.5,
+                    -10000.0,
+                    277.5
                 ]
             }
         },

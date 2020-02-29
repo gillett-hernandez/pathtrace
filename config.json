@@ -13,10 +13,10 @@
     "render_type": "progressive",
     "integrator_type": "recursive path tracing",
     "should_trace_paths": true,
-    "avg_number_of_paths": 1000,
+    "avg_number_of_paths": 100,
     "block_width": 64,
     "block_height": 64,
     "max_bounces": 4,
-    "samples": 200,
+    "samples": 20,
     "threads": 2
 }
