@@ -410,13 +410,15 @@ World *build_scene(json scene)
                 // default to neutral strength.
                 power = 1.0;
             }
+
+            bool two_sided = data.value("two_sided", true);
             if (data.contains("texture"))
             {
                 // set tint
                 std::string texture_id = data["texture"].get<std::string>();
                 // std::cout << "found texture, using texture id " << texture_id;
                 texture *_texture = textures[texture_id];
-                materials.emplace(mat_id, wrapped_material(new diffuse_light(_texture, power), "diffuse_light"));
+                materials.emplace(mat_id, wrapped_material(new diffuse_light(_texture, power, two_sided), "diffuse_light"));
             }
             else
             {
@@ -431,7 +433,7 @@ World *build_scene(json scene)
                     color = vec3(1.0, 1.0, 1.0);
                 }
 
-                materials.emplace(mat_id, wrapped_material(new diffuse_light(color, power), "diffuse_light"));
+                materials.emplace(mat_id, wrapped_material(new diffuse_light(color, power, two_sided), "diffuse_light"));
             }
             break;
         }

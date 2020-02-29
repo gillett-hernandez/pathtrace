@@ -127,8 +127,8 @@ public:
 class diffuse_light : public material
 {
 public:
-    diffuse_light(texture *a, float power = 1.0) : emit(a), power(power) {}
-    diffuse_light(vec3 &a, float power = 1.0) : power(power)
+    diffuse_light(texture *a, float power = 1.0, bool two_sided = true) : emit(a), power(power), two_sided(two_sided) {}
+    diffuse_light(vec3 &a, float power = 1.0, bool two_sided = true) : power(power), two_sided(two_sided)
     {
         emit = new constant_texture(a);
     }
@@ -136,7 +136,9 @@ public:
                          vec3 &attenuation, ray &scattered) const
     {
         float alpha = emit->alpha(rec.u, rec.v, rec.p);
-        if (alpha == 0.0 || random_double() > alpha || dot(rec.normal, r_in.direction()) > 0)
+        bool aligned = dot(rec.normal, r_in.direction()) > 0;
+        // this if condition handles alpha and one-sided visibility
+        if (alpha == 0.0 || random_double() > alpha || (aligned && !two_sided))
         {
             // passthrough ray,
             // because the random was above the alpha threshold,
@@ -153,7 +155,9 @@ public:
     }
     virtual vec3 emitted(const ray &r_in, const hit_record &rec, float u, float v, const vec3 &p) const
     {
-        if (dot(rec.normal, r_in.direction()) < 0)
+        // this if condition handles one-sidedness
+        bool aligned = dot(rec.normal, r_in.direction()) > 0;
+        if (!aligned || two_sided)
         {
             // if normal and r_in.direction are in opposite directions
             // i.e. if hit on correct side of light
@@ -161,11 +165,15 @@ public:
         }
         else
         {
+            // aligned && !two_sided
+            // opposite is !(aligned && !two_sided)
+            //           = !aligned || two_sided
             // normal and r_in.direction are aligned, pointing the same way
-            // this means that we hit from the wrong side
+            // this means that we hit from the wrong side and that we're not two sided
             return vec3(0, 0, 0);
         }
     }
     texture *emit;
     float power;
+    bool two_sided;
 };

@@ -29,6 +29,22 @@ public:
         int x = int(u * width);
         return data[y][x];
     }
+    float alpha(float u, float v, const vec3 &p) const
+    {
+        v -= int(v);
+        if (v < 0)
+        {
+            v += 1;
+        }
+        u -= int(u);
+        if (u < 0)
+        {
+            u += 1;
+        }
+        int y = int(v * height);
+        int x = int(u * width);
+        return alpha_mask[y][x];
+    }
     int width, height;
     vec3 **data;
     float **alpha_mask;
