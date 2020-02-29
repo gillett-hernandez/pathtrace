@@ -192,12 +192,14 @@ bool rect::hit(const ray &r, float t0, float t1, hit_record &rec) const
     vec3 temp_d = shuffle(r.direction(), type);
 
     float t = (y - temp_o.y()) / temp_d.y();
+    // time value of hit outside of bounds?
     if (t < t0 || t > t1)
     {
         return false;
     }
     float xh = temp_o.x() + t * temp_d.x();
     float zh = temp_o.z() + t * temp_d.z();
+    // coordinates of hit outside of bounds?
     if (xh < x0 || xh > x1 || zh < z0 || zh > z1)
     {
         return false;

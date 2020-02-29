@@ -65,15 +65,17 @@ enum texture_type
 {
     CONSTANT,
     CHECKERED,
-    PERLIN
+    PERLIN,
+    PNG
 };
 
 texture_type get_texture_type_for(std::string type)
-{
+{ 
     static std::map<std::string, texture_type> mapping = {
         {"constant", CONSTANT},
         {"checker", CHECKERED},
-        {"perlin", PERLIN}};
+        {"perlin", PERLIN},
+        {"png", PNG}};
     return mapping[type];
 }
 

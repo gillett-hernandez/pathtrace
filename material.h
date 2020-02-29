@@ -17,8 +17,7 @@ public:
     }
     virtual vec3 generate(const ray &r, const hit_record &rec) = 0;
     virtual float value(const ray &r, const hit_record &rec, const vec3 &direction) = 0;
-
-    virtual vec3 emitted(float u, float v, const vec3 &p) const
+    virtual vec3 emitted(const ray &r_in, const hit_record &rec, float u, float v, const vec3 &p) const
     {
         return vec3(0, 0, 0);
     }
@@ -33,14 +32,25 @@ public:
     {
         albedo = new constant_texture(v);
     }
-    bool scatter(const ray &r_in, const hit_record &rec, vec3 &alb) const
+    bool scatter(const ray &r_in, const hit_record &rec, vec3 &attenuation) const
     {
 
-        alb = albedo->value(rec.u, rec.v, rec.p) / M_PI;
+        attenuation = albedo->value(rec.u, rec.v, rec.p) / M_PI;
+
+        // scattered = ray(rec.p, target - rec.p);
         return true;
     }
     vec3 generate(const ray &r_in, const hit_record &rec)
     {
+        /*float alpha = albedo->alpha(rec.u, rec.v, rec.p);
+                if (alpha == 0.0 || random_double() > alpha)
+        {
+            // passthrough
+            target = rec.p + r_in.direction();
+            attenuation = vec3(1.0, 1.0, 1.0);
+        }
+        else
+        {*/
         return cosine_pdf(rec.normal).generate();
     };
     float value(const ray &r, const hit_record &rec, const vec3 &direction)
@@ -156,16 +166,58 @@ public:
 class diffuse_light : public material
 {
 public:
-    diffuse_light(texture *a, std::string name = "diffuse_light") : emit(a), name(name) {}
-    diffuse_light(vec3 &a, std::string name = "diffuse_light") : name(name)
+    diffuse_light(texture *a, float power = 1.0, bool two_sided = true) : emit(a), power(power), two_sided(two_sided)
+    {
+    }
+    diffuse_light(vec3 &a, float power = 1.0, bool two_sided = true) : power(power), two_sided(two_sided)
     {
         emit = new constant_texture(a);
     }
     virtual bool scatter(const ray &r_in, const hit_record &rec,
-                         vec3 &attenuation) const { return false; }
-    virtual vec3 emitted(float u, float v, const vec3 &p) const
+                         vec3 &attenuation) const
     {
-        return emit->value(u, v, p);
+        return false;
+    }
+    // virtual vec3 emitted(float u, float v, const vec3 &p) const
+    //                      vec3 &attenuation, ray &scattered) const
+    // {
+    // float alpha = emit->alpha(rec.u, rec.v, rec.p);
+    // bool aligned = dot(rec.normal, r_in.direction()) > 0;
+    // // this if condition handles alpha and one-sided visibility
+    // if (alpha == 0.0 || random_double() > alpha || (aligned && !two_sided))
+    // {
+    //     // passthrough ray,
+    //     // because the random was above the alpha threshold,
+    //     // we were at 0 alpha,
+    //     // or the hit occurred from behind the light
+
+    //     // set ray passthrough to right after the ray intersection point and in original ray direction.
+    //     scattered = ray(rec.p + r_in.direction() * 0.01, r_in.direction());
+    //     // set attenuation to 1 (meaning no change)
+    //     attenuation = vec3(1.0, 1.0, 1.0); //emit->value(rec.u, rec.v, rec.p);
+    //     return true;
+    // }
+    // return false;
+    // }
+    virtual vec3 emitted(const ray &r_in, const hit_record &rec, float u, float v, const vec3 &p) const
+    {
+        // this if condition handles one-sidedness
+        bool aligned = dot(rec.normal, r_in.direction()) > 0;
+        if (!aligned || two_sided)
+        {
+            // if normal and r_in.direction are in opposite directions
+            // i.e. if hit on correct side of light
+            return power * emit->value(u, v, p) * emit->alpha(u, v, p);
+        }
+        else
+        {
+            // aligned && !two_sided
+            // opposite is !(aligned && !two_sided)
+            //           = !aligned || two_sided
+            // normal and r_in.direction are aligned, pointing the same way
+            // this means that we hit from the wrong side and that we're not two sided
+            return vec3(0, 0, 0);
+        }
     }
     vec3 generate(const ray &r_in, const hit_record &rec)
     {
@@ -177,13 +229,15 @@ public:
     }
     texture *emit;
     std::string name;
+    float power;
+    bool two_sided;
 };
 
 class isotropic : public material
 {
 public:
-    isotropic(texture *a, vec3 emission = vec3(0, 0, 0), std::string name = "dielectric") : albedo(a), emission(emission), name(name) {}
-    isotropic(vec3 a, vec3 emission = vec3(0, 0, 0), std::string name = "dielectric") : albedo(new constant_texture(a)), emission(emission), name(name) {}
+    isotropic(texture *a, vec3 emission = vec3(0, 0, 0), std::string name = "isotropic") : albedo(a), emission(emission), name(name) {}
+    isotropic(vec3 a, vec3 emission = vec3(0, 0, 0), std::string name = "isotropic") : albedo(new constant_texture(a)), emission(emission), name(name) {}
     virtual bool scatter(
         const ray &r_in,
         const hit_record &rec,
