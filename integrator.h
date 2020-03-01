@@ -206,7 +206,7 @@ public:
                 // cosine_pdf p = p1;
                 // mixture_pdf p(&p0, rec.mat_ptr->pdf);
                 ray light_ray = ray(rec.p, l_pdf.generate(), r.time());
-                ray scattered = ray(rec.p + 0.0001 * rec.normal, rec.mat_ptr->generate(r, rec), r.time());
+                ray scattered = ray(rec.p + 0.001 * rec.normal, rec.mat_ptr->generate(r, rec), r.time());
                 // float weight;
                 vec3 _color = vec3(0, 0, 0);
                 // vec3 _color = vec3(0.0f, 0.0f, 0.0f);
@@ -222,16 +222,10 @@ public:
                 // pdf of scattered ray having been generated from scatter
                 // float scatter_pdf_s = rec.mat_ptr->value(r, rec, scattered.direction());
 
-                // float mix_l = (scatter_pdf_l + light_pdf_l) / 2.0f;
-                // float mix_s = (scatter_pdf_s + light_pdf_s) / 2.0f;
-
                 float weight_l = power_heuristic(1.0f, light_pdf_l, 1.0f, scatter_pdf_l);
                 float inv_weight_l = 1.0f - weight_l;
                 float cos_l = fabs(dot(light_ray.direction(), rec.normal));
 
-                // float weight_s = power_heuristic(1.0f, light_pdf_s, 1.0f, scatter_pdf_s);
-
-                // float inv_weight_s = 1.0f - weight_s;
                 // cosine direction
                 float cos_s = fabs(dot(scattered.direction(), rec.normal));
 
@@ -241,11 +235,13 @@ public:
                 if (!world->config.only_direct_illumination)
                 {
                     // add contribution from next and future bounces
-                    _color += inv_weight_l * attenuation * 1 / scatter_pdf_l * this->color(scattered, depth + 1, bounce_count, _path, true);
+                    vec3 fac = inv_weight_l * attenuation / scatter_pdf_l;
+                    vec3 next_and_future_bounces = this->color(scattered, depth + 1, bounce_count, _path, true);
+                    _color += fac * next_and_future_bounces;
                 }
 
                 vec3 light_hit = this->color(light_ray, depth + 1, bounce_count, nullptr, false);
-                _color += weight_l * attenuation * 1 / light_pdf_l * light_hit;
+                _color += weight_l * attenuation / light_pdf_l * light_hit;
 
                 return _color;
             }

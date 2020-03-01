@@ -17,7 +17,7 @@
     "avg_number_of_paths": 100,
     "block_width": 64,
     "block_height": 64,
-    "max_bounces": 2,
+    "max_bounces": 10,
     "samples": 20,
     "threads": 2
 }
