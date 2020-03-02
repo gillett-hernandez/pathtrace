@@ -6,7 +6,7 @@ endif
 
 HPP = $(wildcard *.h) $(wildcard **/*.h)
 
-lodepng.o: thirdparty/lodepng/lodepng.cpp
+lodepng.o:
 	g++ $(opts) -O3 -c thirdparty/lodepng/lodepng.cpp -o lodepng.o
 
 main.exe: main.cpp $(HPP) lodepng.o
