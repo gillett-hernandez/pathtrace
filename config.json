@@ -11,7 +11,7 @@
     "traced_paths_2d_output_path": "output/out_2d.txt",
     "scene": "scenes/cornell_box_image_light.json",
     "render_type": "progressive",
-    "integrator_type": "recursive nee path tracing",
+    "integrator_type": "iterative nee path tracing",
     "should_trace_paths": true,
     "only_direct_illumination": true,
     "avg_number_of_paths": 100,
