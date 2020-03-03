@@ -20,6 +20,7 @@
     "normal_offset": 0.00001,
     "max_bounces": 10,
     "samples": 20,
-    "light_samples": 4,
+    "light_samples": 2,
+    "russian_roulette": true,
     "threads": 2
 }

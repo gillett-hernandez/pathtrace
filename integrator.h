@@ -284,7 +284,18 @@ public:
                     // MIS weighted contribtuion of
                     // add contribution from next event estimation
 
-                    // flat out skip bounces that would hit the light directly
+                    float p = std::max(beta.x(), std::max(beta.y(), beta.z()));
+                    if (config.russian_roulette && p <= 1)
+                    {
+                        if (random_double() > p)
+                        {
+                            break;
+                        }
+
+                        // Add the energy we 'lose' by randomly terminating paths
+                        beta *= 1 / p;
+                    }
+
                     if (!config.only_direct_illumination)
                     {
                         beta *= attenuation * fabs(cos_i) / scatter_pdf_s;
@@ -300,7 +311,7 @@ public:
                 else
                 {
                     sum += beta * hit_emission;
-                    ASSERT(!is_nan(sum), "sum had nan components");
+                    ASSERT(!is_nan(sum), "sum had nan components, beta was " << beta << " and sum was " << sum);
 
                     break;
                 }

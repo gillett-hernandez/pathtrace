@@ -92,6 +92,7 @@ struct Config
     int light_samples;
     uint16_t threads;
     float normal_offset;
+    bool russian_roulette;
     Config(){};
 
     Config(json jconfig)
@@ -116,6 +117,7 @@ struct Config
         threads = (uint16_t)jconfig.value("threads", 1);
         normal_offset = jconfig.value("normal_offset", 0.0001);
         light_samples = jconfig.value("light_samples", 1);
+        russian_roulette = jconfig.value("russian_roulette", true);
 
         long min_camera_rays = samples * film.total_pixels;
 
