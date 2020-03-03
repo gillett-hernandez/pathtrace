@@ -13,11 +13,12 @@
     "render_type": "progressive",
     "integrator_type": "iterative nee path tracing",
     "should_trace_paths": true,
-    "only_direct_illumination": true,
+    "only_direct_illumination": false,
     "avg_number_of_paths": 100,
     "block_width": 64,
     "block_height": 64,
-    "max_bounces": 10,
-    "samples": 200,
-    "threads": 20
+    "normal_offset": 0.00001,
+    "max_bounces": 4,
+    "samples": 10,
+    "threads": 1
 }

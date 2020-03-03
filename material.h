@@ -27,6 +27,10 @@ public:
 class lambertian : public material
 {
 public:
+    lambertian()
+    {
+        // bsdf_pdf = new cosine_pdf();
+    }
     lambertian(texture *a, std::string name = "lambertian") : albedo(a), name(name) {}
     lambertian(vec3 v, std::string name = "lambertian") : name(name)
     {
@@ -81,7 +85,7 @@ public:
     {
         // vec3 reflected = reflect(unit_vector(r_in.direction()), rec.normal);
         // scattered = ray(rec.p, reflected + fuzz * random_in_unit_sphere());
-        attenuation = albedo;
+        attenuation = albedo / M_PI;
         // return (dot(scattered.direction(), rec.normal) > 0);
         return true;
     }

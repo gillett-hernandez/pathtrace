@@ -79,7 +79,7 @@ public:
 //     vec3 color(ray &r,  int depth, long *bounce_count, path *_path)
 //     {
 //         hit_record rec;
-//         vec3 _color = vec3(0, 0, 0);
+//         vec3 sum = vec3(0, 0, 0);
 //         ray scattered;
 //         vec3 attenuation = vec3(0, 0, 0);
 //         vec3 emitted = vec3(0, 0, 0);
@@ -97,13 +97,13 @@ public:
 //                 if (rec.mat_ptr->scatter(r, rec, attenuation, scattered))
 //                 {
 //                     (*bounce_count)++;
-//                     _color += beta * emitted;
+//                     sum += beta * emitted;
 //                     beta *= attenuation;
 //                     r = scattered;
 //                 }
 //                 else
 //                 {
-//                     _color += beta * emitted;
+//                     sum += beta * emitted;
 //                     break;
 //                 }
 //             }
@@ -120,11 +120,11 @@ public:
 //                 float u = unit_direction.x();
 //                 float v = unit_direction.y();
 //                 // TODO: replace u and v with angle l->r and angle d->u;
-//                 _color += beta * world->value(u, v, unit_direction);
+//                 sum += beta * world->value(u, v, unit_direction);
 //                 break;
 //             }
 //         }
-//         return _color;
+//         return sum;
 //     }
 // }; */
 
@@ -162,8 +162,8 @@ public:
                 ray light_ray = ray(rec.p, l_pdf.generate(), r.time());
                 ray scattered = ray(rec.p + 0.001 * rec.normal, rec.mat_ptr->generate(r, rec), r.time());
                 // float weight;
-                vec3 _color = vec3(0, 0, 0);
-                // vec3 _color = vec3(0.0f, 0.0f, 0.0f);
+                vec3 sum = vec3(0, 0, 0);
+                // vec3 sum = vec3(0.0f, 0.0f, 0.0f);
                 // cosine of incoming ray
                 float cos_i = fabs(dot(r.direction(), rec.normal));
                 // pdf of light ray having gone directly towards light
@@ -191,13 +191,13 @@ public:
                     // add contribution from next and future bounces
                     vec3 fac = inv_weight_l * attenuation / scatter_pdf_l;
                     vec3 next_and_future_bounces = this->color(scattered, depth + 1, bounce_count, _path, true);
-                    _color += fac * next_and_future_bounces;
+                    sum += fac * next_and_future_bounces;
                 }
 
                 vec3 light_hit = this->color(light_ray, depth + 1, bounce_count, nullptr, false);
-                _color += weight_l * attenuation / light_pdf_l * light_hit;
+                sum += weight_l * attenuation / light_pdf_l * light_hit;
 
-                return _color;
+                return sum;
             }
             else
             {
@@ -228,78 +228,111 @@ public:
     vec3 color(ray &r, int depth, long *bounce_count, path *_path, bool skip_light_hit = false)
     {
         hit_record rec;
-        vec3 _color = vec3(0, 0, 0);
+        vec3 sum = vec3(0, 0, 0);
         ray scattered;
         vec3 attenuation = vec3(0, 0, 0);
-        vec3 emitted = vec3(0, 0, 0);
-        if (_path != nullptr)
-        {
-            _path->push_back(rec.p);
-        }
+        vec3 hit_emission = vec3(0, 0, 0);
+        float last_bsdf_pdf = -1;
+
         vec3 beta = vec3(1.0, 1.0, 1.0);
         for (int i = 0; i < max_bounces; i++)
         {
-            if (beta.squared_length() < 0.00001)
-            {
-                // terminate iteration of beta becomes too small
-                break;
-            }
-            assert(!is_nan(_color));
+            // do russian roulette path termination here? by checking beta?
+
+            assert(!is_nan(sum));
             if (world->hit(r, 0.001, MAXFLOAT, rec))
             {
-                emitted = rec.mat_ptr->emitted(r, rec, rec.u, rec.v, rec.p);
-                if (rec.mat_ptr->scatter(r, rec, attenuation))
+                if (_path != nullptr)
                 {
-                    assert(!is_nan(r.time()));
+                    _path->push_back(rec.p);
+                }
+                bool did_scatter = rec.mat_ptr->scatter(r, rec, attenuation);
+                assert(!is_nan(r.time()));
+                hittable *random_light = world->get_random_light();
+                float pick_pdf = world->lights.size();
+                hittable_pdf l_pdf(random_light, rec.p);
+                // pdf scatter_pdf;
 
-                    _color += beta * emitted;
-                    assert(!is_nan(r.time()));
+                // rec.mat_ptr->get_pdf(*scatter_pdf, r, rec);
+                // mixture_pdf p(&p0, &p1);
+                // hittable_pdf p = p0;
+                // cosine_pdf p = p1;
+                // mixture_pdf p(&p0, rec.mat_ptr->pdf);
+                // cosine of incoming ray
+                float cos_i = dot(-r.direction().normalized(), rec.normal.normalized());
+
+                ray light_ray = ray(rec.p, l_pdf.generate(), r.time());
+                float cos_l = fabs(dot(light_ray.direction(), rec.normal) / light_ray.direction().length());
+
+                // vec3 sum = vec3(0.0f, 0.0f, 0.0f);
+                // pdf of light ray having gone directly towards light
+                float light_pdf_l = l_pdf.value(light_ray.direction());
+                float scatter_pdf_l = rec.mat_ptr->value(r, rec, light_ray.direction());
+                float weight_l = power_heuristic(1.0f, light_pdf_l, 1.0f, scatter_pdf_l);
+                float inv_weight_l = 1.0f - weight_l;
+
+                hit_emission = rec.mat_ptr->emitted(r, rec, rec.u, rec.v, rec.p);
+                // if hit emission is greater than some small value
+                if (hit_emission.squared_length() > 0.000001)
+                {
+                    if (last_bsdf_pdf <= 0)
+                    {
+                        sum += beta * hit_emission;
+                    }
+                    else
+                    {
+                        hittable_pdf this_pdf(rec.primitive, r.origin());
+                        float weight = power_heuristic(1.0, last_bsdf_pdf, 1.0, this_pdf.value(rec.p));
+                        sum += beta * hit_emission * weight;
+                        assert(!is_nan(sum));
+                    }
+                }
+
+                hit_record light_rec;
+                bool did_light_hit = world->hit(light_ray, 0.001, MAXFLOAT, light_rec);
+                if (did_light_hit)
+                {
+                    if (true || light_rec.primitive == random_light)
+                    {
+                        vec3 light_emission = light_rec.mat_ptr->emitted(light_ray, light_rec, light_rec.u, light_rec.v, light_rec.p);
+                        float dropoff = fmax(cos_i, 0.0);
+                        vec3 contribution = attenuation * beta * weight_l / light_pdf_l * dropoff * light_emission / pick_pdf;
+                        if (is_nan(contribution))
+                        {
+                            // likely nan because what was hit by `r` was the same object as what was hit by light_ray
+                        }
+                        else
+                        {
+                            sum += contribution;
+                        }
+                        assert(!is_nan(sum));
+                    }
+                }
+
+                if (did_scatter)
+                {
                     (*bounce_count)++;
-                    hittable *random_light = world->get_random_light();
-                    hittable_pdf l_pdf(random_light, rec.p);
-                    // pdf scatter_pdf;
 
-                    // rec.mat_ptr->get_pdf(*scatter_pdf, r, rec);
-                    // mixture_pdf p(&p0, &p1);
-                    // hittable_pdf p = p0;
-                    // cosine_pdf p = p1;
-                    // mixture_pdf p(&p0, rec.mat_ptr->pdf);
-                    ray light_ray = ray(rec.p, l_pdf.generate(), r.time());
-                    ray scattered = ray(rec.p + 0.001 * rec.normal, rec.mat_ptr->generate(r, rec), r.time());
+                    ray scattered = ray(rec.p + world->config.normal_offset * rec.normal, rec.mat_ptr->generate(r, rec), r.time());
                     // float weight;
-                    vec3 _color = vec3(0, 0, 0);
-                    // vec3 _color = vec3(0.0f, 0.0f, 0.0f);
-                    // cosine of incoming ray
-                    float cos_i = fabs(dot(r.direction(), rec.normal));
-                    // pdf of light ray having gone directly towards light
-                    float light_pdf_l = l_pdf.value(light_ray.direction());
                     // pdf of scatter having gone directly towards light
-                    float scatter_pdf_l = rec.mat_ptr->value(r, rec, light_ray.direction());
 
                     // pdf of light ray having been generated from scatter
                     // float light_pdf_s = l_pdf.value(scattered.direction());
                     // pdf of scattered ray having been generated from scatter
-                    // float scatter_pdf_s = rec.mat_ptr->value(r, rec, scattered.direction());
-
-                    float weight_l = power_heuristic(1.0f, light_pdf_l, 1.0f, scatter_pdf_l);
-                    float inv_weight_l = 1.0f - weight_l;
-                    float cos_l = fabs(dot(light_ray.direction(), rec.normal));
+                    float scatter_pdf_s = rec.mat_ptr->value(r, rec, scattered.direction());
 
                     // cosine direction
-                    float cos_s = fabs(dot(scattered.direction(), rec.normal));
+                    // float cos_s = fabs(dot(scattered.direction(), rec.normal)) / scattered.direction().length();
 
                     // MIS weighted contribtuion of
                     // add contribution from next event estimation
 
-                    vec3 light_hit = this->color(light_ray, depth + 1, bounce_count, nullptr, false);
-                    _color += weight_l * attenuation / light_pdf_l * light_hit;
-
                     // flat out skip bounces that would hit the light directly
                     if (!world->config.only_direct_illumination)
                     {
-                        // multiply beta to account for next and future bounces
-                        beta *= inv_weight_l * attenuation / scatter_pdf_l;
-                        (*bounce_count)++;
+                        beta *= attenuation * fabs(cos_i) / scatter_pdf_s;
+                        last_bsdf_pdf = scatter_pdf_s;
                         // reassign r to continue bouncing.
                         r = scattered;
                     }
@@ -310,8 +343,8 @@ public:
                 }
                 else
                 {
-                    _color += beta * emitted;
-                    assert(!is_nan(_color));
+                    sum += beta * hit_emission;
+                    assert(!is_nan(sum));
                     break;
                 }
             }
@@ -328,12 +361,12 @@ public:
                 float u = atan(unit_direction.z() / unit_direction.x());
                 float v = acos(unit_direction.y());
                 // TODO: replace u and v with angle l->r and angle d->u;
-                _color += beta * world->value(u, v, unit_direction);
-                assert(!is_nan(_color));
+                sum += beta * world->value(u, v, unit_direction);
+                assert(!is_nan(sum));
                 break;
             }
         }
-        return _color;
+        return sum;
     }
     int max_bounces;
     World *world;

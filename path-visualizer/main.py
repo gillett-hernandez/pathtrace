@@ -16,7 +16,7 @@ if os.path.exists(config_path):
     with open(config_path, "r") as fd:
         data = json.load(fd)
     default_paths_path = os.path.abspath(
-        os.path.join(".", data["traced_paths_2d_output"])
+        os.path.join(".", data["traced_paths_2d_output_path"])
     )
     default_image_path = os.path.abspath(
         os.path.join(".", data["ppm_output_path"].replace("ppm", "png"))

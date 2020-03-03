@@ -90,6 +90,7 @@ struct Config
     int max_bounces;
     int samples;
     uint16_t threads;
+    float normal_offset;
     Config(){};
 
     Config(json jconfig)
@@ -112,6 +113,7 @@ struct Config
         max_bounces = jconfig.value("max_bounces", 10);
         samples = jconfig.value("samples", 20);
         threads = (uint16_t)jconfig.value("threads", 1);
+        normal_offset = jconfig.value("normal_offset", 0.0001);
 
         long min_camera_rays = samples * film.total_pixels;
 

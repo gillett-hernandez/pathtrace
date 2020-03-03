@@ -42,19 +42,29 @@ bool constant_medium::hit(const ray &r, float t_min, float t_max, hit_record &re
         {
 
             if (debugging)
+            {
                 std::cerr << "\nt0 t1 " << rec1.t << " " << rec2.t << '\n';
+            }
 
             if (rec1.t < t_min)
+            {
                 rec1.t = t_min;
+            }
 
             if (rec2.t > t_max)
+            {
                 rec2.t = t_max;
+            }
 
             if (rec1.t >= rec2.t)
+            {
                 return false;
+            }
 
             if (rec1.t < 0)
+            {
                 rec1.t = 0;
+            }
 
             float distance_inside_boundary = (rec2.t - rec1.t) * r.direction().length();
             float hit_distance = -(1 / density) * log(random_double());
@@ -74,6 +84,7 @@ bool constant_medium::hit(const ray &r, float t_min, float t_max, hit_record &re
 
                 rec.normal = vec3(1, 0, 0); // arbitrary
                 rec.mat_ptr = phase_function;
+                rec.primitive = (hittable *)this;
                 return true;
             }
         }

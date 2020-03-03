@@ -43,7 +43,7 @@ Integrator *integrator_from_config(World *world, Config config)
     }
     case INEEPT:
     {
-        std::cout << "selected and constructed recursive NEE path tracing integrator\n";
+        std::cout << "selected and constructed iterative NEE path tracing integrator\n";
         return new NEEIterative(config.max_bounces, world);
     }
     default:
