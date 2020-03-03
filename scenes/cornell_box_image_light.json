@@ -206,7 +206,7 @@
             "id": "sphere",
             "type": "sphere",
             "material": {
-                "id": "noise"
+                "id": "metal"
             },
             "radius": 67.5
         },

@@ -14,12 +14,13 @@ public:
     virtual vec3 color(ray &r, int depth, long *bounce_count, path *_path, bool skip_light_hit = false) = 0;
     int max_bounces;
     World *world;
+    Config config;
 };
 
 class RecursivePT : public Integrator
 {
 public:
-    RecursivePT(int max_bounces, World *world) : max_bounces(max_bounces), world(world)
+    RecursivePT(int max_bounces, World *world) : max_bounces(max_bounces), world(world), config(world->config)
     {
         assert(this->max_bounces > 0);
         std::cout << "complex constructor called for recursivePT" << std::endl;
@@ -71,6 +72,7 @@ public:
     }
     int max_bounces;
     World *world;
+    Config config;
 };
 
 /* class IterativePT : public Integrator
@@ -131,7 +133,7 @@ public:
 class NEERecursive : public Integrator
 {
 public:
-    NEERecursive(int max_bounces, World *world) : max_bounces(max_bounces), world(world){};
+    NEERecursive(int max_bounces, World *world) : max_bounces(max_bounces), world(world), config(world->config){};
     vec3 color(ray &r, int depth, long *bounce_count, path *_path, bool skip_light_hit = false)
     {
         hit_record rec;
@@ -186,7 +188,7 @@ public:
                 // MIS weighted contribtuion of
                 // add contribution from next event estimation
 
-                if (!world->config.only_direct_illumination)
+                if (!config.only_direct_illumination)
                 {
                     // add contribution from next and future bounces
                     vec3 fac = inv_weight_l * attenuation / scatter_pdf_l;
@@ -218,12 +220,13 @@ public:
     }
     int max_bounces;
     World *world;
+    Config config;
 };
 
 class NEEIterative : public Integrator
 {
 public:
-    NEEIterative(int max_bounces, World *world) : max_bounces(max_bounces), world(world){};
+    NEEIterative(int max_bounces, World *world) : max_bounces(max_bounces), world(world), config(world->config){};
     // iterative is more suited for optimization, and possible gpu execution
     vec3 color(ray &r, int depth, long *bounce_count, path *_path, bool skip_light_hit = false)
     {
@@ -269,7 +272,7 @@ public:
                 }
 
                 vec3 light_contribution = vec3(0, 0, 0);
-                for (int i = 0; i < world->config.light_samples; i++)
+                for (int i = 0; i < config.light_samples; i++)
                 {
                     hittable *random_light = world->get_random_light();
                     float pick_pdf = world->lights.size();
@@ -316,12 +319,12 @@ public:
                     }
                 }
 
-                sum += light_contribution / world->config.light_samples;
+                sum += light_contribution / config.light_samples;
 
                 if (did_scatter)
                 {
 
-                    ray scattered = ray(rec.p + world->config.normal_offset * rec.normal, rec.mat_ptr->generate(r, rec), r.time());
+                    ray scattered = ray(rec.p + config.normal_offset * rec.normal, rec.mat_ptr->generate(r, rec), r.time());
                     // float weight;
                     // pdf of scatter having gone directly towards light
 
@@ -337,7 +340,7 @@ public:
                     // add contribution from next event estimation
 
                     // flat out skip bounces that would hit the light directly
-                    if (!world->config.only_direct_illumination)
+                    if (!config.only_direct_illumination)
                     {
                         beta *= attenuation * fabs(cos_i) / scatter_pdf_s;
                         last_bsdf_pdf = scatter_pdf_s;
@@ -380,6 +383,7 @@ public:
     }
     int max_bounces;
     World *world;
+    Config config;
 };
 
 // class BPT : public Integrator {
