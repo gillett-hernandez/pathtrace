@@ -75,61 +75,6 @@ public:
     Config config;
 };
 
-/* class IterativePT : public Integrator
-// {
-// public:
-//     vec3 color(ray &r,  int depth, long *bounce_count, path *_path)
-//     {
-//         hit_record rec;
-//         vec3 sum = vec3(0, 0, 0);
-//         ray scattered;
-//         vec3 attenuation = vec3(0, 0, 0);
-//         vec3 emitted = vec3(0, 0, 0);
-
-//         vec3 beta = vec3(1.0, 1.0, 1.0);
-//         for (int i = 0; i < max_bounces; i++)
-//         {
-//             if (_path != nullptr)
-//             {
-//                 _path->push_back(rec.p);
-//             }
-//             if (world->hit(r, 0.001, MAXFLOAT, rec))
-//             {
-//                 emitted = rec.mat_ptr->emitted(rec.u, rec.v, rec.p);
-//                 if (rec.mat_ptr->scatter(r, rec, attenuation, scattered))
-//                 {
-//                     (*bounce_count)++;
-//                     sum += beta * emitted;
-//                     beta *= attenuation;
-//                     r = scattered;
-//                 }
-//                 else
-//                 {
-//                     sum += beta * emitted;
-//                     break;
-//                 }
-//             }
-//             else
-//             {
-//                 // world background color here
-//                 // vec3 unit_direction = unit_vector(r.direction());
-//                 // float t = 0.5 * (unit_direction.y() + 1.0);
-//                 // return (1.0 - t) * vec3(1.0, 1.0, 1.0) + t * vec3(0.2, 0.1, 0.7);
-
-//                 // generate world u v and then sample world texture?
-//                 // return vec3(0, 0, 0);
-//                 vec3 unit_direction = unit_vector(r.direction());
-//                 float u = unit_direction.x();
-//                 float v = unit_direction.y();
-//                 // TODO: replace u and v with angle l->r and angle d->u;
-//                 sum += beta * world->value(u, v, unit_direction);
-//                 break;
-//             }
-//         }
-//         return sum;
-//     }
-// }; */
-
 class NEERecursive : public Integrator
 {
 public:
@@ -252,7 +197,7 @@ public:
                 }
                 bool did_scatter = rec.mat_ptr->scatter(r, rec, attenuation);
                 assert(!is_nan(r.time()));
-                float cos_i = dot(-r.direction().normalized(), rec.normal.normalized());
+                float cos_i = fabs(dot(r.direction().normalized(), rec.normal.normalized()));
 
                 hit_emission = rec.mat_ptr->emitted(r, rec, rec.u, rec.v, rec.p);
                 // if hit emission is greater than some small value
@@ -287,7 +232,7 @@ public:
                     // cosine of incoming ray
 
                     ray light_ray = ray(rec.p, l_pdf.generate(), r.time());
-                    float cos_l = fabs(dot(light_ray.direction(), rec.normal) / light_ray.direction().length());
+                    float cos_l = dot(light_ray.direction().normalized(), rec.normal.normalized());
 
                     // vec3 sum = vec3(0.0f, 0.0f, 0.0f);
                     // pdf of light ray having gone directly towards light
@@ -299,12 +244,12 @@ public:
                     hit_record light_rec;
                     bool did_light_hit = world->hit(light_ray, 0.001, MAXFLOAT, light_rec);
                     (*bounce_count)++;
-                    if (did_light_hit)
+                    if (did_light_hit && attenuation.length() > 0.0001)
                     {
                         if (true || light_rec.primitive == random_light)
                         {
                             vec3 light_emission = light_rec.mat_ptr->emitted(light_ray, light_rec, light_rec.u, light_rec.v, light_rec.p);
-                            float dropoff = fmax(cos_i, 0.0);
+                            float dropoff = fmax(cos_l, 0.0);
                             vec3 contribution = attenuation * beta * weight_l / light_pdf_l * dropoff * light_emission / pick_pdf;
                             if (is_nan(contribution))
                             {

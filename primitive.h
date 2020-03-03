@@ -178,6 +178,7 @@ public:
     }
     material *mp;
     bool normal;
+    bool two_sided = true;
     float x0, z0, x1, z1, y;
     plane_enum type;
 };
@@ -208,7 +209,17 @@ bool rect::hit(const ray &r, float t0, float t1, hit_record &rec) const
     rec.mat_ptr = mp;
 
     rec.p = r.point_at_parameter(t);
+
     rec.normal = shuffle(vec3(0, 2 * normal - 1, 0), type);
+    if (two_sided)
+    {
+        // rec.normal *= 2 * (dot(r.direction(), rec.normal) < 0) - 1;
+        if (dot(r.direction(), rec.normal) > 0)
+        {
+            // aligned, not good, so negate normal
+            rec.normal = -rec.normal;
+        }
+    }
     rec.primitive = (hittable *)this;
     return true;
 }

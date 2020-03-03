@@ -38,8 +38,15 @@ public:
     }
     bool scatter(const ray &r_in, const hit_record &rec, vec3 &attenuation) const
     {
-
-        attenuation = albedo->value(rec.u, rec.v, rec.p) / M_PI;
+        // unaligned is what we want
+        if (dot(r_in.direction(), rec.normal) < 0)
+        {
+            attenuation = albedo->value(rec.u, rec.v, rec.p) / M_PI;
+        }
+        else
+        {
+            attenuation = vec3(0, 0, 0);
+        }
 
         // scattered = ray(rec.p, target - rec.p);
         return true;
