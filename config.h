@@ -89,6 +89,7 @@ struct Config
     IntegratorType integrator_type;
     int max_bounces;
     int samples;
+    int light_samples;
     uint16_t threads;
     float normal_offset;
     Config(){};
@@ -114,6 +115,7 @@ struct Config
         samples = jconfig.value("samples", 20);
         threads = (uint16_t)jconfig.value("threads", 1);
         normal_offset = jconfig.value("normal_offset", 0.0001);
+        light_samples = jconfig.value("light_samples", 1);
 
         long min_camera_rays = samples * film.total_pixels;
 

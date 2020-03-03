@@ -239,7 +239,8 @@ public:
         {
             // do russian roulette path termination here? by checking beta?
 
-            assert(!is_nan(sum));
+            ASSERT(!is_nan(sum), "sum had nan components");
+            (*bounce_count)++;
             if (world->hit(r, 0.001, MAXFLOAT, rec))
             {
                 if (_path != nullptr)
@@ -248,28 +249,7 @@ public:
                 }
                 bool did_scatter = rec.mat_ptr->scatter(r, rec, attenuation);
                 assert(!is_nan(r.time()));
-                hittable *random_light = world->get_random_light();
-                float pick_pdf = world->lights.size();
-                hittable_pdf l_pdf(random_light, rec.p);
-                // pdf scatter_pdf;
-
-                // rec.mat_ptr->get_pdf(*scatter_pdf, r, rec);
-                // mixture_pdf p(&p0, &p1);
-                // hittable_pdf p = p0;
-                // cosine_pdf p = p1;
-                // mixture_pdf p(&p0, rec.mat_ptr->pdf);
-                // cosine of incoming ray
                 float cos_i = dot(-r.direction().normalized(), rec.normal.normalized());
-
-                ray light_ray = ray(rec.p, l_pdf.generate(), r.time());
-                float cos_l = fabs(dot(light_ray.direction(), rec.normal) / light_ray.direction().length());
-
-                // vec3 sum = vec3(0.0f, 0.0f, 0.0f);
-                // pdf of light ray having gone directly towards light
-                float light_pdf_l = l_pdf.value(light_ray.direction());
-                float scatter_pdf_l = rec.mat_ptr->value(r, rec, light_ray.direction());
-                float weight_l = power_heuristic(1.0f, light_pdf_l, 1.0f, scatter_pdf_l);
-                float inv_weight_l = 1.0f - weight_l;
 
                 hit_emission = rec.mat_ptr->emitted(r, rec, rec.u, rec.v, rec.p);
                 // if hit emission is greater than some small value
@@ -284,34 +264,62 @@ public:
                         hittable_pdf this_pdf(rec.primitive, r.origin());
                         float weight = power_heuristic(1.0, last_bsdf_pdf, 1.0, this_pdf.value(rec.p));
                         sum += beta * hit_emission * weight;
-                        assert(!is_nan(sum));
+                        ASSERT(!is_nan(sum), "sum had nan components");
                     }
                 }
 
-                hit_record light_rec;
-                bool did_light_hit = world->hit(light_ray, 0.001, MAXFLOAT, light_rec);
-                if (did_light_hit)
+                vec3 light_contribution = vec3(0, 0, 0);
+                for (int i = 0; i < world->config.light_samples; i++)
                 {
-                    if (true || light_rec.primitive == random_light)
+                    hittable *random_light = world->get_random_light();
+                    float pick_pdf = world->lights.size();
+                    hittable_pdf l_pdf(random_light, rec.p);
+                    // pdf scatter_pdf;
+
+                    // rec.mat_ptr->get_pdf(*scatter_pdf, r, rec);
+                    // mixture_pdf p(&p0, &p1);
+                    // hittable_pdf p = p0;
+                    // cosine_pdf p = p1;
+                    // mixture_pdf p(&p0, rec.mat_ptr->pdf);
+                    // cosine of incoming ray
+
+                    ray light_ray = ray(rec.p, l_pdf.generate(), r.time());
+                    float cos_l = fabs(dot(light_ray.direction(), rec.normal) / light_ray.direction().length());
+
+                    // vec3 sum = vec3(0.0f, 0.0f, 0.0f);
+                    // pdf of light ray having gone directly towards light
+                    float light_pdf_l = l_pdf.value(light_ray.direction());
+                    float scatter_pdf_l = rec.mat_ptr->value(r, rec, light_ray.direction());
+                    float weight_l = power_heuristic(1.0f, light_pdf_l, 1.0f, scatter_pdf_l);
+                    float inv_weight_l = 1.0f - weight_l;
+
+                    hit_record light_rec;
+                    bool did_light_hit = world->hit(light_ray, 0.001, MAXFLOAT, light_rec);
+                    (*bounce_count)++;
+                    if (did_light_hit)
                     {
-                        vec3 light_emission = light_rec.mat_ptr->emitted(light_ray, light_rec, light_rec.u, light_rec.v, light_rec.p);
-                        float dropoff = fmax(cos_i, 0.0);
-                        vec3 contribution = attenuation * beta * weight_l / light_pdf_l * dropoff * light_emission / pick_pdf;
-                        if (is_nan(contribution))
+                        if (true || light_rec.primitive == random_light)
                         {
-                            // likely nan because what was hit by `r` was the same object as what was hit by light_ray
+                            vec3 light_emission = light_rec.mat_ptr->emitted(light_ray, light_rec, light_rec.u, light_rec.v, light_rec.p);
+                            float dropoff = fmax(cos_i, 0.0);
+                            vec3 contribution = attenuation * beta * weight_l / light_pdf_l * dropoff * light_emission / pick_pdf;
+                            if (is_nan(contribution))
+                            {
+                                // likely nan because what was hit by `r` was the same object as what was hit by light_ray
+                            }
+                            else
+                            {
+                                light_contribution += contribution;
+                            }
+                            ASSERT(!is_nan(sum), "sum had nan components");
                         }
-                        else
-                        {
-                            sum += contribution;
-                        }
-                        assert(!is_nan(sum));
                     }
                 }
+
+                sum += light_contribution / world->config.light_samples;
 
                 if (did_scatter)
                 {
-                    (*bounce_count)++;
 
                     ray scattered = ray(rec.p + world->config.normal_offset * rec.normal, rec.mat_ptr->generate(r, rec), r.time());
                     // float weight;
@@ -344,7 +352,8 @@ public:
                 else
                 {
                     sum += beta * hit_emission;
-                    assert(!is_nan(sum));
+                    ASSERT(!is_nan(sum), "sum had nan components");
+
                     break;
                 }
             }
@@ -362,7 +371,8 @@ public:
                 float v = acos(unit_direction.y());
                 // TODO: replace u and v with angle l->r and angle d->u;
                 sum += beta * world->value(u, v, unit_direction);
-                assert(!is_nan(sum));
+                ASSERT(!is_nan(sum), "sum had nan components");
+
                 break;
             }
         }

@@ -18,7 +18,8 @@
     "block_width": 64,
     "block_height": 64,
     "normal_offset": 0.00001,
-    "max_bounces": 4,
-    "samples": 10,
-    "threads": 1
+    "max_bounces": 10,
+    "samples": 20,
+    "light_samples": 4,
+    "threads": 2
 }
