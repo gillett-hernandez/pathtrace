@@ -118,14 +118,13 @@ public:
     {
         this->output = std::make_shared<std::ofstream>(std::ofstream("trash.txt"));
     };
-    Renderer(Integrator *integrator, camera cam, World *world)
+    Renderer(Integrator *integrator, camera cam, Config config)
     {
         std::cout << "complex constructor called" << std::endl;
-        this->config = world->config;
+        this->config = config;
         this->film = this->config.film;
         this->cam = cam;
         this->integrator = integrator;
-        this->world = world;
         this->output = std::make_shared<std::ofstream>(std::ofstream(config.ppm_output_path));
         ;
 
@@ -145,7 +144,6 @@ public:
     bool completed;
     Integrator *integrator;
     camera cam;
-    World *world;
     Config config;
     s_film film;
     std::shared_ptr<std::ofstream> output;
@@ -154,7 +152,7 @@ public:
 class Progressive : public Renderer
 {
 public:
-    Progressive(Integrator *integrator, camera cam, World *world) : Renderer{integrator, cam, world}, queue()
+    Progressive(Integrator *integrator, camera cam, Config config) : Renderer{integrator, cam, config}, queue()
     {
         trace_probability = config.trace_probability;
         N_THREADS = config.threads;
@@ -277,7 +275,7 @@ public:
                     {
                         _path = nullptr;
                     }
-                    col += de_nan(integrator->color(r, world, 0, count, _path));
+                    col += de_nan(integrator->color(r, 0, count, _path));
                     if (_path != nullptr)
                     {
                         // std::cout << "traced _path, size is " << _path->size() << std::endl;
@@ -346,7 +344,7 @@ public:
 class Naive : public Renderer
 {
 public:
-    Naive(Integrator *integrator, camera cam, World *world) : Renderer{integrator, cam, world}, queue()
+    Naive(Integrator *integrator, camera cam, Config config) : Renderer{integrator, cam, config}, queue()
     {
         trace_probability = config.trace_probability;
         N_THREADS = config.threads;
@@ -474,7 +472,7 @@ public:
                     {
                         _path = nullptr;
                     }
-                    col += de_nan(integrator->color(r, world, 0, count, _path));
+                    col += de_nan(integrator->color(r, 0, count, _path));
                     if (_path != nullptr)
                     {
                         // std::cout << "traced _path, size is " << _path->size() << std::endl;
@@ -526,6 +524,7 @@ public:
         float max_luminance, avg_luminance, total_luminance;
         calculate_luminance(framebuffer, film.width, film.height, config.samples, film.width * film.height, max_luminance, total_luminance, avg_luminance);
         std::cout << "avg lum " << avg_luminance << std::endl;
+        std::cout << "total lum " << total_luminance << std::endl;
         std::cout << "max lum " << max_luminance << std::endl;
 
         output_to_file(output, framebuffer, film.width, film.height, config.samples, max_luminance, film.exposure, film.gamma);
@@ -663,7 +662,7 @@ public:
 //                     {
 //                         _path = nullptr;
 //                     }
-//                     col += de_nan(integrator->color(r, world, 0, count, _path));
+//                     col += de_nan(integrator->color(r, 0, count, _path));
 //                     if (_path != nullptr)
 //                     {
 //                         // std::cout << "traced _path, size is " << _path->size() << std::endl;

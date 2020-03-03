@@ -2,53 +2,81 @@
 #include "hittable.h"
 #include "texture.h"
 #include "vec3.h"
+#include "pdf.h"
 
 class material
 {
 public:
     virtual bool scatter(
-        const ray &r_in, const hit_record &rec, vec3 &attenuation,
-        ray &scattered) const = 0;
+        const ray &r_in, const hit_record &rec, vec3 &attenuation) const
+    {
+        // mauve
+        std::cout << "WARNING! material::scatter being called" << std::endl;
+        attenuation = vec3(0.8, 0.0, 0.8);
+        return true;
+    }
+    virtual vec3 generate(const ray &r, const hit_record &rec) = 0;
+    virtual float value(const ray &r, const hit_record &rec, const vec3 &direction) = 0;
     virtual vec3 emitted(const ray &r_in, const hit_record &rec, float u, float v, const vec3 &p) const
     {
         return vec3(0, 0, 0);
     }
+    std::string name = "error";
 };
 
 class lambertian : public material
 {
 public:
-    lambertian(texture *a) : albedo(a) {}
-    lambertian(vec3 v)
+    lambertian()
+    {
+        // bsdf_pdf = new cosine_pdf();
+    }
+    lambertian(texture *a, std::string name = "lambertian") : albedo(a), name(name) {}
+    lambertian(vec3 v, std::string name = "lambertian") : name(name)
     {
         albedo = new constant_texture(v);
     }
-    virtual bool scatter(const ray &r_in, const hit_record &rec,
-                         vec3 &attenuation, ray &scattered) const
+    bool scatter(const ray &r_in, const hit_record &rec, vec3 &attenuation) const
     {
-        float alpha = albedo->alpha(rec.u, rec.v, rec.p);
-        vec3 target;
-        if (alpha == 0.0 || random_double() > alpha)
+        // unaligned is what we want
+        if (dot(r_in.direction(), rec.normal) < 0)
+        {
+            attenuation = albedo->value(rec.u, rec.v, rec.p) / M_PI;
+        }
+        else
+        {
+            attenuation = vec3(0, 0, 0);
+        }
+
+        // scattered = ray(rec.p, target - rec.p);
+        return true;
+    }
+    vec3 generate(const ray &r_in, const hit_record &rec)
+    {
+        /*float alpha = albedo->alpha(rec.u, rec.v, rec.p);
+                if (alpha == 0.0 || random_double() > alpha)
         {
             // passthrough
             target = rec.p + r_in.direction();
             attenuation = vec3(1.0, 1.0, 1.0);
         }
         else
-        {
-            target = rec.p + rec.normal + random_in_unit_sphere();
-            attenuation = albedo->value(rec.u, rec.v, rec.p);
-        }
-        scattered = ray(rec.p, target - rec.p);
-        return true;
+        {*/
+        return cosine_pdf(rec.normal).generate();
+    };
+    float value(const ray &r, const hit_record &rec, const vec3 &direction)
+    {
+        return cosine_pdf(rec.normal).value(direction);
     }
+
     texture *albedo;
+    std::string name;
 };
 
 class metal : public material
 {
 public:
-    metal(const vec3 &a, float f) : albedo(a)
+    metal(const vec3 &a, float f, std::string name = "metal") : albedo(a), name(name)
     {
         if (f < 1)
         {
@@ -60,28 +88,46 @@ public:
         }
     }
     virtual bool scatter(const ray &r_in, const hit_record &rec,
-                         vec3 &attenuation, ray &scattered) const
+                         vec3 &attenuation) const
     {
-        vec3 reflected = reflect(unit_vector(r_in.direction()), rec.normal);
-        scattered = ray(rec.p, reflected + fuzz * random_in_unit_sphere());
-        attenuation = albedo;
-        return (dot(scattered.direction(), rec.normal) > 0);
+        // vec3 reflected = reflect(unit_vector(r_in.direction()), rec.normal);
+        // scattered = ray(rec.p, reflected + fuzz * random_in_unit_sphere());
+        attenuation = albedo / M_PI;
+        // return (dot(scattered.direction(), rec.normal) > 0);
+        return true;
+    }
+    vec3 generate(const ray &r_in, const hit_record &rec)
+    {
+        // for now use cosine.
+        // in the future, program a microfaced brdf
+        return cosine_pdf(rec.normal).generate();
+    };
+    float value(const ray &r, const hit_record &rec, const vec3 &direction)
+    {
+        return cosine_pdf(rec.normal).value(direction);
     }
     vec3 albedo;
     float fuzz;
+    std::string name;
 };
 
 class dielectric : public material
 {
 public:
-    dielectric(float ri) : ref_idx(ri) {}
+    dielectric(float ri, std::string name = "dielectric") : ref_idx(ri), name(name) {}
     virtual bool scatter(const ray &r_in, const hit_record &rec,
-                         vec3 &attenuation, ray &scattered) const
+                         vec3 &attenuation) const
+    {
+        attenuation = vec3(1.0, 1.0, 1.0); // change this to something else to have a tinted glass material
+
+        return true;
+    }
+    vec3 generate(const ray &r_in, const hit_record &rec)
     {
         vec3 outward_normal;
         vec3 reflected = reflect(r_in.direction(), rec.normal);
         float ni_over_nt;
-        attenuation = vec3(1.0, 1.0, 1.0);
+        vec3 scattered_direction;
         vec3 refracted;
 
         float reflect_prob;
@@ -111,48 +157,59 @@ public:
 
         if (random_double() < reflect_prob)
         {
-            scattered = ray(rec.p, reflected);
+            scattered_direction = reflected;
         }
         else
         {
-            scattered = ray(rec.p, refracted);
+            scattered_direction = refracted;
         }
-
-        return true;
+        return scattered_direction;
+    };
+    float value(const ray &r, const hit_record &rec, const vec3 &direction)
+    {
+        return void_pdf().value(direction);
     }
 
     float ref_idx;
+    std::string name;
 };
 
 class diffuse_light : public material
 {
 public:
-    diffuse_light(texture *a, float power = 1.0, bool two_sided = true) : emit(a), power(power), two_sided(two_sided) {}
+    diffuse_light(texture *a, float power = 1.0, bool two_sided = true) : emit(a), power(power), two_sided(two_sided)
+    {
+    }
     diffuse_light(vec3 &a, float power = 1.0, bool two_sided = true) : power(power), two_sided(two_sided)
     {
         emit = new constant_texture(a);
     }
     virtual bool scatter(const ray &r_in, const hit_record &rec,
-                         vec3 &attenuation, ray &scattered) const
+                         vec3 &attenuation) const
     {
-        float alpha = emit->alpha(rec.u, rec.v, rec.p);
-        bool aligned = dot(rec.normal, r_in.direction()) > 0;
-        // this if condition handles alpha and one-sided visibility
-        if (alpha == 0.0 || random_double() > alpha || (aligned && !two_sided))
-        {
-            // passthrough ray,
-            // because the random was above the alpha threshold,
-            // we were at 0 alpha,
-            // or the hit occurred from behind the light
-
-            // set ray passthrough to right after the ray intersection point and in original ray direction.
-            scattered = ray(rec.p + r_in.direction() * 0.01, r_in.direction());
-            // set attenuation to 1 (meaning no change)
-            attenuation = vec3(1.0, 1.0, 1.0); //emit->value(rec.u, rec.v, rec.p);
-            return true;
-        }
         return false;
     }
+    // virtual vec3 emitted(float u, float v, const vec3 &p) const
+    //                      vec3 &attenuation, ray &scattered) const
+    // {
+    // float alpha = emit->alpha(rec.u, rec.v, rec.p);
+    // bool aligned = dot(rec.normal, r_in.direction()) > 0;
+    // // this if condition handles alpha and one-sided visibility
+    // if (alpha == 0.0 || random_double() > alpha || (aligned && !two_sided))
+    // {
+    //     // passthrough ray,
+    //     // because the random was above the alpha threshold,
+    //     // we were at 0 alpha,
+    //     // or the hit occurred from behind the light
+
+    //     // set ray passthrough to right after the ray intersection point and in original ray direction.
+    //     scattered = ray(rec.p + r_in.direction() * 0.01, r_in.direction());
+    //     // set attenuation to 1 (meaning no change)
+    //     attenuation = vec3(1.0, 1.0, 1.0); //emit->value(rec.u, rec.v, rec.p);
+    //     return true;
+    // }
+    // return false;
+    // }
     virtual vec3 emitted(const ray &r_in, const hit_record &rec, float u, float v, const vec3 &p) const
     {
         // this if condition handles one-sidedness
@@ -173,7 +230,48 @@ public:
             return vec3(0, 0, 0);
         }
     }
+    vec3 generate(const ray &r_in, const hit_record &rec)
+    {
+        return void_pdf().generate();
+    };
+    float value(const ray &r, const hit_record &rec, const vec3 &direction)
+    {
+        return void_pdf().value(direction);
+    }
     texture *emit;
+    std::string name;
     float power;
     bool two_sided;
+};
+
+class isotropic : public material
+{
+public:
+    isotropic(texture *a, vec3 emission = vec3(0, 0, 0), std::string name = "isotropic") : albedo(a), emission(emission), name(name) {}
+    isotropic(vec3 a, vec3 emission = vec3(0, 0, 0), std::string name = "isotropic") : albedo(new constant_texture(a)), emission(emission), name(name) {}
+    virtual bool scatter(
+        const ray &r_in,
+        const hit_record &rec,
+        vec3 &attenuation) const
+    {
+
+        // scattered = ray(rec.p, random_in_unit_sphere());
+        attenuation = albedo->value(rec.u, rec.v, rec.p);
+        return true;
+    }
+    virtual vec3 emitted(float u, float v, const vec3 &p) const
+    {
+        return emission;
+    }
+    vec3 generate(const ray &r_in, const hit_record &rec)
+    {
+        return random_pdf().generate();
+    };
+    float value(const ray &r, const hit_record &rec, const vec3 &direction)
+    {
+        return random_pdf().value(direction);
+    }
+    texture *albedo;
+    vec3 emission;
+    std::string name;
 };

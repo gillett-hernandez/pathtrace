@@ -34,6 +34,28 @@ public:
 
     virtual bool hit(const ray &r, float tmin, float tmax, hit_record &rec) const;
     virtual bool bounding_box(float t0, float t1, aabb &box) const;
+    virtual float pdf_value(const vec3 &o, const vec3 &v) const
+    {
+        hit_record rec;
+        if (this->hit(ray(o, v), 0.001, FLT_MAX, rec))
+        {
+            float cos_theta_max = sqrt(1 - radius * radius / (center - o).squared_length());
+            float solid_angle = 2 * M_PI * (1 - cos_theta_max);
+            return 1 / solid_angle;
+        }
+        else
+        {
+            return 0;
+        }
+    }
+    virtual vec3 random(const vec3 &o) const
+    {
+        vec3 direction = center - o;
+        float distance_squared = direction.squared_length();
+        onb uvw;
+        uvw.build_from_w(direction);
+        return uvw.local(random_to_sphere(radius, distance_squared));
+    }
     vec3 center;
     float radius;
     material *mat_ptr;
@@ -54,8 +76,8 @@ bool sphere::hit(const ray &r, float t_min, float t_max, hit_record &rec) const
             rec.t = temp;
             rec.p = r.point_at_parameter(rec.t);
             rec.normal = (rec.p - center) / radius;
-            ;
             rec.mat_ptr = mat_ptr;
+            rec.primitive = (hittable *)this;
             return true;
         }
         temp = (-b + sqrt(discriminant)) / a;
@@ -65,6 +87,7 @@ bool sphere::hit(const ray &r, float t_min, float t_max, hit_record &rec) const
             rec.p = r.point_at_parameter(rec.t);
             rec.normal = (rec.p - center) / radius;
             rec.mat_ptr = mat_ptr;
+            rec.primitive = (hittable *)this;
             return true;
         }
     }
@@ -96,8 +119,6 @@ inline vec3 shuffle(vec3 v, plane_enum style)
     }
     }
 }
-
-
 
 class rect : public hittable
 {
@@ -131,8 +152,33 @@ public:
         box = aabb(shuffle(a, type), shuffle(b, type));
         return true;
     }
+
+    virtual float pdf_value(const vec3 &o, const vec3 &v) const
+    {
+        hit_record rec;
+        if (this->hit(ray(o, v), 0.001, FLT_MAX, rec))
+        {
+            float area = (x1 - x0) * (z1 - z0);
+            float vlen = v.length();
+            float distance_squared = powf(rec.t * vlen, 2.0);
+            float cosine = fabs(dot(v, rec.normal) / vlen);
+            return distance_squared / (cosine * area);
+        }
+        else
+        {
+            return 0;
+        }
+    }
+    virtual vec3 random(const vec3 &o) const
+    {
+        vec3 random_point = shuffle(vec3(x0 + random_double() * (x1 - x0), y,
+                                         z0 + random_double() * (z1 - z0)),
+                                    type);
+        return random_point - o;
+    }
     material *mp;
     bool normal;
+    bool two_sided = true;
     float x0, z0, x1, z1, y;
     plane_enum type;
 };
@@ -163,7 +209,18 @@ bool rect::hit(const ray &r, float t0, float t1, hit_record &rec) const
     rec.mat_ptr = mp;
 
     rec.p = r.point_at_parameter(t);
+
     rec.normal = shuffle(vec3(0, 2 * normal - 1, 0), type);
+    if (two_sided)
+    {
+        // rec.normal *= 2 * (dot(r.direction(), rec.normal) < 0) - 1;
+        if (dot(r.direction(), rec.normal) > 0)
+        {
+            // aligned, not good, so negate normal
+            rec.normal = -rec.normal;
+        }
+    }
+    rec.primitive = (hittable *)this;
     return true;
 }
 
@@ -245,6 +302,7 @@ public:
         {
             rec.p = transform * rec.p;
             rec.normal = transform.apply_normal(rec.normal);
+            rec.primitive = (hittable *)this;
             return true;
         }
         else
@@ -257,6 +315,30 @@ public:
     {
         box = bbox;
         return hasbbox;
+    }
+    virtual float pdf_value(const vec3 &o, const vec3 &v) const
+    {
+        // hit_record rec;
+        // if (this->hit(ray(o, v), 0.001, FLT_MAX, rec))
+        // {
+        //     float area = (x1 - x0) * (z1 - z0);
+        //     float vlen = v.length();
+        //     float distance_squared = powf(rec.t * vlen, 2.0);
+        //     float cosine = fabs(dot(v, rec.normal) / vlen);
+        //     return distance_squared / (cosine * area);
+        // }
+        // else
+        // {
+        //     return 0;
+        // }
+
+        // inverse transform to local space
+        return ptr->pdf_value(transform.inverse() * o, transform.inverse().apply_linear(v));
+    }
+    virtual vec3 random(const vec3 &o) const
+    {
+        // inverse transform
+        return transform.apply_linear(ptr->random(transform.inverse() * o));
     }
 
     transform3 transform;

@@ -5,6 +5,7 @@
 #include "helpers.h"
 #include "hittable_list.h"
 #include "material.h"
+#include "pdf.h"
 #include "primitive.h"
 #include "random.h"
 #include "scene_parser.h"
@@ -26,44 +27,53 @@ using json = nlohmann::json;
 #include <mutex>
 #include <thread>
 
-Integrator *integrator_from_config(Config config)
+Integrator *integrator_from_config(World *world, Config config)
 {
     switch (config.integrator_type)
     {
     case RPT:
     {
         std::cout << "selected and constructed RecursivePT integrator" << std::endl;
-        return new RecursivePT(config.max_bounces);
+        return new RecursivePT(config.max_bounces, world);
     }
-
+    case RNEEPT:
+    {
+        std::cout << "selected and constructed recursive NEE path tracing integrator\n";
+        return new NEERecursive(config.max_bounces, world);
+    }
+    case INEEPT:
+    {
+        std::cout << "selected and constructed iterative NEE path tracing integrator\n";
+        return new NEEIterative(config.max_bounces, world);
+    }
     default:
     {
         std::cout << "WARNING! due to lack of option selected, constructed RecursivePT integrator" << std::endl;
-        return new RecursivePT(config.max_bounces);
+        return new RecursivePT(config.max_bounces, world);
     };
     };
 }
 
 Renderer *renderer_from_config(World *world, camera cam, Config config)
 {
-    Integrator *integrator = integrator_from_config(config);
+    Integrator *integrator = integrator_from_config(world, config);
     switch (config.render_type)
     {
     case PROGRESSIVE:
     {
         std::cout << "selected and constructed Progressive renderer" << std::endl;
-        return new Progressive(integrator, cam, world);
+        return new Progressive(integrator, cam, config);
     }
     case NAIVE:
     {
         std::cout << "selected and constructed Naive renderer" << std::endl;
-        return new Naive(integrator, cam, world);
+        return new Naive(integrator, cam, config);
     }
 
     default:
     {
         std::cout << "WARNING! due to lack of option selected, constructed Progressive renderer" << std::endl;
-        return new Progressive(integrator, cam, world);
+        return new Progressive(integrator, cam, config);
     };
     };
 }
@@ -146,8 +156,6 @@ int main(int argc, char *argv[])
         using namespace std::chrono_literals;
         std::this_thread::sleep_for(0.5s);
     }
-
-    std::cout << '\n';
 
     std::cout << " done\n";
 

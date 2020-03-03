@@ -12,6 +12,11 @@ public:
     virtual bool hit(const ray &r, float tmin, float tmax, hit_record &rec) const;
     virtual bool bounding_box(float t0, float t1, aabb &box) const;
 
+    void find_lights(std::vector<hittable *> *lights)
+    {
+        // lights->push_back
+    }
+
     hittable *left;
     hittable *right;
     aabb box;

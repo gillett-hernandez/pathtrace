@@ -1,7 +1,7 @@
 {
     "camera": {
         "look_from": [
-            278.0,
+            -100.0,
             400.0,
             -750.0
         ],
@@ -16,9 +16,9 @@
     },
     "world": {
         "color": [
-            0.001,
-            0.001,
-            0.001
+            0.0,
+            0.0,
+            0.0
         ],
         "texture2": "checker_texture"
     },
@@ -143,6 +143,20 @@
             }
         },
         {
+            "id": "glass",
+            "type": "dielectric",
+            "data": {
+                "ior": 1.5
+            }
+        },
+        {
+            "id": "metal",
+            "type": "metal",
+            "data": {
+                "roughness": 0.5
+            }
+        },
+        {
             "id": "checker",
             "type": "lambertian",
             "data": {
@@ -153,14 +167,14 @@
             "id": "light",
             "type": "diffuse_light",
             "data": {
-                "color2": [
+                "color": [
                     1,
                     1,
                     1
                 ],
-                "texture": "light_texture",
+                "texture2": "light_texture",
                 "power": 1,
-                "two_sided": false
+                "two_sided": true
             }
         }
     ],
@@ -192,7 +206,7 @@
             "id": "sphere",
             "type": "sphere",
             "material": {
-                "id": "noise"
+                "id": "metal"
             },
             "radius": 67.5
         },
@@ -300,6 +314,11 @@
                     0,
                     277.5,
                     277.5
+                ],
+                "rotate": [
+                    0.0,
+                    0.0,
+                    0.0
                 ]
             }
         },

@@ -85,10 +85,14 @@ struct Config
     int block_height;
     float trace_probability;
     RenderType render_type;
+    bool only_direct_illumination;
     IntegratorType integrator_type;
     int max_bounces;
     int samples;
+    int light_samples;
     uint16_t threads;
+    float normal_offset;
+    bool russian_roulette;
     Config(){};
 
     Config(json jconfig)
@@ -102,6 +106,7 @@ struct Config
         scene_path = jconfig.value("scene", "scenes/scene.json");
         should_trace_paths = jconfig.value("should_trace_paths", false);
         avg_number_of_paths = jconfig.value("avg_number_of_paths", 100.0f);
+        only_direct_illumination = jconfig.value("only_direct_illumination", false);
         block_width = jconfig.value("block_width", 64);
         block_height = jconfig.value("block_height", 64);
 
@@ -110,6 +115,9 @@ struct Config
         max_bounces = jconfig.value("max_bounces", 10);
         samples = jconfig.value("samples", 20);
         threads = (uint16_t)jconfig.value("threads", 1);
+        normal_offset = jconfig.value("normal_offset", 0.0001);
+        light_samples = jconfig.value("light_samples", 1);
+        russian_roulette = jconfig.value("russian_roulette", true);
 
         long min_camera_rays = samples * film.total_pixels;
 

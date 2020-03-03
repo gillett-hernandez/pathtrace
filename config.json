@@ -2,7 +2,7 @@
     "film": {
         "width": 600,
         "height": 600,
-        "exposure": -10.0,
+        "exposure": 0.0,
         "gamma": 2.2
     },
     "ppm_output_path": "output/render.ppm",
@@ -11,12 +11,16 @@
     "traced_paths_2d_output_path": "output/out_2d.txt",
     "scene": "scenes/cornell_box_image_light.json",
     "render_type": "progressive",
-    "integrator_type": "recursive path tracing",
+    "integrator_type": "iterative nee path tracing",
     "should_trace_paths": true,
+    "only_direct_illumination": false,
     "avg_number_of_paths": 100,
     "block_width": 64,
     "block_height": 64,
-    "max_bounces": 4,
+    "normal_offset": 0.00001,
+    "max_bounces": 10,
     "samples": 20,
+    "light_samples": 2,
+    "russian_roulette": true,
     "threads": 2
 }

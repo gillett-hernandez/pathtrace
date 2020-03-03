@@ -10,6 +10,7 @@ public:
     {
         A = a;
         B = b;
+        assert(ti == ti);
         _time = ti;
     }
     inline vec3 origin() const { return A; }
