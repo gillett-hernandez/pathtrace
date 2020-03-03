@@ -307,17 +307,11 @@ public:
             }
             else
             {
-                // world background color here
-                // vec3 unit_direction = unit_vector(r.direction());
-                // float t = 0.5 * (unit_direction.y() + 1.0);
-                // return (1.0 - t) * vec3(1.0, 1.0, 1.0) + t * vec3(0.2, 0.1, 0.7);
-
-                // generate world u v and then sample world texture?
-                // return vec3(0, 0, 0);
                 vec3 unit_direction = unit_vector(r.direction());
-                float u = atan(unit_direction.z() / unit_direction.x());
-                float v = acos(unit_direction.y());
-                // TODO: replace u and v with angle l->r and angle d->u;
+                // get phi and theta values for that direction, then convert to UV values for an environment map.
+                float u = (M_PI + atan2(unit_direction.y(), unit_direction.x())) / TAU;
+                float v = acos(unit_direction.z()) / M_PI;
+
                 sum += beta * world->value(u, v, unit_direction);
                 ASSERT(!is_nan(sum), "sum had nan components");
 
