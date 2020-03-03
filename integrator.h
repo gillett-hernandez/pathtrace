@@ -324,7 +324,7 @@ public:
                 float v = acos(unit_direction.z()) / M_PI;
 
                 sum += beta * world->value(u, v, unit_direction);
-                ASSERT(!is_nan(sum), "sum had nan components");
+                ASSERT(!is_nan(sum), "sum had nan components, beta was " << beta << ", sum was " << sum << ", and world value was " << world->value(u, v, unit_direction));
 
                 break;
             }
