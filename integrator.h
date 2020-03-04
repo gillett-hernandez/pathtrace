@@ -265,6 +265,7 @@ public:
                 }
 
                 sum += light_contribution / config.light_samples;
+                ASSERT(!is_nan(sum), "sum had nan components: " << sum << ", and light contrib: " << light_contribution);
 
                 if (did_scatter)
                 {
@@ -285,7 +286,7 @@ public:
                     // add contribution from next event estimation
 
                     float p = std::max(beta.x(), std::max(beta.y(), beta.z()));
-                    if (config.russian_roulette && p <= 1)
+                    if (config.russian_roulette && p <= 1 && 0.001 < p)
                     {
                         if (random_double() > p)
                         {

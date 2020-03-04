@@ -1,7 +1,7 @@
 {
     "film": {
-        "width": 600,
-        "height": 600,
+        "width": 601,
+        "height": 601,
         "exposure": 0.0,
         "gamma": 2.2
     },
@@ -15,8 +15,8 @@
     "should_trace_paths": true,
     "only_direct_illumination": false,
     "avg_number_of_paths": 100,
-    "block_width": 64,
-    "block_height": 64,
+    "block_width": 32,
+    "block_height": 32,
     "normal_offset": 0.00001,
     "max_bounces": 10,
     "samples": 20,
