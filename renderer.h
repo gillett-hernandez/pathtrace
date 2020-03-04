@@ -677,11 +677,12 @@ public:
                             }
                         }
                         // framebuffer accesses need to be guarded with a lock so that multiple threads don't write to the same pixel at the same time.
-                        framebuffer_lock.lock();
+                        // since this is a tiled renderer, this does not apply, so the locks can be removed.
+                        // framebuffer_lock.lock();
                         framebuffer[j][i] += col;
                         bounce_counts[thread_id] += *count;
                         samples_done[thread_id] += 1;
-                        framebuffer_lock.unlock();
+                        // framebuffer_lock.unlock();
                     }
                 }
             }
