@@ -52,55 +52,6 @@ private:
     std::condition_variable c;
 };
 
-SafeQueue<std::pair<int, int>> *spiral_queue(SafeQueue<std::pair<int, int>> *queue, int width, int height, int start_x = -1, int start_y = -1)
-{
-    int radius = 1;
-    int x = start_x == -1 ? (width % 2 == 0 ? (width / 2 - 1) : (width / 2)) : start_x;
-    int y = start_y == -1 ? (height % 2 == 0 ? (height / 2 - 1) : (height / 2)) : start_y;
-
-    // get largest of the two dimensions
-    int furthest = max(width, height);
-    int dir_x = 1;
-    int dir_y = 0;
-    int count = radius;
-    while (radius <= furthest)
-    {
-        if (x >= 0 && y >= 0 && x < width && y < height)
-        {
-            queue->enqueue(std::pair<int, int>(x, y));
-        }
-        x += dir_x;
-        y += dir_y;
-        count--;
-        if (count <= 0)
-        {
-            if (dir_x == 0 && dir_y == 1)
-            {
-                dir_x = -1;
-                dir_y = 0;
-                radius++;
-            }
-            else if (dir_x == 1 && dir_y == 0)
-            {
-                dir_x = 0;
-                dir_y = 1;
-            }
-            else if (dir_x == -1 && dir_y == 0)
-            {
-                dir_x = 0;
-                dir_y = -1;
-            }
-            else if (dir_x == 0 && dir_y == -1)
-            {
-                dir_x = 1;
-                dir_y = 0;
-                radius++;
-            }
-            count = radius;
-        }
-    }
-    return queue;
-}
 
 class Spiral
 {
