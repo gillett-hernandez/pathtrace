@@ -1,5 +1,5 @@
 #pragma once
-
+#include "helpers.h"
 #include <queue>
 #include <mutex>
 #include <condition_variable>
@@ -52,34 +52,158 @@ private:
     std::condition_variable c;
 };
 
+SafeQueue<std::pair<int, int>> *spiral_queue(SafeQueue<std::pair<int, int>> *queue, int width, int height, int start_x = -1, int start_y = -1)
+{
+    int radius = 1;
+    int x = start_x == -1 ? (width % 2 == 0 ? (width / 2 - 1) : (width / 2)) : start_x;
+    int y = start_y == -1 ? (height % 2 == 0 ? (height / 2 - 1) : (height / 2)) : start_y;
+
+    // get largest of the two dimensions
+    int furthest = max(width, height);
+    int dir_x = 1;
+    int dir_y = 0;
+    int count = radius;
+    while (radius <= furthest)
+    {
+        if (x >= 0 && y >= 0 && x < width && y < height)
+        {
+            queue->enqueue(std::pair<int, int>(x, y));
+        }
+        x += dir_x;
+        y += dir_y;
+        count--;
+        if (count <= 0)
+        {
+            if (dir_x == 0 && dir_y == 1)
+            {
+                dir_x = -1;
+                dir_y = 0;
+                radius++;
+            }
+            else if (dir_x == 1 && dir_y == 0)
+            {
+                dir_x = 0;
+                dir_y = 1;
+            }
+            else if (dir_x == -1 && dir_y == 0)
+            {
+                dir_x = 0;
+                dir_y = -1;
+            }
+            else if (dir_x == 0 && dir_y == -1)
+            {
+                dir_x = 1;
+                dir_y = 0;
+                radius++;
+            }
+            count = radius;
+        }
+    }
+    return queue;
+}
+
 class Spiral
 {
 public:
-    Spiral(int width, int height) : queue()
-    {
-        int radius = 0;
-    }
-    std::pair<int, int> next()
-    {
-        return queue.dequeue();
-    }
+    virtual std::pair<std::pair<int, int>, std::pair<int, int>> next() = 0;
+    virtual bool is_empty() = 0;
 
-private:
     SafeQueue<std::pair<int, int>> queue;
 };
 
-class Hilbert
+class NaiveSpiral : public Spiral
 {
 public:
-    Hilbert(int width, int height) : queue()
+    NaiveSpiral(int width, int height, int block_width, int block_height) : queue(), width(width), height(height), block_width(block_width), block_height(block_height)
     {
-        // queue all tiles all at once
+        // queue = spiral_queue(new SafeQueue<std::pair<int, int>>(), (int)std::ceil((float)width / block_width), (int)std::ceil((float)height / block_height));
+        int tiles_width = (int)std::ceil((float)width / block_width);
+        int tiles_height = (int)std::ceil((float)height / block_height);
+        int radius = 1;
+        int start_x = -1;
+        int start_y = -1;
+        int x = start_x == -1 ? (tiles_width % 2 == 0 ? (tiles_width / 2 - 1) : (tiles_width / 2)) : start_x;
+        int y = start_y == -1 ? (tiles_height % 2 == 0 ? (tiles_height / 2 - 1) : (tiles_height / 2)) : start_y;
+
+        // get largest of the two dimensions
+        int furthest = max(tiles_width, tiles_height);
+        int dir_x = 1;
+        int dir_y = 0;
+        int count = radius;
+        while (radius <= furthest)
+        {
+            if (x >= 0 && y >= 0 && x < tiles_width && y < tiles_height)
+            {
+                queue.enqueue(std::pair<int, int>(x, y));
+            }
+            x += dir_x;
+            y += dir_y;
+            count--;
+            if (count <= 0)
+            {
+                if (dir_x == 0 && dir_y == 1)
+                {
+                    dir_x = -1;
+                    dir_y = 0;
+                    radius++;
+                }
+                else if (dir_x == 1 && dir_y == 0)
+                {
+                    dir_x = 0;
+                    dir_y = 1;
+                }
+                else if (dir_x == -1 && dir_y == 0)
+                {
+                    dir_x = 0;
+                    dir_y = -1;
+                }
+                else if (dir_x == 0 && dir_y == -1)
+                {
+                    dir_x = 1;
+                    dir_y = 0;
+                    radius++;
+                }
+                count = radius;
+            }
+        }
     }
-    std::pair<int, int> next()
+    std::pair<std::pair<int, int>, std::pair<int, int>> next()
     {
-        return queue.dequeue();
+        std::pair<int, int> topleft_in_block_coordinates = queue.dequeue();
+        std::pair<int, int> topleft = std::pair<int, int>(topleft_in_block_coordinates.first * block_width, topleft_in_block_coordinates.second * block_height);
+        std::pair<int, int> bottomright = std::pair<int, int>(min(topleft.first + block_width, width), min(topleft.second + block_height, height));
+        return std::pair<std::pair<int, int>, std::pair<int, int>>(topleft, bottomright);
     }
 
-private:
+    bool is_empty()
+    {
+        return queue.empty();
+    }
+    int block_width;
+    int block_height;
+    int width;
+    int height;
     SafeQueue<std::pair<int, int>> queue;
 };
+
+// class HilbertSpiral : public Spiral
+// {
+// public:
+//     HilbertSpiral(int width, int height, int block_width, int block_height) : queue(), width(width), height(height), block_width(block_width), block_height(block_height)
+//     {
+//         spiral_queue(std::shared_ptr<SafeQueue<std::pair<int, int>>>(&queue), (int)std::ceil((float)width / block_width), (int)std::ceil((float)height / block_height));
+//     }
+//     std::pair<std::pair<int, int>, std::pair<int, int>> next()
+//     {
+//         std::pair<int, int> topleft_in_block_coordinates = queue.dequeue();
+//         std::pair<int, int> topleft = std::pair<int, int>(topleft_in_block_coordinates.first * block_width, topleft_in_block_coordinates.second * block_height);
+//         std::pair<int, int> bottomright = std::pair<int, int>(min(topleft.first + block_width, width), min(topleft.second + block_height, height));
+//         return std::pair<std::pair<int, int>, std::pair<int, int>>(topleft, bottomright);
+//     }
+//     int block_width;
+//     int block_height;
+//     int width;
+//     int height;
+
+//     SafeQueue<std::pair<int, int>> queue;
+// };
