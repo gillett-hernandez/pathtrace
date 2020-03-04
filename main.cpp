@@ -69,6 +69,11 @@ Renderer *renderer_from_config(World *world, camera cam, Config config)
         std::cout << "selected and constructed Naive renderer" << std::endl;
         return new Naive(integrator, cam, config);
     }
+    case TILED:
+    {
+        std::cout << "selected and constructed Tiled renderer" << std::endl;
+        return new Tiled(integrator, cam, config);
+    }
 
     default:
     {

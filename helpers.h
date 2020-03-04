@@ -1,12 +1,20 @@
 #pragma once
 #include "random.h"
 #include "vec3.h"
+#include "types.h"
 #include <math.h>
 #include <vector>
 #include <float.h>
 
-typedef std::vector<vec3> path;
-typedef std::vector<path *> paths;
+inline int max(int a, int b)
+{
+    return a > b ? a : b;
+}
+
+inline int min(int a, int b)
+{
+    return a < b ? a : b;
+}
 
 vec3 reflect(const vec3 &v, const vec3 &n)
 {
