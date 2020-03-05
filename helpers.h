@@ -52,6 +52,11 @@ inline bool is_nan(const vec3 v)
     return is_nan(v.x()) || is_nan(v.y()) || is_nan(v.z());
 }
 
+inline bool isinf(const vec3 v)
+{
+    return isinf(v[0]) || isinf(v[1]) || isinf(v[2]);
+}
+
 inline vec3 de_nan(const vec3 &c)
 {
     vec3 temp = c;

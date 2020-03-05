@@ -188,6 +188,7 @@ public:
             // do russian roulette path termination here? by checking beta?
 
             ASSERT(!is_nan(sum), "sum had nan components");
+            ASSERT(!isinf(beta), "beta was inf");
             (*bounce_count)++;
             if (world->hit(r, 0.001, MAXFLOAT, rec))
             {
@@ -271,10 +272,7 @@ public:
                 {
 
                     ray scattered = ray(rec.p + config.normal_offset * rec.normal, rec.mat_ptr->generate(r, rec), r.time());
-                    // float weight;
-                    // pdf of scatter having gone directly towards light
 
-                    // pdf of light ray having been generated from scatter
                     // float light_pdf_s = l_pdf.value(scattered.direction());
                     // pdf of scattered ray having been generated from scatter
                     float scatter_pdf_s = rec.mat_ptr->value(r, rec, scattered.direction());
@@ -295,11 +293,18 @@ public:
 
                         // Add the energy we 'lose' by randomly terminating paths
                         beta *= 1 / p;
+                        ASSERT(!isinf(beta), "beta was inf");
                     }
 
                     if (!config.only_direct_illumination)
                     {
+                        if (scatter_pdf_s < 0.0000001)
+                        {
+                            break;
+                        }
                         beta *= attenuation * fabs(cos_i) / scatter_pdf_s;
+                        ASSERT(!isinf(beta), "beta was inf " << beta << "  " << attenuation << "  " << cos_i << "  " << scatter_pdf_s);
+                        ASSERT(!is_nan(beta), beta << " " << attenuation << " " << cos_i << " " << scatter_pdf_s);
                         last_bsdf_pdf = scatter_pdf_s;
                         // reassign r to continue bouncing.
                         r = scattered;
