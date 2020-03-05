@@ -3,7 +3,7 @@
         "look_from": [
             278.0,
             278.0,
-            -800.0
+            -700.0
         ],
         "look_at": [
             278.0,
@@ -16,9 +16,9 @@
     },
     "world": {
         "color": [
-            0.2,
-            0.2,
-            0.2
+            0.0,
+            0.0,
+            0.0
         ]
     },
     "assets": [],
@@ -58,13 +58,25 @@
             }
         },
         {
+            "id": "isotropic",
+            "type": "isotropic",
+            "data": {
+                "color": [
+                    0.93,
+                    0.93,
+                    0.93
+                ],
+                "density": 0.0004
+            }
+        },
+        {
             "id": "light",
             "type": "diffuse_light",
             "data": {
                 "color": [
-                    15.0,
-                    15.0,
-                    15.0
+                    1.0,
+                    1.0,
+                    1.0
                 ]
             }
         }
@@ -84,13 +96,21 @@
         {
             "id": "box",
             "type": "box",
-            "material": {
-                "id": "white"
-            },
             "size": [
-                165,
-                165,
-                165
+                555,
+                555,
+                555
+            ]
+        },
+        {
+            "id": "fog",
+            "type": "volume",
+            "primitive": "box",
+            "density": 0.001,
+            "color": [
+                0.9,
+                0.9,
+                0.9
             ]
         }
     ],
@@ -188,6 +208,7 @@
             }
         },
         {
+            "skip": true,
             "type": "ref",
             "primitive": {
                 "id": "box"
@@ -202,6 +223,19 @@
                     0.0,
                     -0.1,
                     0.0
+                ]
+            }
+        },
+        {
+            "type": "ref",
+            "primitive": {
+                "id": "fog"
+            },
+            "transform": {
+                "translate": [
+                    277.5,
+                    277.5,
+                    277.5
                 ]
             }
         },

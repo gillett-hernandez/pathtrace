@@ -1,5 +1,4 @@
-#ifndef EXAMPLESCENEH
-#define EXAMPLESCENEH
+#pragma once
 
 #include "hittable.h"
 #include "hittable_list.h"
@@ -69,5 +68,3 @@ hittable *test_scene()
     list[i++] = new sphere(vec3(-1, 1, 0), 1.0, new metal(vec3(1.0, 1.0, 1.0), 0.05));
     return new bvh_node(list, i, 0.0f, 0.0f);
 }
-
-#endif

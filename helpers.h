@@ -1,54 +1,20 @@
-#ifndef HELPERSH
-#define HELPERSH
-#include "vec3.h"
+#pragma once
 #include "random.h"
+#include "vec3.h"
+#include "types.h"
 #include <math.h>
+#include <vector>
+#include <float.h>
 
-#define PI 3.14159265358979323
-#define TAU 2 * PI
 
-template <class T>
-struct list
+inline int max(int a, int b)
 {
-    T *array;
-    size_t length;
-    T operator[](int idx)
-    {
-        if (idx < 0)
-        {
-            idx = length + idx;
-        }
-        assert(idx < length);
-        return array[idx];
-    }
-};
-
-vec3 random_in_unit_sphere()
-{
-    // vec3 p;
-    // do
-    // {
-    //     p = 2.0 * vec3(random_double(), random_double(), random_double()) - vec3(1, 1, 1);
-    // } while (p.squared_length() >= 1.0);
-    float u, v, w;
-    u = random_double() * TAU;
-    v = acos(2 * random_double() - 1);
-    w = powf(random_double(), 1.0 / 3.0);
-    return vec3(cos(u) * sin(v) * w, cos(v) * w, sin(u) * sin(v) * w);
+    return a > b ? a : b;
 }
 
-vec3 random_in_unit_disk()
+inline int min(int a, int b)
 {
-    // vec3 p;
-    // do
-    // {
-    //     p = 2.0 * vec3(random_double(), random_double(), 0) - vec3(1, 1, 0);
-    // } while (dot(p, p) >= 1.0);
-    float u, v;
-    u = random_double() * TAU;
-    v = powf(random_double(), 1.0 / 2.0);
-    vec3 p = vec3(cos(u) * v, sin(u) * v, 0);
-    return p;
+    return a < b ? a : b;
 }
 
 vec3 reflect(const vec3 &v, const vec3 &n)
@@ -77,15 +43,36 @@ float schlick(float cosine, float ref_idx)
     return r0 + (1 - r0) * pow((1 - cosine), 5);
 }
 
+inline bool is_nan(const float x)
+{
+    return !(x == x);
+}
+
+inline bool is_nan(const vec3 v)
+{
+    return is_nan(v.x()) || is_nan(v.y()) || is_nan(v.z());
+}
+
+inline bool isinf(const vec3 v)
+{
+    return isinf(v[0]) || isinf(v[1]) || isinf(v[2]);
+}
+
 inline vec3 de_nan(const vec3 &c)
 {
     vec3 temp = c;
-    if (!(temp[0] == temp[0]))
+    if (is_nan(temp[0]))
+    {
         temp[0] = 0;
-    if (!(temp[1] == temp[1]))
+    }
+    if (is_nan(temp[1]))
+    {
         temp[1] = 0;
-    if (!(temp[2] == temp[2]))
+    }
+    if (is_nan(temp[2]))
+    {
         temp[2] = 0;
+    }
     return temp;
 }
 
@@ -122,4 +109,61 @@ T clamp(T x, T l, T r)
         return x;
     }
 }
-#endif
+
+class onb
+{
+public:
+    onb() {}
+    inline vec3 operator[](int i) const { return axis[i]; }
+    vec3 u() const { return axis[0]; }
+    vec3 v() const { return axis[1]; }
+    vec3 w() const { return axis[2]; }
+    vec3 local(float a, float b, float c) const { return a * u() + b * v() + c * w(); }
+    vec3 local(const vec3 &a) const { return a.x() * u() + a.y() * v() + a.z() * w(); }
+    void build_from_w(const vec3 &);
+    vec3 axis[3];
+};
+
+void onb::build_from_w(const vec3 &n)
+{
+    axis[2] = unit_vector(n);
+    vec3 a;
+    if (fabs(w().x()) > 0.9)
+        a = vec3(0, 1, 0);
+    else
+        a = vec3(1, 0, 0);
+    axis[1] = unit_vector(cross(w(), a));
+    axis[0] = cross(w(), v());
+}
+
+inline float power_heuristic(int nf, float fPdf, int ng, float gPdf, float pow = 2.0f)
+{
+    float f = nf * fPdf, g = ng * gPdf;
+    // return (f * f) / (f * f + g * g);
+    float fpow = powf(f, pow);
+    return fpow / (fpow + powf(g, pow));
+}
+
+void calculate_luminance(vec3 **framebuffer, int width, int height, int n_samples, long total_pixels, float &max_luminance, float &total_luminance, float &avg_luminance)
+{
+    max_luminance = -FLT_MAX;
+    assert(n_samples > 0);
+    total_luminance = 0.0;
+    for (int j = height - 1; j >= 0; j--)
+    {
+        for (int i = 0; i < width; i++)
+        {
+            vec3 col = de_nan(framebuffer[j][i]);
+            col /= float(n_samples);
+            float f = abs(col.length());
+            total_luminance += f;
+            assert(!is_nan(col));
+            assert(!is_nan(total_luminance));
+            if (f > max_luminance)
+            {
+                max_luminance = f;
+            }
+        }
+    }
+    avg_luminance = total_luminance / ((float)total_pixels * (float)n_samples);
+}

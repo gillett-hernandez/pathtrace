@@ -3,7 +3,7 @@
         "look_from": [
             278.0,
             278.0,
-            -800.0
+            -750.0
         ],
         "look_at": [
             278.0,
@@ -16,9 +16,9 @@
     },
     "world": {
         "color": [
-            0.2,
-            0.2,
-            0.2
+            0.0,
+            0.0,
+            0.0
         ]
     },
     "assets": [],
@@ -239,13 +239,33 @@
                     "id": "light"
                 },
                 "size": [
-                    240,
-                    230
+                    30,
+                    30
                 ]
             },
             "transform": {
                 "translate": [
-                    273,
+                    243,
+                    554.0,
+                    171
+                ]
+            }
+        },
+        {
+            "type": "direct",
+            "primitive": {
+                "type": "rect",
+                "material": {
+                    "id": "light"
+                },
+                "size": [
+                    30,
+                    30
+                ]
+            },
+            "transform": {
+                "translate": [
+                    303,
                     554.0,
                     171
                 ]

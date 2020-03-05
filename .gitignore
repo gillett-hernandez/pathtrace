@@ -9,6 +9,6 @@ sendgrid.env
 *.code-workspace
 *.sublime-workspace
 *.sublime-project
-
+.mypy_cache/*
 *.dSYM/*
 

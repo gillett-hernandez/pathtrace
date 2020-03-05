@@ -1,5 +1,4 @@
-#ifndef TRANSFORM3H
-#define TRANSFORM3H
+#pragma once
 #include "thirdparty/Eigen/Dense"
 #include "thirdparty/Eigen/Geometry"
 #include "vec3.h"
@@ -69,5 +68,3 @@ public:
     }
     Eigen::Affine3f _transform;
 };
-
-#endif

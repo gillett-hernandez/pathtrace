@@ -1,18 +1,26 @@
 {
     "film": {
-        "width": 800,
-        "height": 800,
-        "exposure": -10.0,
-        "gamma": 1.0
+        "width": 600,
+        "height": 600,
+        "exposure": 0.0,
+        "gamma": 2.2
     },
-    "output_path": "render.ppm",
-    "scene": "scenes/light_test.json",
+    "ppm_output_path": "output/render.ppm",
+    "png_output_path": "output/render.png",
+    "traced_paths_output_path": "output/out.txt",
+    "traced_paths_2d_output_path": "output/out_2d.txt",
+    "scene": "scenes/cornell_box_image_light.json",
+    "render_type": "tiled",
+    "integrator_type": "iterative nee path tracing",
     "should_trace_paths": true,
-    "avg_number_of_paths": 1000,
-    "progressive_render_proportion": 0.0,
-    "traced_paths_output": "light_test.txt",
-    "traced_paths_2d_output": "light_test_2d.txt",
-    "max_bounces": 15,
-    "samples": 100,
-    "threads": 11
+    "only_direct_illumination": false,
+    "avg_number_of_paths": 100,
+    "block_width": 128,
+    "block_height": 128,
+    "normal_offset": 0.0001,
+    "max_bounces": 10,
+    "samples": 20,
+    "light_samples": 4,
+    "russian_roulette": true,
+    "threads": 10
 }

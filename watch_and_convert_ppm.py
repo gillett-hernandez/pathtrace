@@ -6,6 +6,8 @@ import time
 if __name__ == "__main__":
     while True:
         os.system(
-            "python3 " + os.path.abspath("./convert_ppm_in_curdir.py") + " --no-delete"
+            "python3 "
+            + os.path.abspath("./convert_ppm.py")
+            + " --no-delete --path output"
         )
-        time.sleep(1)
+        time.sleep(0.5)

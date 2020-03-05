@@ -1,13 +1,28 @@
-#ifndef PRIMITIVEH
-#define PRIMITIVEH
+#pragma once
 #include "bvh.h"
-#include "enums.h"
+#include "scene.h"
 #include "hittable.h"
 #include "hittable_list.h"
 #include "ray.h"
 #include "transform3.h"
 #include "vec3.h"
 #include <float.h>
+
+enum plane_enum
+{
+    XY,
+    XZ,
+    YZ
+};
+
+plane_enum plane_enum_mapping(std::string alignment)
+{
+    static std::map<std::string, plane_enum> mapping = {
+        {"xy", XY},
+        {"xz", XZ},
+        {"yz", YZ}};
+    return mapping[alignment];
+}
 
 class sphere : public hittable
 {
@@ -19,6 +34,28 @@ public:
 
     virtual bool hit(const ray &r, float tmin, float tmax, hit_record &rec) const;
     virtual bool bounding_box(float t0, float t1, aabb &box) const;
+    virtual float pdf_value(const vec3 &o, const vec3 &v) const
+    {
+        hit_record rec;
+        if (this->hit(ray(o, v), 0.001, FLT_MAX, rec))
+        {
+            float cos_theta_max = sqrt(1 - radius * radius / (center - o).squared_length());
+            float solid_angle = 2 * M_PI * (1 - cos_theta_max);
+            return 1 / solid_angle;
+        }
+        else
+        {
+            return 0;
+        }
+    }
+    virtual vec3 random(const vec3 &o) const
+    {
+        vec3 direction = center - o;
+        float distance_squared = direction.squared_length();
+        onb uvw;
+        uvw.build_from_w(direction);
+        return uvw.local(random_to_sphere(radius, distance_squared));
+    }
     vec3 center;
     float radius;
     material *mat_ptr;
@@ -39,8 +76,8 @@ bool sphere::hit(const ray &r, float t_min, float t_max, hit_record &rec) const
             rec.t = temp;
             rec.p = r.point_at_parameter(rec.t);
             rec.normal = (rec.p - center) / radius;
-            ;
             rec.mat_ptr = mat_ptr;
+            rec.primitive = (hittable *)this;
             return true;
         }
         temp = (-b + sqrt(discriminant)) / a;
@@ -50,6 +87,7 @@ bool sphere::hit(const ray &r, float t_min, float t_max, hit_record &rec) const
             rec.p = r.point_at_parameter(rec.t);
             rec.normal = (rec.p - center) / radius;
             rec.mat_ptr = mat_ptr;
+            rec.primitive = (hittable *)this;
             return true;
         }
     }
@@ -61,6 +99,25 @@ bool sphere::bounding_box(float t0, float t1, aabb &box) const
     box = aabb(center - vec3(radius, radius, radius),
                center + vec3(radius, radius, radius));
     return true;
+}
+
+inline vec3 shuffle(vec3 v, plane_enum style)
+{
+    switch (style)
+    {
+    case XY:
+    {
+        return vec3(v.x(), v.z(), v.y());
+    }
+    case YZ:
+    {
+        return vec3(v.y(), v.x(), v.z());
+    }
+    default:
+    {
+        return v;
+    }
+    }
 }
 
 class rect : public hittable
@@ -89,80 +146,59 @@ public:
     {
         assert(x0 < x1);
         assert(z0 < z1);
+        vec3 a = vec3(x0, y - 0.001, z0);
+        vec3 b = vec3(x1, y + 0.001, z1);
         // switch some variables around for axis alignment
-        switch (type)
-        {
-        case XY:
-        {
-            // std::cout << "set xy aabb" << '\n';
-            box = aabb(vec3(x0, z0, y - 0.001), vec3(x1, z1, y + 0.001));
-            break;
-        }
-        case YZ:
-        {
-            // std::cout << "set yz aabb" << '\n';
-            box = aabb(vec3(y - 0.001, x0, z0), vec3(y + 0.001, x1, z1));
-            break;
-        }
-        default:
-        {
-            // std::cout << "set default aabb" << '\n';
-            box = aabb(vec3(x0, y - 0.001, z0), vec3(x1, y + 0.001, z1));
-            break;
-        }
-        }
+        box = aabb(shuffle(a, type), shuffle(b, type));
         return true;
+    }
+
+    virtual float pdf_value(const vec3 &o, const vec3 &v) const
+    {
+        hit_record rec;
+        if (this->hit(ray(o, v), 0.001, FLT_MAX, rec))
+        {
+            float area = (x1 - x0) * (z1 - z0);
+            float vlen = v.length();
+            float distance_squared = powf(rec.t * vlen, 2.0);
+            float cosine = fabs(dot(v, rec.normal) / vlen);
+            return distance_squared / (cosine * area);
+        }
+        else
+        {
+            return 0;
+        }
+    }
+    virtual vec3 random(const vec3 &o) const
+    {
+        vec3 random_point = shuffle(vec3(x0 + random_double() * (x1 - x0), y,
+                                         z0 + random_double() * (z1 - z0)),
+                                    type);
+        return random_point - o;
     }
     material *mp;
     bool normal;
+    bool two_sided = true;
     float x0, z0, x1, z1, y;
     plane_enum type;
 };
 
 bool rect::hit(const ray &r, float t0, float t1, hit_record &rec) const
 {
-    float rox, roy, roz, rdx, rdy, rdz;
+    // float rox, roy, roz, rdx, rdy, rdz;
     // conversion to simulated/transformed space
-    switch (type)
-    {
-    case XY:
-    {
-        rox = r.origin().x();
-        rdx = r.direction().x();
-        roy = r.origin().z();
-        rdy = r.direction().z();
-        roz = r.origin().y();
-        rdz = r.direction().y();
-        break;
-    }
-    case YZ:
-    {
-        rox = r.origin().y();
-        rdx = r.direction().y();
-        roy = r.origin().x();
-        rdy = r.direction().x();
-        roz = r.origin().z();
-        rdz = r.direction().z();
-        break;
-    }
-    default:
-    {
-        rox = r.origin().x();
-        rdx = r.direction().x();
-        roy = r.origin().y();
-        rdy = r.direction().y();
-        roz = r.origin().z();
-        rdz = r.direction().z();
-        break;
-    }
-    }
-    float t = (y - roy) / rdy;
+    vec3 temp_o = shuffle(r.origin(), type);
+    vec3 temp_d = shuffle(r.direction(), type);
+
+    float t = (y - temp_o.y()) / temp_d.y();
+    // time value of hit outside of bounds?
     if (t < t0 || t > t1)
     {
         return false;
     }
-    float xh = rox + t * rdx;
-    float zh = roz + t * rdz;
+    float xh = temp_o.x() + t * temp_d.x();
+    float zh = temp_o.z() + t * temp_d.z();
+    // coordinates of hit outside of bounds?
     if (xh < x0 || xh > x1 || zh < z0 || zh > z1)
     {
         return false;
@@ -173,24 +209,18 @@ bool rect::hit(const ray &r, float t0, float t1, hit_record &rec) const
     rec.mat_ptr = mp;
 
     rec.p = r.point_at_parameter(t);
-    switch (type)
+
+    rec.normal = shuffle(vec3(0, 2 * normal - 1, 0), type);
+    if (two_sided)
     {
-    case XY:
-    {
-        rec.normal = vec3(0, 0, 2 * normal - 1);
-        break;
+        // rec.normal *= 2 * (dot(r.direction(), rec.normal) < 0) - 1;
+        if (dot(r.direction(), rec.normal) > 0)
+        {
+            // aligned, not good, so negate normal
+            rec.normal = -rec.normal;
+        }
     }
-    case YZ:
-    {
-        rec.normal = vec3(2 * normal - 1, 0, 0);
-        break;
-    }
-    default:
-    {
-        rec.normal = vec3(0, 2 * normal - 1, 0);
-        break;
-    }
-    }
+    rec.primitive = (hittable *)this;
     return true;
 }
 
@@ -272,6 +302,7 @@ public:
         {
             rec.p = transform * rec.p;
             rec.normal = transform.apply_normal(rec.normal);
+            rec.primitive = (hittable *)this;
             return true;
         }
         else
@@ -285,11 +316,33 @@ public:
         box = bbox;
         return hasbbox;
     }
+    virtual float pdf_value(const vec3 &o, const vec3 &v) const
+    {
+        // hit_record rec;
+        // if (this->hit(ray(o, v), 0.001, FLT_MAX, rec))
+        // {
+        //     float area = (x1 - x0) * (z1 - z0);
+        //     float vlen = v.length();
+        //     float distance_squared = powf(rec.t * vlen, 2.0);
+        //     float cosine = fabs(dot(v, rec.normal) / vlen);
+        //     return distance_squared / (cosine * area);
+        // }
+        // else
+        // {
+        //     return 0;
+        // }
+
+        // inverse transform to local space
+        return ptr->pdf_value(transform.inverse() * o, transform.inverse().apply_linear(v));
+    }
+    virtual vec3 random(const vec3 &o) const
+    {
+        // inverse transform
+        return transform.apply_linear(ptr->random(transform.inverse() * o));
+    }
 
     transform3 transform;
     aabb bbox;
     bool hasbbox;
     hittable *ptr;
 };
-
-#endif

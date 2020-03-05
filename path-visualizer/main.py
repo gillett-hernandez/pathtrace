@@ -1,5 +1,6 @@
 import argparse
 from random import random
+from typing import Optional
 import json
 import os
 import pygame
@@ -7,18 +8,21 @@ import time
 from pygame.locals import *
 
 config_path = os.path.abspath("./config.json")
+
+default_image_path: Optional[str] = None
+default_paths_path: Optional[str] = None
 if os.path.exists(config_path):
     print("loading config")
     with open(config_path, "r") as fd:
         data = json.load(fd)
     default_paths_path = os.path.abspath(
-        os.path.join(".", data["traced_paths_2d_output"]))
-    default_image_path = os.path.abspath(os.path.join(
-        ".", data["output_path"].replace("ppm", "png")))
+        os.path.join(".", data["traced_paths_2d_output_path"])
+    )
+    default_image_path = os.path.abspath(
+        os.path.join(".", data["ppm_output_path"].replace("ppm", "png"))
+    )
 else:
     print(f"not loading config, couldn't find at {config_path}")
-    default_image_path = None
-    default_paths_path = None
 
 parser = argparse.ArgumentParser()
 
@@ -50,7 +54,7 @@ def main(args):
             p0, p1 = line.split(",")
             actual_paths[-1].append((float(p0), float(p1), exited_world))
 
-    actual_paths.sort(key=lambda l: len(l),  reverse=True)
+    actual_paths.sort(key=lambda l: len(l), reverse=True)
     max_i = 0
     path_idx = 0
     while True:
@@ -88,25 +92,28 @@ def main(args):
         pygame.draw.circle(
             display,
             pygame.color.Color("green"),
-            (int(width*path[0][0]), int(height*path[0][1])),
+            (int(width * path[0][0]), int(height * path[0][1])),
             5,
-            0
+            0,
         )
         pygame.draw.circle(
             display,
             pygame.color.Color("black" if path[max_i][-1] else "red"),
-            (int(width*path[max_i][0]), int(height*path[max_i][1])),
+            (int(width * path[max_i][0]), int(height * path[max_i][1])),
             5,
-            0
+            0,
         )
         if max_i >= 1 and max_i <= len(path):
-            pygame.draw.lines(display,
-                              pygame.color.Color("white"),
-                              False,
-                              [(width * x + 3*random(), height * y + 3*random())
-                               for x, y, exited_world in path[:max_i+1]],
-                              3
-                              )
+            pygame.draw.lines(
+                display,
+                pygame.color.Color("white"),
+                False,
+                [
+                    (width * x + 3 * random(), height * y + 3 * random())
+                    for x, y, exited_world in path[: max_i + 1]
+                ],
+                3,
+            )
         if max_i < len(path) - 1:
 
             max_i += 1

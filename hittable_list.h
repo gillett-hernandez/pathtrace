@@ -1,5 +1,4 @@
-#ifndef HITTABLELISTH
-#define HITTABLELISTH
+#pragma once
 
 #include "hittable.h"
 
@@ -68,4 +67,3 @@ bool hittable_list::bounding_box(float t0, float t1, aabb &box) const
     return true;
 }
 
-#endif

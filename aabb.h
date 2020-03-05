@@ -1,7 +1,7 @@
 
-#ifndef AABBH
-#define AABBH
+#pragma once
 #include <stdlib.h>
+#include "ray.h"
 #include "transform3.h"
 
 inline float ffmin(float a, float b) { return a < b ? a : b; }
@@ -58,11 +58,15 @@ inline bool aabb::hit(const ray &r, float tmin, float tmax) const
         float t0 = (min()[a] - r.origin()[a]) * invD;
         float t1 = (max()[a] - r.origin()[a]) * invD;
         if (invD < 0.0f)
+        {
             std::swap(t0, t1);
+        }
         tmin = t0 > tmin ? t0 : tmin;
         tmax = t1 < tmax ? t1 : tmax;
         if (tmax <= tmin)
+        {
             return false;
+        }
     }
     return true;
 }
@@ -77,5 +81,3 @@ aabb surrounding_box(aabb box0, aabb box1)
              ffmax(box0.max().z(), box1.max().z()));
     return aabb(small, big);
 }
-
-#endif

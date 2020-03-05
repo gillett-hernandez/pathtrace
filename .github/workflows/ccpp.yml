@@ -11,11 +11,33 @@ jobs:
     steps:
     - uses: actions/checkout@v1
 
+    - uses: actions/checkout@v2
+    - name: Checkout submodules
+      shell: bash
+      run: |
+        # If your submodules are configured to use SSH instead of HTTPS please uncomment the following line
+        git config --global url."https://github.com/".insteadOf "git@github.com:"
+        auth_header="$(git config --local --get http.https://github.com/.extraheader)"
+        git submodule sync --recursive
+        git -c "http.extraheader=$auth_header" -c protocol.version=2 submodule update --init --force --recursive --depth=1
 
-    - name: make run_and_send
-      env:
-        SENDGRID_API_KEY: ${{ secrets.SENDGRID_API_KEY }}
-      run: make run_and_send
+
+    # - name: install setuptools
+    #   run: sudo apt install python-setuptools
+
+
+    - name: make run_w_pillow
+      # env:
+      #   SENDGRID_API_KEY: ${{ secrets.SENDGRID_API_KEY }}
+      run: make run_w_pillow
+
+    # comment
+    - name: Upload render artifact
+      uses: actions/upload-artifact@v1
+      with:
+        name: render.png
+        path: output/render.png
+
 
 
 

@@ -1,6 +1,4 @@
-#ifndef RAYH
-#define RAYH
-
+#pragma once
 #include "vec3.h"
 #include "transform3.h"
 
@@ -12,6 +10,7 @@ public:
     {
         A = a;
         B = b;
+        assert(ti == ti);
         _time = ti;
     }
     inline vec3 origin() const { return A; }
@@ -29,4 +28,3 @@ public:
     float _time;
 };
 
-#endif
