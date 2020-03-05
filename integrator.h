@@ -272,10 +272,7 @@ public:
                 {
 
                     ray scattered = ray(rec.p + config.normal_offset * rec.normal, rec.mat_ptr->generate(r, rec), r.time());
-                    // float weight;
-                    // pdf of scatter having gone directly towards light
 
-                    // pdf of light ray having been generated from scatter
                     // float light_pdf_s = l_pdf.value(scattered.direction());
                     // pdf of scattered ray having been generated from scatter
                     float scatter_pdf_s = rec.mat_ptr->value(r, rec, scattered.direction());
@@ -301,6 +298,10 @@ public:
 
                     if (!config.only_direct_illumination)
                     {
+                        if (scatter_pdf_s < 0.0000001)
+                        {
+                            break;
+                        }
                         beta *= attenuation * fabs(cos_i) / scatter_pdf_s;
                         ASSERT(!isinf(beta), "beta was inf " << beta << "  " << attenuation << "  " << cos_i << "  " << scatter_pdf_s);
                         ASSERT(!is_nan(beta), beta << " " << attenuation << " " << cos_i << " " << scatter_pdf_s);
