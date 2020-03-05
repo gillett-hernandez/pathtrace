@@ -40,7 +40,7 @@ std::vector<mesh *> load_asset(std::string filepath, std::string basedir)
     // Loop over shapes
     for (size_t s = 0; s < shapes.size(); s++)
     {
-
+        // determine x, y, z span of the shape, as well as the computed origin/median point
         int *indices = new int[shapes[s].mesh.indices.size()];
         vec3 *vertices = new vec3[shapes[s].mesh.indices.size()];
         vec3 *normals = new vec3[shapes[s].mesh.indices.size()];
@@ -95,10 +95,25 @@ std::vector<mesh *> load_asset(std::string filepath, std::string basedir)
         {
             l1.push_back(indices[i]);
         }
+        vec3 min = vec3(MAXFLOAT, MAXFLOAT, MAXFLOAT);
+        vec3 max = vec3(-MAXFLOAT, -MAXFLOAT, -MAXFLOAT);
         for (int i = 0; i < attrib.vertices.size(); i++)
         {
-            l2.push_back(vertices[i]);
+            auto v = vertices[i];
+            l2.push_back(v);
+            for (int j = 0; j < 3; j++)
+            {
+                if (min[j] > v[j])
+                {
+                    min[j] = v[j];
+                }
+                if (max[j] < v[j])
+                {
+                    max[j] = v[j];
+                }
+            }
         }
+        std::cout << "min is " << min << " and max is " << max << '\n';
         for (int i = 0; i < attrib.normals.size(); i++)
         {
             l3.push_back(normals[i]);
