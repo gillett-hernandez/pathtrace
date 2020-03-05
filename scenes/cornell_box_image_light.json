@@ -6,7 +6,7 @@
             -750.0
         ],
         "look_at": [
-            278.0,
+            0.0,
             278.0,
             0.0
         ],
@@ -16,13 +16,21 @@
     },
     "world": {
         "color": [
-            0.0,
-            0.0,
-            0.0
+            0.05,
+            0.05,
+            0.05
         ],
         "texture2": "checker_texture"
     },
-    "assets": [],
+    "assets": [
+        {
+            "id": "monkey",
+            "type": "object",
+            "data": {
+                "path": "assets/monkey.obj"
+            }
+        }
+    ],
     "textures": [
         {
             "id": "light_texture",
@@ -204,11 +212,11 @@
         },
         {
             "id": "sphere",
-            "type": "sphere",
+            "type": "mesh",
             "material": {
                 "id": "metal"
             },
-            "radius": 67.5
+            "asset_id": "monkey"
         },
         {
             "id": "big_sphere",
@@ -341,6 +349,7 @@
             }
         },
         {
+            "skip": true,
             "type": "ref",
             "primitive": {
                 "id": "big_sphere"
@@ -348,7 +357,7 @@
             "transform": {
                 "translate": [
                     277.5,
-                    -10000.0,
+                    -10500.0,
                     277.5
                 ]
             }

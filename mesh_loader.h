@@ -1,10 +1,10 @@
-#ifndef MESHLOADERH
-#define MESHLOADERH
+#pragma once
 
 #define TINYOBJLOADER_IMPLEMENTATION
 #include "thirdparty/tiny_obj_loader.h"
 
 #include "hittable.h"
+#include "material.h"
 #include "mesh.h"
 #include "vec3.h"
 
@@ -44,7 +44,7 @@ std::vector<mesh *> load_asset(std::string filepath, std::string basedir)
         int *indices = new int[shapes[s].mesh.indices.size()];
         vec3 *vertices = new vec3[shapes[s].mesh.indices.size()];
         vec3 *normals = new vec3[shapes[s].mesh.indices.size()];
-        // std::vector<material *> materials;
+        std::cout << "found shape, parsing...\n";
         // Loop over faces(polygon)
         size_t index_offset = 0;
         for (size_t f = 0; f < shapes[s].mesh.num_face_vertices.size(); f++)
@@ -78,28 +78,37 @@ std::vector<mesh *> load_asset(std::string filepath, std::string basedir)
                 // tinyobj::real_t blue = attrib.colors[3*idx.vertex_index+2];
                 indices[index_offset + v] = idx.vertex_index;
                 vertices[index_offset + v] = vec3(vx, vy, vz);
-                normals[index_offset + v] = vec3(vx, vy, vz);
+                normals[index_offset + v] = vec3(nx, ny, nz);
             }
             index_offset += fv;
 
             // per-face material
             // materials.push_back(parse_material(shapes[s].mesh.material_ids[f]));
         }
-        mesh *temp_mesh = new mesh((int)shapes[s].mesh.num_face_vertices.size(), list<int>{indices, shapes[s].mesh.indices.size()}, list<vec3>{vertices, attrib.vertices.size()}, list<vec3>{normals, attrib.normals.size()});
+        std::vector<int> l1 = std::vector<int>(shapes[s].mesh.indices.size());
+        std::cout << "found and parsed " << l1.size() << " unique vertices\n";
+        std::vector<vec3> l2 = std::vector<vec3>(attrib.vertices.size());
+        std::cout << "found and parsed " << l2.size() << " vertices\n";
+        std::vector<vec3> l3 = std::vector<vec3>(attrib.normals.size());
+        std::cout << "found and parsed " << l3.size() << " normals\n";
+        for (int i = 0; i < shapes[s].mesh.indices.size(); i++)
+        {
+            l1.push_back(indices[i]);
+        }
+        for (int i = 0; i < attrib.vertices.size(); i++)
+        {
+            l2.push_back(vertices[i]);
+        }
+        for (int i = 0; i < attrib.normals.size(); i++)
+        {
+            l3.push_back(normals[i]);
+        }
+        mesh *temp_mesh = new mesh((int)shapes[s].mesh.num_face_vertices.size(), l1, l2, l3, std::vector<material *>());
         meshes.push_back(temp_mesh);
     }
     return meshes;
-    // return new mesh(attrib, materials);
 }
 std::vector<mesh *> load_asset(std::string filepath)
 {
     return load_asset(filepath, "assets/");
 }
-
-// bvh_node *load_asset_as_bvh(std::string filepath)
-// {
-// auto ret = load_asset(filepath);
-// return new bvh_node(ret.data(), ret.size(), 0.0, 1.0);
-// }
-
-#endif

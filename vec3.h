@@ -57,6 +57,7 @@ public:
     inline float length() const { return sqrt(e[0] * e[0] + e[1] * e[1] + e[2] * e[2]); }
     inline float squared_length() const { return e[0] * e[0] + e[1] * e[1] + e[2] * e[2]; }
     inline void make_unit_vector();
+    inline vec3 abs() const { return vec3(fabs(e[0]), fabs(e[1]), fabs(e[2])); }
 
     float e[3];
 };
@@ -196,4 +197,40 @@ inline vec3 vec3::normalized() const
 inline vec3 unit_vector(vec3 v)
 {
     return v / v.length();
+}
+
+inline vec3 permute(const vec3 &v, int x, int y, int z)
+{
+    return vec3(v[x], v[y], v[z]);
+}
+
+inline vec3 abs(const vec3 &v)
+{
+    return v.abs();
+}
+
+inline int max_dimension(const vec3 &v)
+{
+    if (v[1] > v[0])
+    {
+        if (v[2] > v[1])
+        {
+            return 2;
+        }
+        else
+        {
+            return 1;
+        }
+    }
+    else
+    {
+        if (v[2] > v[0])
+        {
+            return 2;
+        }
+        else
+        {
+            return 0;
+        }
+    }
 }
