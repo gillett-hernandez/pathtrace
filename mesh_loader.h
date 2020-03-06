@@ -93,14 +93,14 @@ std::vector<mesh *> load_asset(std::string filepath, std::string basedir)
         std::cout << "found and parsed " << l3.size() << " normals\n";
         for (int i = 0; i < shapes[s].mesh.indices.size(); i++)
         {
-            l1.push_back(indices[i]);
+            l1[i] = indices[i];
         }
         vec3 min = vec3(MAXFLOAT, MAXFLOAT, MAXFLOAT);
         vec3 max = vec3(-MAXFLOAT, -MAXFLOAT, -MAXFLOAT);
         for (int i = 0; i < attrib.vertices.size(); i++)
         {
             auto v = vertices[i];
-            l2.push_back(v);
+            l2[i] = v;
             for (int j = 0; j < 3; j++)
             {
                 if (min[j] > v[j])
@@ -116,7 +116,7 @@ std::vector<mesh *> load_asset(std::string filepath, std::string basedir)
         std::cout << "min is " << min << " and max is " << max << '\n';
         for (int i = 0; i < attrib.normals.size(); i++)
         {
-            l3.push_back(normals[i]);
+            l3[i] = normals[i];
         }
         mesh *temp_mesh = new mesh((int)shapes[s].mesh.num_face_vertices.size(), l1, l2, l3, std::vector<material *>());
         meshes.push_back(temp_mesh);

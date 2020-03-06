@@ -70,7 +70,7 @@ public:
     }
 
     texture *albedo;
-    std::string name;
+    std::string name = "lambertian";
 };
 
 class metal : public material
@@ -108,7 +108,7 @@ public:
     }
     vec3 albedo;
     float fuzz;
-    std::string name;
+    std::string name = "metal";
 };
 
 class dielectric : public material
@@ -171,7 +171,7 @@ public:
     }
 
     float ref_idx;
-    std::string name;
+    std::string name = "dielectric";
 };
 
 class diffuse_light : public material
@@ -239,7 +239,7 @@ public:
         return void_pdf().value(direction);
     }
     texture *emit;
-    std::string name;
+    std::string name = "diffuse_light";
     float power;
     bool two_sided;
 };
@@ -273,5 +273,5 @@ public:
     }
     texture *albedo;
     vec3 emission;
-    std::string name;
+    std::string name = "isotropic_volume";
 };

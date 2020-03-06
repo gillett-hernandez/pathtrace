@@ -4,7 +4,6 @@
 #include "primitive.h"
 #include "bvh.h"
 #include "vec3.h"
-// #include "triangle.h"
 #include "helpers.h"
 
 class mesh;
@@ -23,8 +22,13 @@ public:
 class mesh : public hittable
 {
 public:
-    mesh(int num_faces, std::vector<int> v_indices, std::vector<vec3> vertices, std::vector<vec3> normals, std::vector<material*> materials) : num_faces(num_faces), v_indices(v_indices), vertices(vertices), normals(normals), materials(materials)
+    mesh(int num_faces, std::vector<int> v_indices, std::vector<vec3> vertices, std::vector<vec3> normals, std::vector<material *> materials)
     {
+        this->num_faces = num_faces;
+        this->v_indices = v_indices;
+        this->vertices = vertices;
+        this->normals = normals;
+        this->materials = materials;
         for (size_t i = 0; i < v_indices.size(); i++)
         {
             int index = v_indices[i];
@@ -51,7 +55,7 @@ public:
     std::vector<vec3> vertices;
     // std::vector<int> n_indices;
     std::vector<vec3> normals;
-    std::vector<material*> materials;
+    std::vector<material *> materials;
 };
 
 triangle::triangle(mesh *p_mesh, int tri_num) : p_mesh(p_mesh)
@@ -70,17 +74,9 @@ bool triangle::hit(const ray &r, float t_min, float t_max, hit_record &rec) cons
     vec3 p1t = p1 - r.origin();
     vec3 p2t = p2 - r.origin();
     // rearrange triangle dimensions and point coordinates based on ray orientation
-    int kz = max_dimension(r.direction().abs());
-    int kx = kz + 1;
-    if (kx == 3)
-    {
-        kx = 0;
-    }
-    int ky = kx + 1;
-    if (ky == 3)
-    {
-        ky = 0;
-    }
+    int ky = max_dimension(r.direction().abs());
+    int kz = (ky + 1) % 3;
+    int kx = (kz + 1) % 3;
     vec3 d = permute(r.direction(), kx, ky, kz);
     p0t = permute(p0t, kx, ky, kz);
     p1t = permute(p1t, kx, ky, kz);
@@ -142,7 +138,9 @@ bool triangle::hit(const ray &r, float t_min, float t_max, hit_record &rec) cons
     vec3 dp02 = p0 - p2;
     vec3 dp12 = p1 - p2;
     rec.p = b0 * p0 + b1 * p1 + b2 * p2;
+    ASSERT(!isinf(rec.p), "rec.p was " << rec.p);
     rec.t = t_scaled * invDet;
+    ASSERT(!isinf(rec.t), "rec.t was " << rec.t);
     rec.normal = cross(dp02, dp12).normalized();
     // rec.u = b0 * uv[0] + b1 * uv[1] + b2 * uv[2];
     rec.u = 0.5;
