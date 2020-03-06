@@ -41,9 +41,11 @@ std::vector<mesh *> load_asset(std::string filepath, std::string basedir)
     for (size_t s = 0; s < shapes.size(); s++)
     {
         // determine x, y, z span of the shape, as well as the computed origin/median point
-        int *indices = new int[shapes[s].mesh.indices.size()];
-        vec3 *vertices = new vec3[shapes[s].mesh.indices.size()];
-        vec3 *normals = new vec3[shapes[s].mesh.indices.size()];
+        std::vector<int> v_indices = std::vector<int>();
+        std::vector<vec3> vertices = std::vector<vec3>();
+        std::vector<int> n_indices = std::vector<int>();
+        std::vector<vec3> normals = std::vector<vec3>();
+        std::vector<int> material_ids = std::vector<int>();
         std::cout << "found shape, parsing...\n";
         // Loop over faces(polygon)
         size_t index_offset = 0;
@@ -76,49 +78,37 @@ std::vector<mesh *> load_asset(std::string filepath, std::string basedir)
                 // tinyobj::real_t red = attrib.colors[3*idx.vertex_index+0];
                 // tinyobj::real_t green = attrib.colors[3*idx.vertex_index+1];
                 // tinyobj::real_t blue = attrib.colors[3*idx.vertex_index+2];
-                indices[index_offset + v] = idx.vertex_index;
-                vertices[index_offset + v] = vec3(vx, vy, vz);
-                normals[index_offset + v] = vec3(nx, ny, nz);
+                v_indices.push_back(idx.vertex_index);
+                vertices.push_back(vec3(vx, vy, vz));
+                n_indices.push_back(idx.normal_index);
+                normals.push_back(vec3(nx, ny, nz));
             }
             index_offset += fv;
 
             // per-face material
-            // materials.push_back(parse_material(shapes[s].mesh.material_ids[f]));
-        }
-        std::vector<int> l1 = std::vector<int>(shapes[s].mesh.indices.size());
-        std::cout << "found and parsed " << l1.size() << " unique vertices\n";
-        std::vector<vec3> l2 = std::vector<vec3>(attrib.vertices.size());
-        std::cout << "found and parsed " << l2.size() << " vertices\n";
-        std::vector<vec3> l3 = std::vector<vec3>(attrib.normals.size());
-        std::cout << "found and parsed " << l3.size() << " normals\n";
-        for (int i = 0; i < shapes[s].mesh.indices.size(); i++)
-        {
-            l1[i] = indices[i];
+            material_ids.push_back(shapes[s].mesh.material_ids[f]);
         }
         vec3 min = vec3(MAXFLOAT, MAXFLOAT, MAXFLOAT);
         vec3 max = vec3(-MAXFLOAT, -MAXFLOAT, -MAXFLOAT);
         for (int i = 0; i < attrib.vertices.size(); i++)
         {
             auto v = vertices[i];
-            l2[i] = v;
             for (int j = 0; j < 3; j++)
             {
-                if (min[j] > v[j])
-                {
-                    min[j] = v[j];
-                }
-                if (max[j] < v[j])
-                {
-                    max[j] = v[j];
-                }
+                // if (min[j] > v[j])
+                // {
+                //     min[j] = v[j];
+                // }
+                min[j] = std::min(min[j], v[j]);
+                // if (max[j] < v[j])
+                // {
+                //     max[j] = v[j];
+                // }
+                max[j] = std::max(max[j], v[j]);
             }
         }
-        std::cout << "min is " << min << " and max is " << max << '\n';
-        for (int i = 0; i < attrib.normals.size(); i++)
-        {
-            l3[i] = normals[i];
-        }
-        mesh *temp_mesh = new mesh((int)shapes[s].mesh.num_face_vertices.size(), l1, l2, l3, std::vector<material *>());
+        std::cout << "mesh bounds are " << min << " to " << max << '\n';
+        mesh *temp_mesh = new mesh((int)shapes[s].mesh.num_face_vertices.size(), v_indices, vertices, n_indices, normals, material_ids);
         meshes.push_back(temp_mesh);
     }
     return meshes;
