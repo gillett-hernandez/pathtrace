@@ -30,10 +30,9 @@ public:
         this->n_indices = n_indices;
         this->normals = normals;
         this->material_ids = mat_ids;
-        for (size_t i = 0; i < v_indices.size(); i++)
+        for (size_t tri_num = 0; tri_num < num_faces; tri_num++)
         {
-            int index = v_indices[i];
-            triangles.push_back(new triangle(this, index));
+            triangles.push_back(new triangle(this, tri_num));
         }
 
         bvh = new bvh_node((hittable **)triangles.data(), triangles.size(), 0.00001f, MAXFLOAT);
@@ -149,7 +148,7 @@ bool triangle::hit(const ray &r, float t_min, float t_max, hit_record &rec) cons
     ASSERT(!isinf(rec.p), "rec.p was " << rec.p);
     rec.t = t_scaled * invDet;
     ASSERT(!isinf(rec.t), "rec.t was " << rec.t);
-    rec.normal = cross(dp02, dp12).normalized() * (2 * (random_double() > 0.5) - 1);
+    rec.normal = cross(dp02, dp12).normalized(); // * (2 * (random_double() > 0.5) - 1);
     // rec.u = b0 * uv[0] + b1 * uv[1] + b2 * uv[2];
     rec.u = 0.5;
     rec.v = 0.5;

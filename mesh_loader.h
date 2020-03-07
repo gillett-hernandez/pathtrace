@@ -38,13 +38,42 @@ std::vector<mesh *> load_asset(std::string filepath, std::string basedir)
     std::vector<mesh *> meshes = std::vector<mesh *>();
     int material_id = 0;
     // Loop over shapes
+    std::vector<vec3> vertices = std::vector<vec3>();
+    std::vector<vec3> normals = std::vector<vec3>();
+
+    vec3 min = vec3(MAXFLOAT, MAXFLOAT, MAXFLOAT);
+    vec3 max = vec3(-MAXFLOAT, -MAXFLOAT, -MAXFLOAT);
+    for (size_t i = 0; i < attrib.vertices.size(); i++)
+    {
+        // iterate through all vertices, so that the indexing works properly
+
+        tinyobj::real_t vx = attrib.vertices[3 * i + 0];
+        tinyobj::real_t vy = attrib.vertices[3 * i + 1];
+        tinyobj::real_t vz = attrib.vertices[3 * i + 2];
+        vec3 v = vec3(vx, vy, vz);
+        vertices.push_back(v);
+        for (int j = 0; j < 3; j++)
+        {
+            min[j] = std::min(min[j], v[j]);
+            max[j] = std::max(max[j], v[j]);
+        }
+    }
+
+    for (size_t i = 0; i < attrib.normals.size(); i++)
+    {
+        // iterate through all normals, so that the indexing works properly
+
+        tinyobj::real_t nx = attrib.normals[3 * i + 0];
+        tinyobj::real_t ny = attrib.normals[3 * i + 1];
+        tinyobj::real_t nz = attrib.normals[3 * i + 2];
+        normals.push_back(vec3(nx, ny, nz));
+    }
+
     for (size_t s = 0; s < shapes.size(); s++)
     {
         // determine x, y, z span of the shape, as well as the computed origin/median point
         std::vector<int> v_indices = std::vector<int>();
-        std::vector<vec3> vertices = std::vector<vec3>();
         std::vector<int> n_indices = std::vector<int>();
-        std::vector<vec3> normals = std::vector<vec3>();
         std::vector<int> material_ids = std::vector<int>();
         std::cout << "found shape, parsing...\n";
         // Loop over faces(polygon)
@@ -58,12 +87,9 @@ std::vector<mesh *> load_asset(std::string filepath, std::string basedir)
             {
                 // access to vertex
                 tinyobj::index_t idx = shapes[s].mesh.indices[index_offset + v];
-                tinyobj::real_t vx = attrib.vertices[3 * idx.vertex_index + 0];
-                tinyobj::real_t vy = attrib.vertices[3 * idx.vertex_index + 1];
-                tinyobj::real_t vz = attrib.vertices[3 * idx.vertex_index + 2];
-                tinyobj::real_t nx = attrib.normals[3 * idx.normal_index + 0];
-                tinyobj::real_t ny = attrib.normals[3 * idx.normal_index + 1];
-                tinyobj::real_t nz = attrib.normals[3 * idx.normal_index + 2];
+                // this essentially copies the indices from shapes[s].mesh.indices
+                v_indices.push_back(idx.vertex_index);
+                n_indices.push_back(idx.normal_index);
                 if (attrib.texcoords.size() > 2 * idx.texcoord_index + 1)
                 {
                     tinyobj::real_t tx = attrib.texcoords[2 * idx.texcoord_index + 0];
@@ -78,35 +104,13 @@ std::vector<mesh *> load_asset(std::string filepath, std::string basedir)
                 // tinyobj::real_t red = attrib.colors[3*idx.vertex_index+0];
                 // tinyobj::real_t green = attrib.colors[3*idx.vertex_index+1];
                 // tinyobj::real_t blue = attrib.colors[3*idx.vertex_index+2];
-                v_indices.push_back(idx.vertex_index);
-                vertices.push_back(vec3(vx, vy, vz));
-                n_indices.push_back(idx.normal_index);
-                normals.push_back(vec3(nx, ny, nz));
             }
             index_offset += fv;
 
             // per-face material
             material_ids.push_back(shapes[s].mesh.material_ids[f]);
         }
-        vec3 min = vec3(MAXFLOAT, MAXFLOAT, MAXFLOAT);
-        vec3 max = vec3(-MAXFLOAT, -MAXFLOAT, -MAXFLOAT);
-        for (int i = 0; i < attrib.vertices.size(); i++)
-        {
-            auto v = vertices[i];
-            for (int j = 0; j < 3; j++)
-            {
-                // if (min[j] > v[j])
-                // {
-                //     min[j] = v[j];
-                // }
-                min[j] = std::min(min[j], v[j]);
-                // if (max[j] < v[j])
-                // {
-                //     max[j] = v[j];
-                // }
-                max[j] = std::max(max[j], v[j]);
-            }
-        }
+
         std::cout << "mesh bounds are " << min << " to " << max << '\n';
         mesh *temp_mesh = new mesh((int)shapes[s].mesh.num_face_vertices.size(), v_indices, vertices, n_indices, normals, material_ids);
         meshes.push_back(temp_mesh);

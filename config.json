@@ -15,12 +15,12 @@
     "should_trace_paths": true,
     "only_direct_illumination": false,
     "avg_number_of_paths": 1000,
-    "block_width": 64,
-    "block_height": 64,
+    "block_width": 16,
+    "block_height": 16,
     "normal_offset": 0.0001,
     "max_bounces": 10,
     "samples": 20,
     "light_samples": 4,
     "russian_roulette": true,
-    "threads": 10
+    "threads": 20
 }
