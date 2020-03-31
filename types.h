@@ -30,3 +30,20 @@ T **array_2d(int width, int height)
     }
     return data;
 }
+
+
+template <class T>
+struct list
+{
+    T *array;
+    size_t length;
+    T operator[](int idx)
+    {
+        if (idx < 0)
+        {
+            idx = length + idx;
+        }
+        assert(idx < length);
+        return array[idx];
+    }
+};

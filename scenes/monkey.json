@@ -1,24 +1,24 @@
 {
     "camera": {
         "look_from": [
-            -100.0,
-            400.0,
-            -750.0
+            0.0,
+            0.0,
+            200.0
         ],
         "look_at": [
             0.0,
-            278.0,
+            0.0,
             0.0
         ],
-        "fov": 70.0,
+        "fov": 35.0,
         "aperture": 0.0,
         "dist_to_focus": 100.0
     },
     "world": {
         "color": [
-            0.05,
-            0.05,
-            0.05
+            0.005,
+            0.005,
+            0.005
         ],
         "texture2": "checker_texture"
     },
@@ -181,7 +181,7 @@
                     1
                 ],
                 "texture2": "light_texture",
-                "power": 1,
+                "power": 1.0,
                 "two_sided": true
             }
         }
@@ -211,7 +211,7 @@
             ]
         },
         {
-            "id": "sphere",
+            "id": "monkey",
             "type": "mesh",
             "material": {
                 "id": "metal"
@@ -231,164 +231,25 @@
         {
             "type": "ref",
             "primitive": {
-                "id": "white_wall"
+                "id": "monkey"
             },
             "transform": {
-                "translate": [
-                    277.5,
-                    0.0,
-                    277.5
-                ],
-                "rotate": [
-                    0.0,
-                    0.0,
-                    0.0
-                ]
-            }
-        },
-        {
-            "type": "ref",
-            "primitive": {
-                "id": "white_wall"
-            },
-            "transform": {
-                "rotate": [
-                    1.0,
-                    0.0,
-                    0.0
-                ],
-                "translate": [
-                    277.5,
-                    555,
-                    277.5
-                ]
-            }
-        },
-        {
-            "type": "ref",
-            "primitive": {
-                "id": "white_wall"
-            },
-            "transform": {
-                "rotate": [
-                    1.5,
-                    0,
-                    0
-                ],
-                "translate": [
-                    277.5,
-                    277.5,
-                    555
-                ]
-            }
-        },
-        {
-            "type": "direct",
-            "primitive": {
-                "type": "rect",
-                "material": {
-                    "id": "green"
-                },
-                "size": [
-                    555,
-                    555
-                ],
-                "align": "yz",
-                "flip": true
-            },
-            "transform": {
-                "translate": [
-                    555,
-                    277.5,
-                    277.5
-                ]
-            }
-        },
-        {
-            "type": "direct",
-            "primitive": {
-                "type": "rect",
-                "material": {
-                    "id": "red"
-                },
-                "size": [
-                    555,
-                    555
-                ],
-                "align": "yz"
-            },
-            "transform": {
-                "translate": [
-                    0,
-                    277.5,
-                    277.5
-                ],
-                "rotate": [
-                    0.0,
-                    0.0,
-                    0.0
-                ]
-            }
-        },
-        {
-            "type": "ref",
-            "primitive": {
-                "id": "sphere"
-            },
-            "transform": {
-                "translate": [
-                    212.5,
-                    82.5,
-                    147.5
-                ],
-                "rotate": [
-                    0.0,
-                    -0.1,
-                    0.0
-                ],
                 "scale": [
-                    10,
-                    10,
-                    10
+                    50.0,
+                    50.0,
+                    50.0
                 ]
             }
         },
         {
-            "skip": true,
             "type": "ref",
             "primitive": {
                 "id": "big_sphere"
             },
             "transform": {
                 "translate": [
-                    277.5,
-                    -10500.0,
-                    277.5
-                ]
-            }
-        },
-        {
-            "type": "direct",
-            "primitive": {
-                "type": "box",
-                "material": {
-                    "id": "white"
-                },
-                "size": [
-                    165,
-                    330,
-                    165
-                ]
-            },
-            "transform": {
-                "translate": [
-                    347.5,
-                    165,
-                    377.5
-                ],
-                "rotate": [
                     0.0,
-                    0.05,
+                    -10200.0,
                     0.0
                 ]
             }
@@ -407,9 +268,9 @@
             },
             "transform": {
                 "translate": [
-                    273,
-                    520.0,
-                    171
+                    0,
+                    100.0,
+                    0
                 ],
                 "rotate": [
                     1.0,

@@ -8,6 +8,10 @@
 #include "world.h"
 #include "scene.h"
 #include "image.h"
+#include "mesh.h"
+
+#include "mesh_loader.h"
+
 #include "thirdparty/json.hpp"
 #include "thirdparty/lodepng/lodepng.h"
 #include <map>
@@ -75,6 +79,7 @@ class wrapped_hittable
 public:
     wrapped_hittable() : _hittable(nullptr), _material(wrapped_material()) {}
     // wrapped_hittable() {}
+    wrapped_hittable(hittable *_hittable) : _hittable(_hittable), _material(wrapped_material()) {}
     wrapped_hittable(hittable *_hittable, wrapped_material _material) : _hittable(_hittable), _material(_material) {}
     hittable *_hittable;
     wrapped_material _material;
@@ -125,8 +130,15 @@ parse_prim_or_instance(std::map<std::string, wrapped_hittable> primitives, std::
     switch (get_primitive_type_for(element["type"].get<std::string>()))
     {
     case MESH:
+    {
         std::cout << "found MESH" << '\n';
+        std::string asset_id = element["asset_id"].get<std::string>();
+        primitive = primitives[asset_id];
+        ASSERT(primitives.count(asset_id) > 0, "primitives did not contain " << asset_id);
+        primitive._material = _material;
+        reinterpret_cast<mesh*>(primitive._hittable)->materials.push_back(_material.unwrap());
         break;
+    }
 
     case SPHERE:
     {
@@ -258,6 +270,21 @@ World *build_scene(json scene)
         std::cout << element << '\n';
         // currently the only accepted asset type is a .obj or .png
         assert(element["type"].get<std::string>() == "object");
+        json data = element["data"];
+        std::vector<mesh *> meshes = load_asset(data["path"].get<std::string>());
+        if (element.contains("id") && meshes.size() == 1)
+        {
+            primitives.emplace(element["id"].get<std::string>(), wrapped_hittable((hittable *)meshes[0]));
+            std::cout << "\tsingle id path, id was " << element["id"].get<std::string>() << '\n';
+        }
+        else
+        {
+            ASSERT(element.contains("ids"), element);
+            for (int i = 0; i < meshes.size(); i++)
+            {
+                primitives.emplace(element["ids"].at(i), wrapped_hittable((hittable *)meshes[i]));
+            }
+        }
     }
     // iterate through and load textures
     for (auto &element : scene["textures"])

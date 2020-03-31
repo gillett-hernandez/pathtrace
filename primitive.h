@@ -107,11 +107,13 @@ inline vec3 shuffle(vec3 v, plane_enum style)
     {
     case XY:
     {
-        return vec3(v.x(), v.z(), v.y());
+        // return vec3(v.x(), v.z(), v.y());
+        return permute(v, 0, 2, 1);
     }
     case YZ:
     {
-        return vec3(v.y(), v.x(), v.z());
+        // return vec3(v.y(), v.x(), v.z());
+        return permute(v, 1, 0, 2);
     }
     default:
     {

@@ -6,6 +6,7 @@
 #include <vector>
 #include <float.h>
 
+
 inline int max(int a, int b)
 {
     return a > b ? a : b;
@@ -16,7 +17,7 @@ inline int min(int a, int b)
     return a < b ? a : b;
 }
 
-vec3 reflect(const vec3 &v, const vec3 &n)
+inline vec3 reflect(const vec3 &v, const vec3 &n)
 {
     return v - 2 * dot(v, n) * n;
 }
