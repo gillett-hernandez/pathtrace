@@ -16,9 +16,9 @@
     },
     "world": {
         "color": [
-            0.05,
-            0.05,
-            0.05
+            0.005,
+            0.005,
+            0.005
         ],
         "texture2": "checker_texture"
     },
@@ -181,7 +181,7 @@
                     1
                 ],
                 "texture2": "light_texture",
-                "power": 1,
+                "power": 1.0,
                 "two_sided": true
             }
         }

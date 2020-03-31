@@ -59,6 +59,9 @@ std::vector<mesh *> load_asset(std::string filepath, std::string basedir)
         }
     }
 
+    std::cout << attrib.vertices.size() << " vertices\n";
+    std::cout << attrib.normals.size() << " normals\n";
+
     for (size_t i = 0; i < attrib.normals.size(); i++)
     {
         // iterate through all normals, so that the indexing works properly
@@ -89,7 +92,14 @@ std::vector<mesh *> load_asset(std::string filepath, std::string basedir)
                 tinyobj::index_t idx = shapes[s].mesh.indices[index_offset + v];
                 // this essentially copies the indices from shapes[s].mesh.indices
                 v_indices.push_back(idx.vertex_index);
+                vec3 vertex = vertices[v_indices[f * 3 + v]];
+
+                tinyobj::real_t vx = attrib.vertices[3 * idx.vertex_index + 0];
+                tinyobj::real_t vy = attrib.vertices[3 * idx.vertex_index + 1];
+                tinyobj::real_t vz = attrib.vertices[3 * idx.vertex_index + 2];
                 n_indices.push_back(idx.normal_index);
+                vec3 normal = normals[n_indices[f * 3 + v]];
+
                 if (attrib.texcoords.size() > 2 * idx.texcoord_index + 1)
                 {
                     tinyobj::real_t tx = attrib.texcoords[2 * idx.texcoord_index + 0];
@@ -112,6 +122,9 @@ std::vector<mesh *> load_asset(std::string filepath, std::string basedir)
         }
 
         std::cout << "mesh bounds are " << min << " to " << max << '\n';
+        std::cout << shapes[s].mesh.num_face_vertices.size() << " num faces\n";
+        std::cout << v_indices.size() << " num vertex indices\n";
+        std::cout << n_indices.size() << " num normal indices\n";
         mesh *temp_mesh = new mesh((int)shapes[s].mesh.num_face_vertices.size(), v_indices, vertices, n_indices, normals, material_ids);
         meshes.push_back(temp_mesh);
     }

@@ -6,6 +6,11 @@ endif
 
 HPP = $(wildcard *.h) $(wildcard **/*.h)
 
+run: main.exe
+	python3 pre_render.py
+	./main.exe
+	python3 convert_ppm.py
+
 lodepng.o:
 	g++ $(opts) -O3 -c thirdparty/lodepng/lodepng.cpp -o lodepng.o
 
@@ -28,10 +33,7 @@ test.exe: test.cpp mesh_loader.h mesh.h triangle.h
 test: test.exe
 	./test.exe
 
-run: main.exe
-	python3 pre_render.py
-	./main.exe
-	python3 convert_ppm.py
+
 
 run_w_pillow: main.exe
 	python3 pre_render.py

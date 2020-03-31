@@ -67,15 +67,15 @@ public:
 
 triangle::triangle(mesh *p_mesh, int tri_num) : p_mesh(p_mesh)
 {
-    idx = p_mesh->v_indices[3 * tri_num];
+    idx = tri_num;
 }
 
 bool triangle::hit(const ray &r, float t_min, float t_max, hit_record &rec) const
 {
     // get coordinates
-    vec3 p0 = p_mesh->vertices[idx];
-    vec3 p1 = p_mesh->vertices[idx + 1];
-    vec3 p2 = p_mesh->vertices[idx + 2];
+    vec3 p0 = p_mesh->vertices[p_mesh->v_indices[3*idx]];
+    vec3 p1 = p_mesh->vertices[p_mesh->v_indices[3*idx+1]];
+    vec3 p2 = p_mesh->vertices[p_mesh->v_indices[3*idx+2]];
     // convert to ray space
     vec3 p0t = p0 - r.origin();
     vec3 p1t = p1 - r.origin();
@@ -148,7 +148,7 @@ bool triangle::hit(const ray &r, float t_min, float t_max, hit_record &rec) cons
     ASSERT(!isinf(rec.p), "rec.p was " << rec.p);
     rec.t = t_scaled * invDet;
     ASSERT(!isinf(rec.t), "rec.t was " << rec.t);
-    rec.normal = cross(dp02, dp12).normalized(); // * (2 * (random_double() > 0.5) - 1);
+    rec.normal = cross(dp02, dp12).normalized();// * (2 * (random_double() > 0.5) - 1);
     // rec.u = b0 * uv[0] + b1 * uv[1] + b2 * uv[2];
     rec.u = 0.5;
     rec.v = 0.5;
@@ -157,10 +157,10 @@ bool triangle::hit(const ray &r, float t_min, float t_max, hit_record &rec) cons
 }
 bool triangle::bounding_box(float t0, float t1, aabb &box) const
 {
-    vec3 p0, p1, p2;
-    p0 = p_mesh->vertices[idx];
-    p1 = p_mesh->vertices[idx + 1];
-    p2 = p_mesh->vertices[idx + 2];
+
+    vec3 p0 = p_mesh->vertices[p_mesh->v_indices[3*idx]];
+    vec3 p1 = p_mesh->vertices[p_mesh->v_indices[3*idx+1]];
+    vec3 p2 = p_mesh->vertices[p_mesh->v_indices[3*idx+2]];
     box = aabb(p0, p1, false).extend(p2);
     return true;
 }
